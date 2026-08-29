@@ -1,6 +1,7 @@
 Create HintDb judgement_db.
 
 (* we'll start with a simple axiomatic propositional calculus for now *)
+(* bezhanishvili has a Hilbert-style system w /\ and \/ in chapter 3 of his book on intuitionistic logic--if later you determine that having those as primitive would be better *)
 Inductive Sentence : Set :=
 | Snt (n : nat)
 | Arrow (s : Sentence) (s : Sentence)
@@ -61,10 +62,10 @@ Qed.
 (* if we phrase f as the act of writing (now named write), it's just the externalization of a judgement. Which makes sense: the inner act of judging has already occurred, putting it on paper is nothing but externalizing it. *)
 
 (* NOTE: not meant for general usage. Just to make the Deduction_Lemma proof go through. *)
-Ltac deduction_lemma_case axiom_content axiom_cons L1 L2 L3 a :=
-  write L1 (|- axiom_content --> (a --> axiom_content)) Axiom2;
-  write L2 (|- axiom_content) axiom_cons;
-  write L3 (|- (a --> axiom_content)) (ModusPonens _ _ L2 L1);
+Ltac deduction_lemma_case axiom_content axiom_cons J_Pred L1 L2 L3 a :=
+  write L1 (J_Pred (axiom_content --> (a --> axiom_content))) Axiom2;
+  write L2 (J_Pred axiom_content) axiom_cons;
+  write L3 (J_Pred (a --> axiom_content)) (ModusPonens _ _ L2 L1);
   evident.
 
 (* this is a limited form of deduction lemma: can only do one supposition *)
@@ -72,16 +73,16 @@ Ltac deduction_lemma_case axiom_content axiom_cons L1 L2 L3 a :=
 (* and below we have a proof where we do it twice *)
 (* note from when I thought this approach was a bad idea: I think the reason the deduction lemma had to have this honestly pretty ad hoc fix was that the proof of the deduction lemma that you have in mind is within a system where the proofs themselves are defined objects that can be looked into in a particular way. Here, proofs are at the meta-level, they're in Ltac, so we can't really talk about them in Gallina, much less look at specific lines (because there is no notion of a line in a Gallina proof term). I'm going to call this way of doing things a shallow embedding of proofs. I think we need a deep embedding of proofs. *)
 (* I'm not sure anymore. I think this idea is defendable. So far it's gotten the job done! *)
-Theorem Deduction_Lemma : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b) .
+Theorem Deduction_Lemma : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b).
 Proof.
-  intros a b. 
+  intros a b.
   apply conj.
   - intros.
     induction H. 
-    + deduction_lemma_case (p --> p) Axiom1 L1 L2 L3 a.
-    + deduction_lemma_case (q --> (p --> q)) Axiom2 L1 L2 L3 a.
-    + deduction_lemma_case ((p --> q) --> ((p --> (q --> r)) --> (p --> r))) Axiom3 L1 L2 L3 a.
-    + deduction_lemma_case ((p --> Bot) --> (p --> q)) Axiom4 L1 L2 L3 a.
+    + deduction_lemma_case (p --> p) Axiom1 J_IPC L1 L2 L3 a.
+    + deduction_lemma_case (q --> (p --> q)) Axiom2 J_IPC L1 L2 L3 a.
+    + deduction_lemma_case ((p --> q) --> ((p --> (q --> r)) --> (p --> r))) Axiom3 J_IPC L1 L2 L3 a.
+    + deduction_lemma_case ((p --> Bot) --> (p --> q)) Axiom4 J_IPC L1 L2 L3 a.
     + write L1 (|- ((a --> p) --> ((a --> p --> q) --> a -->q))) Axiom3.
       write L2 (|- (a --> p --> q) --> a --> q) (ModusPonens _ _ IHj1 L1).
       write L3 (|- (a --> q)) (ModusPonens _ _ IHj2 L2).
@@ -96,6 +97,10 @@ Proof.
     write L3 (|- b) (ModusPonens _ _ L2 L1).
     evident.
 Qed.
+
+Theorem Deduction_Lemma_gen : forall a b P, (forall x, J_IPC x -> P x) -> (J_Supp a -> P b) <-> P (a --> b).
+Proof.
+Abort.
 
 Ltac use_deduction line_number := apply Deduction_Lemma; intros line_number; apply Supp in line_number.
 
@@ -125,8 +130,24 @@ Qed.
 Inductive J_CPC : Sentence -> Prop :=
 | IPC_Incl : forall p, J_IPC p -> J_CPC p
 | Axiom5 : forall p, J_CPC (~~ ~~ p --> p).
-Hint Resolve IPC_Incl : judgement_db. 
+Hint Resolve IPC_Incl : judgement_db.
 (* Hint Constructors J_CPC : judgement_db. *)
+
+Theorem Deduction_Lemma_classical : forall a b, (J_Supp a -> J_CPC b) <-> J_CPC (a --> b).
+Proof.
+  intros.
+  apply conj.
+  intros.
+  induction H.
+  + apply IPC_Incl. apply Deduction_Lemma. intros. apply H.
+  + write L1 (J_CPC ((~~ ~~ p --> p) --> (a --> (~~ ~~ p --> p)))) Axiom2;
+  write L2 (J_CPC (~~ ~~ p --> p)) Axiom5.
+    write L3 (J_CPC (a --> (~~ ~~ p --> p))) (ModusPonens _ _ L2 L1).
+    (* TODO: figure out. it's the first modus ponens in CPC. sleep on it lol *)
+  evident.
+
+
+    deduction_lemma_case (~~ ~~ p --> p) Axiom5 J_CPC L1 L2 L3 a. 
 
 Theorem ex_falso_quodlibet_classical : forall p, J_CPC (Bot --> p).
 Proof.
