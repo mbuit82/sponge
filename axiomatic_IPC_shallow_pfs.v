@@ -1,4 +1,5 @@
 Create HintDb judgement_db.
+Create HintDb mp_db. 
 
 (* we'll start with a simple axiomatic propositional calculus for now *)
 (* bezhanishvili has a Hilbert-style system w /\ and \/ in chapter 3 of his book on intuitionistic logic--if later you determine that having those as primitive would be better *)
@@ -18,6 +19,9 @@ Inductive J_Supp : Sentence -> Prop :=
 | supposition : forall p, J_Supp p.
 (* If you just treat Rocq's Prop type as things that you _can_ say, well then yes, you _can just suppose_ any sentence. You can also _say_ any sentence is derivable. What you need though is evidence for that judgement. In other words, here you're treating Prop as the type of judgements. Given how M-L says mathematicians use the word "proposition", that might actually be exactly the right thing to do. Or maybe I'm just coping lol *)
 
+Definition Modus_Ponens (P : Sentence -> Prop) : Prop :=
+  forall p q, P p -> P (p --> q) -> P q.
+
 (* we start with the smallest system we (currently anticipate we will) use: intuitionistic propositional calculus. *)
 (* really, we probably won't use it, but it serves as a test case for extension. *)
 Inductive J_IPC : Sentence -> Prop :=
@@ -25,16 +29,20 @@ Inductive J_IPC : Sentence -> Prop :=
 | Axiom2 : forall p q, J_IPC (q --> (p --> q))
 | Axiom3 : forall p q r, J_IPC ((p --> q) --> ((p --> (q --> r)) --> (p --> r)))
 | Axiom4 : forall p q, J_IPC ((p --> Bot) --> (p --> q))
-| ModusPonens : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q
+| MP_IPC : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q
 | Supp : forall p, J_Supp p -> J_IPC p.
-(* Hint Constructors J_IPC : judgement_db. *)
+Hint Resolve MP_IPC : mp_db. 
+
+Axiom modus_ponens_monotone :
+  forall P P', Modus_Ponens P -> (forall s, P s -> P' s) -> Modus_Ponens P'.
+Hint Resolve modus_ponens_monotone : mp_db. 
 
 Theorem ex_falso_quodlibet : forall p, J_IPC (Bot --> p).
 Proof.
   intros.
   assert (J_IPC ((Bot --> Bot) --> (Bot --> p))) by (apply Axiom4).
   assert (J_IPC (Bot --> Bot)) by (apply Axiom1).
-  assert (J_IPC (Bot --> p)) by (apply (ModusPonens _ _ H0 H)).
+  assert (J_IPC (Bot --> p)) by (apply (MP_IPC _ _ H0 H)).
   apply H1.
 Qed.
 (* a bit clunky lol *)
@@ -55,7 +63,7 @@ Proof.
   intros. 
   write L1 (|- ((Bot --> Bot) --> (Bot --> p))) Axiom4.
   write L2 (|- (Bot --> Bot)) Axiom1.
-  write L3 (|- (Bot --> p)) (ModusPonens _ _ L2 L1).
+  write L3 (|- (Bot --> p)) (MP_IPC _ _ L2 L1).
   evident.
 Qed.
 (* better, ideally I get rid of the f? I'm not clear on whether we should lol *)
@@ -65,7 +73,7 @@ Qed.
 Ltac deduction_lemma_case axiom_content axiom_cons J_Pred L1 L2 L3 a :=
   write L1 (J_Pred (axiom_content --> (a --> axiom_content))) Axiom2;
   write L2 (J_Pred axiom_content) axiom_cons;
-  write L3 (J_Pred (a --> axiom_content)) (ModusPonens _ _ L2 L1);
+  write L3 (J_Pred (a --> axiom_content)) (MP_IPC _ _ L2 L1);
   evident.
 
 (* this is a limited form of deduction lemma: can only do one supposition *)
@@ -84,17 +92,17 @@ Proof.
     + deduction_lemma_case ((p --> q) --> ((p --> (q --> r)) --> (p --> r))) Axiom3 J_IPC L1 L2 L3 a.
     + deduction_lemma_case ((p --> Bot) --> (p --> q)) Axiom4 J_IPC L1 L2 L3 a.
     + write L1 (|- ((a --> p) --> ((a --> p --> q) --> a -->q))) Axiom3.
-      write L2 (|- (a --> p --> q) --> a --> q) (ModusPonens _ _ IHj1 L1).
-      write L3 (|- (a --> q)) (ModusPonens _ _ IHj2 L2).
+      write L2 (|- (a --> p --> q) --> a --> q) (MP_IPC _ _ IHj1 L1).
+      write L3 (|- (a --> q)) (MP_IPC _ _ IHj2 L2).
       evident.
     + apply Supp in H.
       write L1 (|- (p --> (a --> p))) Axiom2.
-      write L2 (|- (a --> p)) (ModusPonens _ _ H L1).
+      write L2 (|- (a --> p)) (MP_IPC _ _ H L1).
       evident. 
     + apply supposition.
   - intros L1 L2.
     apply Supp in L2.
-    write L3 (|- b) (ModusPonens _ _ L2 L1).
+    write L3 (|- b) (MP_IPC _ _ L2 L1).
     evident.
 Qed.
 
@@ -109,7 +117,7 @@ Proof.
   intros.
   use_deduction L1.
   use_deduction L2.
-  write L3 (|- Bot) (ModusPonens _ _ L1 L2).
+  write L3 (|- Bot) (MP_IPC _ _ L1 L2).
   evident.
 Qed.
 
@@ -119,19 +127,34 @@ Proof.
   use_deduction L1.
   use_deduction L2.
   write L3 (|- ((~~ ~~ p --> Bot) --> (~~ ~~ p --> ~~ p))) Axiom4.
-  write L4 (|- (~~ ~~ p --> ~~ p)) (ModusPonens _ _ L1 L3).
+  write L4 (|- (~~ ~~ p --> ~~ p)) (MP_IPC _ _ L1 L3).
   write L5 (|- (p --> ~~ ~~ p)) double_negation_intro. (* AWESOME! you can use proven theorems! *)
-  write L6 (|- ~~ ~~ p) (ModusPonens _ _ L2 L5).
-  write L7 (|- ~~ p) (ModusPonens _ _ L6 L4).
-  write L8 (|- Bot) (ModusPonens _ _ L2 L7).
+  write L6 (|- ~~ ~~ p) (MP_IPC _ _ L2 L5).
+  write L7 (|- ~~ p) (MP_IPC _ _ L6 L4).
+  write L8 (|- Bot) (MP_IPC _ _ L2 L7).
   evident.
 Qed.
 
 Inductive J_CPC : Sentence -> Prop :=
-| IPC_Incl : forall p, J_IPC p -> J_CPC p
+| IPC_in_CPC : forall p, J_IPC p -> J_CPC p
 | Axiom5 : forall p, J_CPC (~~ ~~ p --> p).
-Hint Resolve IPC_Incl : judgement_db.
-(* Hint Constructors J_CPC : judgement_db. *)
+Hint Resolve IPC_in_CPC : judgement_db.
+Hint Resolve IPC_in_CPC : mp_db.
+
+(* why doesn't this work? *)
+Theorem MP_CPC : Modus_Ponens J_CPC.
+Proof.
+  eapply modus_ponens_monotone.
+  - admit. 
+  - apply IPC_in_CPC.
+Admitted. 
+
+Definition MP_CPC := modus_ponens_monotone J_IPC J_CPC MP_IPC IPC_in_CPC.
+
+Check MP_CPC.
+Compute MP_CPC. 
+
+
 
 Theorem Deduction_Lemma_classical : forall a b, (J_Supp a -> J_CPC b) <-> J_CPC (a --> b).
 Proof.
@@ -142,7 +165,7 @@ Proof.
   + apply IPC_Incl. apply Deduction_Lemma. intros. apply H.
   + write L1 (J_CPC ((~~ ~~ p --> p) --> (a --> (~~ ~~ p --> p)))) Axiom2;
   write L2 (J_CPC (~~ ~~ p --> p)) Axiom5.
-    write L3 (J_CPC (a --> (~~ ~~ p --> p))) (ModusPonens _ _ L2 L1).
+    write L3 (J_CPC (a --> (~~ ~~ p --> p))) (MP_CPC _ _ L2 L1).
     (* TODO: figure out. it's the first modus ponens in CPC. sleep on it lol *)
   evident.
 
@@ -154,7 +177,7 @@ Proof.
   intros.
   assert (J_CPC ((Bot --> Bot) --> (Bot --> p))) by (eauto using Axiom4 with judgement_db).
   assert (J_IPC (Bot --> Bot)) by (apply Axiom1).
-  assert (J_IPC (Bot --> p)) by (apply (ModusPonens _ _ H0 H)).
+  assert (J_IPC (Bot --> p)) by (apply (MP_IPC _ _ H0 H)).
   apply H1.
 Qed.
 
