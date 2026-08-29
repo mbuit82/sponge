@@ -12,10 +12,12 @@ Notation "~~ a" := (Arrow a Bot) (at level 59, right associativity).
 (* this was a way to get around the deduction lemma with current setup *)
 (* I think this is the best way to do it, because you should never suppose in the middle of a proof in an axiomatic proof, so the trivial case where you just prove the statement by supposition is taken care of in that yeah you're allowed to do that but it's clearly contrary to the intention *)
 (* To do this with natural deduction would be a different story, you'd want to encode levels of supposition. *)
+(* I think the best way to frame the tool the emerges from this approach is one that's complete, but not sound; however, under a certain usage of it (viz never asserting J_Supp in a proof), it is also sound. *)
 Inductive J_Supp : Sentence -> Prop :=
 | supposition : forall p, J_Supp p.
+(* If you just treat Rocq's Prop type as things that you _can_ say, well then yes, you _can just suppose_ any sentence. You can also _say_ any sentence is derivable. What you need though is evidence for that judgement. In other words, here you're treating Prop as the type of judgements. Given how M-L says mathematicians use the word "proposition", that might actually be exactly the right thing to do. Or maybe I'm just coping lol *)
 
-(* we do the smallest system we (currently anticipate we will) use: intuitionistic propositional calculus. *)
+(* we start with the smallest system we (currently anticipate we will) use: intuitionistic propositional calculus. *)
 (* really, we probably won't use it, but it serves as a test case for extension. *)
 Inductive J_IPC : Sentence -> Prop :=
 | Axiom1 : forall p,  J_IPC (p --> p)
@@ -24,6 +26,7 @@ Inductive J_IPC : Sentence -> Prop :=
 | Axiom4 : forall p q, J_IPC ((p --> Bot) --> (p --> q))
 | ModusPonens : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q
 | Supp : forall p, J_Supp p -> J_IPC p.
+(* Hint Constructors J_IPC : judgement_db. *)
 
 Theorem ex_falso_quodlibet : forall p, J_IPC (Bot --> p).
 Proof.
@@ -38,8 +41,11 @@ Qed.
 (* I'll just redefine |- later, doing this just for ease now *)
 Notation "|- a" := (J_IPC a) (at level 61, no associativity). (* does associativity matter for unaary operators? *)
 
-Ltac write line_number judgement justification :=
+Ltac write_old line_number judgement justification :=
   assert (line_number : judgement) by (apply justification).
+
+Ltac write line_number judgement justification :=
+  assert (line_number : judgement) by (eauto using justification with judgement_db). 
 
 Ltac evident := assumption.
 
@@ -64,6 +70,8 @@ Ltac deduction_lemma_case axiom_content axiom_cons L1 L2 L3 a :=
 (* this is a limited form of deduction lemma: can only do one supposition *)
 (* well actually I don't think it's limited in any other sense. I mean, it's a biconditional. *)
 (* and below we have a proof where we do it twice *)
+(* note from when I thought this approach was a bad idea: I think the reason the deduction lemma had to have this honestly pretty ad hoc fix was that the proof of the deduction lemma that you have in mind is within a system where the proofs themselves are defined objects that can be looked into in a particular way. Here, proofs are at the meta-level, they're in Ltac, so we can't really talk about them in Gallina, much less look at specific lines (because there is no notion of a line in a Gallina proof term). I'm going to call this way of doing things a shallow embedding of proofs. I think we need a deep embedding of proofs. *)
+(* I'm not sure anymore. I think this idea is defendable. So far it's gotten the job done! *)
 Theorem Deduction_Lemma : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b) .
 Proof.
   intros a b. 
@@ -117,8 +125,18 @@ Qed.
 Inductive J_CPC : Sentence -> Prop :=
 | IPC_Incl : forall p, J_IPC p -> J_CPC p
 | Axiom5 : forall p, J_CPC (~~ ~~ p --> p).
-Hint Constructors J_CPC : judgements.
+Hint Resolve IPC_Incl : judgement_db. 
+(* Hint Constructors J_CPC : judgement_db. *)
+
+Theorem ex_falso_quodlibet_classical : forall p, J_CPC (Bot --> p).
+Proof.
+  intros.
+  assert (J_CPC ((Bot --> Bot) --> (Bot --> p))) by (eauto using Axiom4 with judgement_db).
+  assert (J_IPC (Bot --> Bot)) by (apply Axiom1).
+  assert (J_IPC (Bot --> p)) by (apply (ModusPonens _ _ H0 H)).
+  apply H1.
+Qed.
 
 
 (* TODO: extensions. I think extension with modus ponens is going to be a bitch. *)
-(* I think the reason the deduction lemma had to have this honestly pretty ad hoc fix was that the proof of the deduction lemma that you have in mind is within a system where the proofs themselves are defined objects that can be looked into in a particular way. Here, proofs are at the meta-level, they're in Ltac, so we can't really talk about them in Gallina, much less look at specific lines (because there is no notion of a line in a Gallina proof term). I'm going to call this way of doing things a shallow embedding of proofs. I think we need a deep embedding of proofs. *)
+
