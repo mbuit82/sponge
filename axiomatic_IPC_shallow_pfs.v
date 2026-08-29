@@ -21,6 +21,7 @@ Inductive J_Supp : Sentence -> Prop :=
 
 Definition Modus_Ponens (P : Sentence -> Prop) : Prop :=
   forall p q, P p -> P (p --> q) -> P q.
+Hint Unfold Modus_Ponens : mp_db. 
 
 (* we start with the smallest system we (currently anticipate we will) use: intuitionistic propositional calculus. *)
 (* really, we probably won't use it, but it serves as a test case for extension. *)
@@ -48,7 +49,7 @@ Qed.
 (* a bit clunky lol *)
 
 (* I'll just redefine |- later, doing this just for ease now *)
-Notation "|- a" := (J_IPC a) (at level 61, no associativity). (* does associativity matter for unaary operators? *)
+Notation "|- a" := (J_IPC a) (at level 61, no associativity). (* does associativity matter for unary operators? *)
 
 Ltac write_old line_number judgement justification :=
   assert (line_number : judgement) by (apply justification).
@@ -81,7 +82,7 @@ Ltac deduction_lemma_case axiom_content axiom_cons J_Pred L1 L2 L3 a :=
 (* and below we have a proof where we do it twice *)
 (* note from when I thought this approach was a bad idea: I think the reason the deduction lemma had to have this honestly pretty ad hoc fix was that the proof of the deduction lemma that you have in mind is within a system where the proofs themselves are defined objects that can be looked into in a particular way. Here, proofs are at the meta-level, they're in Ltac, so we can't really talk about them in Gallina, much less look at specific lines (because there is no notion of a line in a Gallina proof term). I'm going to call this way of doing things a shallow embedding of proofs. I think we need a deep embedding of proofs. *)
 (* I'm not sure anymore. I think this idea is defendable. So far it's gotten the job done! *)
-Theorem Deduction_Lemma : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b).
+Theorem IPC_deduction : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b).
 Proof.
   intros a b.
   apply conj.
@@ -110,13 +111,13 @@ Theorem Deduction_Lemma_gen : forall a b P, (forall x, J_IPC x -> P x) -> (J_Sup
 Proof.
 Abort.
 
-Ltac use_deduction line_number := apply Deduction_Lemma; intros line_number; apply Supp in line_number.
+Ltac use deduction line_number := apply deduction; intros line_number; apply Supp in line_number.
 
 Theorem double_negation_intro : forall p, J_IPC (p --> ~~ ~~ p).
 Proof.
   intros.
-  use_deduction L1.
-  use_deduction L2.
+  use IPC_deduction L1.
+  use IPC_deduction L2.
   write L3 (|- Bot) (MP_IPC _ _ L1 L2).
   evident.
 Qed.
@@ -124,11 +125,11 @@ Qed.
 Theorem triple_negation_elim : forall p, J_IPC (~~ ~~ ~~ p --> ~~ p).
 Proof.
   intros.
-  use_deduction L1.
-  use_deduction L2.
+  use IPC_deduction L1.
+  use IPC_deduction L2.
   write L3 (|- ((~~ ~~ p --> Bot) --> (~~ ~~ p --> ~~ p))) Axiom4.
   write L4 (|- (~~ ~~ p --> ~~ p)) (MP_IPC _ _ L1 L3).
-  write L5 (|- (p --> ~~ ~~ p)) double_negation_intro. (* AWESOME! you can use proven theorems! *)
+  write L5 (|- (p --> ~~ ~~ p)) double_negation_intro. (* AWESOME! you can use proved theorems! *)
   write L6 (|- ~~ ~~ p) (MP_IPC _ _ L2 L5).
   write L7 (|- ~~ p) (MP_IPC _ _ L6 L4).
   write L8 (|- Bot) (MP_IPC _ _ L2 L7).
@@ -141,46 +142,51 @@ Inductive J_CPC : Sentence -> Prop :=
 Hint Resolve IPC_in_CPC : judgement_db.
 Hint Resolve IPC_in_CPC : mp_db.
 
-(* why doesn't this work? *)
 Theorem MP_CPC : Modus_Ponens J_CPC.
-Proof.
-  eapply modus_ponens_monotone.
-  - admit. 
-  - apply IPC_in_CPC.
-Admitted. 
+Proof. apply (modus_ponens_monotone J_IPC); eauto with mp_db. Qed.
 
-Definition MP_CPC := modus_ponens_monotone J_IPC J_CPC MP_IPC IPC_in_CPC.
+Definition MP_CPC_proof_term := modus_ponens_monotone J_IPC J_CPC MP_IPC.
+Compute MP_CPC_proof_term. 
 
-Check MP_CPC.
-Compute MP_CPC. 
-
-
-
-Theorem Deduction_Lemma_classical : forall a b, (J_Supp a -> J_CPC b) <-> J_CPC (a --> b).
+Theorem classical_deduction : forall a b, (J_Supp a -> J_CPC b) <-> J_CPC (a --> b).
 Proof.
   intros.
   apply conj.
-  intros.
-  induction H.
-  + apply IPC_Incl. apply Deduction_Lemma. intros. apply H.
-  + write L1 (J_CPC ((~~ ~~ p --> p) --> (a --> (~~ ~~ p --> p)))) Axiom2;
-  write L2 (J_CPC (~~ ~~ p --> p)) Axiom5.
-    write L3 (J_CPC (a --> (~~ ~~ p --> p))) (MP_CPC _ _ L2 L1).
-    (* TODO: figure out. it's the first modus ponens in CPC. sleep on it lol *)
-  evident.
-
-
-    deduction_lemma_case (~~ ~~ p --> p) Axiom5 J_CPC L1 L2 L3 a. 
-
-Theorem ex_falso_quodlibet_classical : forall p, J_CPC (Bot --> p).
-Proof.
-  intros.
-  assert (J_CPC ((Bot --> Bot) --> (Bot --> p))) by (eauto using Axiom4 with judgement_db).
-  assert (J_IPC (Bot --> Bot)) by (apply Axiom1).
-  assert (J_IPC (Bot --> p)) by (apply (MP_IPC _ _ H0 H)).
-  apply H1.
+  - intros.
+    induction H.
+    + apply IPC_in_CPC. apply IPC_deduction. intros. apply H.
+    + write L1 (J_CPC ((~~ ~~ p --> p) --> (a --> (~~ ~~ p --> p)))) Axiom2;
+        write L2 (J_CPC (~~ ~~ p --> p)) Axiom5.
+      write L3 (J_CPC (a --> (~~ ~~ p --> p))) (MP_CPC _ _ L2 L1).
+      evident. 
+    + apply supposition.
+  - intros. apply Supp in H0.
+    apply IPC_in_CPC in H0. 
+    write L3 (J_CPC b) (MP_CPC _ _ H0 H).
+    evident.
 Qed.
 
+Theorem ex_falso_quodlibet_classical : forall p, J_CPC (Bot --> p).
+Proof. (* I'll do the proof that doesn't use axiom 4! *)
+  intros.
+  use classical_deduction L1; apply IPC_in_CPC in L1. (* deduction is still not completely fixed *)
+  write L2 (J_CPC (Bot --> (~~ p --> Bot))) Axiom2.
+  write L3 (J_CPC (~~ ~~ p)) (MP_CPC _ _ L1 L2).
+  write L4 (J_CPC (~~ ~~ p --> p)) Axiom5.
+  write L5 (J_CPC p) (MP_CPC _ _ L3 L4).
+  evident. 
+Qed.
+
+Theorem axiom4_classically_redundant : forall p q, J_CPC ((p --> Bot) --> (p --> q)).
+Proof.
+  intros.
+  use classical_deduction L1; apply IPC_in_CPC in L1.
+  use classical_deduction L2; apply IPC_in_CPC in L2.
+  write L3 (J_CPC Bot) (MP_CPC _ _ L2 L1).
+  write L4 (J_CPC (Bot --> q)) ex_falso_quodlibet_classical.
+  write L5 (J_CPC q) (MP_CPC _ _ L3 L4).
+  evident.
+Qed.
 
 (* TODO: extensions. I think extension with modus ponens is going to be a bitch. *)
-
+(* No: the real bitch is going to be extending the definition of sentences! *)
