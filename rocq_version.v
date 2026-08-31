@@ -211,6 +211,12 @@ Proof.
 
             (* what if you make deduction not extensible? Like, by design. I never once used deduction in my modal logic homework. That't not what I want my system to be for. But it sure as hell is nice for getting things set up nicely. The sort of thinking that deduction is doesn't really seem as common for modal logic proofs. *)
 
+            (* the funny thing is, I do want substitution of logical identicals lmfao. And that would actually go through super easily in practice by deduction.
+               what am I even doing this for? Like, that's not clear to me. Not the meta-level why, I got that. The object-level why of what sort of proofs I want to be doing, what sort of reasoning I'm trying to isolate.
+
+               I think the ideal version of the tool lets the user choose whether glossy reasoning is allowed for a certain proof. Wow, this is hard. What should it take to turn glossy reasoning on? Damn, this is hard lmfao. Design choices. 
+             *)
+
 Theorem triple_negation_elim : forall p, J_IPC (~~ ~~ ~~ p --> ~~ p).
 Proof.
   intros.
