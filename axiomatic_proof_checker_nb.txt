@@ -12,3 +12,10 @@ The way this other way of doing things would work would be as follows: borrowing
 I think maybe something like Haskell could be the right tool. Maybe a Haskell DSL. 
 
 Something that would be nice in that new way of doing things would be to show the rules available to you as you go in a proof. 
+
+
+
+8/30
+It would be nice to have substitution of propositional equivalents as a proof rule. How to formulate it would be hard though, maybe. Prove on paper first that you can do it, so that you understand how it takes to think about the system for that to work. And then you could build your system so that it fits those properties. And the final step would be to verify it using rocq. 
+
+I should put a pin on all this. The path forward is charted. For this solution, it's clear what to do and it's not too hard to do. (Substitution shows that you do want to be able to manipulate the contents of your proofs more than this strategy suggests.) For the other solution, it's clear what to do and you can't do it now because you don't know Haskell. (So learn Haskell. Lmao.) Anyways ask Noah if pursuing this project is worth your time. 

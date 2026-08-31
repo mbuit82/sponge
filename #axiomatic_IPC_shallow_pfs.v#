@@ -48,7 +48,7 @@ Proof.
 Qed.
 (* a bit clunky lol *)
 
-(* I'll just redefine |- later, doing this just for ease now *)
+b(* I'll just redefine |- later, doing this just for ease now *)
 Notation "|- a" := (J_IPC a) (at level 61, no associativity). (* does associativity matter for unary operators? *)
 
 Ltac write_old line_number judgement justification :=

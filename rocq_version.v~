@@ -1,52 +1,72 @@
 Create HintDb judgement_db.
 Create HintDb mp_db. 
 
-(* we'll start with a simple axiomatic propositional calculus for now *)
-(* bezhanishvili has a Hilbert-style system w /\ and \/ in chapter 3 of his book on intuitionistic logic--if later you determine that having those as primitive would be better *)
 Inductive Sentence : Set :=
 | Snt (n : nat)
 | Arrow (s : Sentence) (s : Sentence)
+| Or (s : Sentence) (s : Sentence)
+| And (s : Sentence) (s :Sentence)
 | Bot.
 
 Infix "-->" := Arrow (at level 60, right associativity).
-Notation "~~ a" := (Arrow a Bot) (at level 59, right associativity).
+Infix "&" := And (at level 59, right associativity).
+Infix "v" := Or (at level 58, right associativity). 
+Notation "~~ a" := (Arrow a Bot) (at level 57, right associativity).
 
-(* this was a way to get around the deduction lemma with current setup *)
-(* I think this is the best way to do it, because you should never suppose in the middle of a proof in an axiomatic proof, so the trivial case where you just prove the statement by supposition is taken care of in that yeah you're allowed to do that but it's clearly contrary to the intention *)
-(* To do this with natural deduction would be a different story, you'd want to encode levels of supposition. *)
-(* I think the best way to frame the tool that emerges from this approach is one that's complete (rather trivially), but not sound; however, under a certain usage of it (viz never asserting J_Supp in a proof), it is also sound. *)
+
 Inductive J_Supp : Sentence -> Prop :=
 | supposition : forall p, J_Supp p.
-(* If you just treat Rocq's Prop type as things that you _can_ say, well then yes, you _can just suppose_ any sentence. You can also _say_ any sentence is derivable. What you need though is evidence for that judgement. In other words, here you're treating Prop as the type of judgements. Given how M-L says mathematicians use the word "proposition", that might actually be exactly the right thing to do. Or maybe I'm just coping lol *)
 
 Definition Modus_Ponens (P : Sentence -> Prop) : Prop :=
   forall p q, P p -> P (p --> q) -> P q.
 Hint Unfold Modus_Ponens : mp_db. 
 
-(* we start with the smallest system we (currently anticipate we will) use: intuitionistic propositional calculus. *)
-(* really, we probably won't use it, but it serves as a test case for extension. *)
+(* start with intuitionistic calculus *)
 Inductive J_IPC : Sentence -> Prop :=
-| Axiom1 : forall p,  J_IPC (p --> p)
 | Axiom2 : forall p q, J_IPC (q --> (p --> q))
 | Axiom3 : forall p q r, J_IPC ((p --> q) --> ((p --> (q --> r)) --> (p --> r)))
-| Axiom4 : forall p q, J_IPC ((p --> Bot) --> (p --> q))
-| MP_IPC : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q
-| Supp : forall p, J_Supp p -> J_IPC p.
+| AndIntro : forall p q, J_IPC (p --> q --> (p & q))
+| AndL : forall p q, J_IPC ((p & q) --> p)
+| AndR : forall p q, J_IPC ((p & q) --> q)
+| OrL : forall p q, J_IPC (p --> (p v q))
+| OrR : forall p q, J_IPC (q --> (p v q))
+| OrElim : forall p q r, J_IPC ((p --> r) --> (q --> r) --> (p v q) --> r)
+| ExFalso : forall p, J_IPC (Bot --> p)
+| MP_IPC : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q.
+
 Hint Resolve MP_IPC : mp_db. 
 
 Axiom modus_ponens_monotone :
   forall P P', Modus_Ponens P -> (forall s, P s -> P' s) -> Modus_Ponens P'.
 Hint Resolve modus_ponens_monotone : mp_db. 
 
-Theorem ex_falso_quodlibet : forall p, J_IPC (Bot --> p).
+Ltac write line_number judgement justification :=
+  assert (line_number : judgement) by (eauto using justification with judgement_db).
+
+Ltac evident := assumption.
+
+Theorem ident_implication : forall p, J_IPC (p --> p).
 Proof.
   intros.
-  assert (J_IPC ((Bot --> Bot) --> (Bot --> p))) by (apply Axiom4).
-  assert (J_IPC (Bot --> Bot)) by (apply Axiom1).
-  assert (J_IPC (Bot --> p)) by (apply (MP_IPC _ _ H0 H)).
-  apply H1.
-Qed.
-(* a bit clunky lol *)
+  destruct p.
+  - admit.
+  - admit.
+  - write L1 (J_IPC ((p1 --> p1 v p2) --> (p2 --> p1 v p2) --> (p1 v p2 --> p1 v p2))) OrElim.
+    write L2 (J_IPC (p1 --> p1 v p2)) OrL.
+    write L3 (J_IPC (p2 --> p1 v p2)) OrR.
+    write L4 (J_IPC ((p2 --> p1 v p2) --> (p1 v p2 --> p1 v p2))) (MP_IPC _ _ L2 L1).
+    write L5 (J_IPC (p1 v p2 --> p1 v p2)) (MP_IPC _ _ L3 L4).
+    evident.
+  - write L1 (J_IPC ((p1 & p2 --> p1) --> ((p1 & p2 --> (p1 --> p1 & p2)) --> (p1 & p2 --> p1 & p2)))) Axiom3.
+    write L2 (J_IPC (p1 & p2 --> p1)) AndL.
+    write L3 (J_IPC ((p1 & p2 --> (p1 --> p1 & p2)) --> (p1 & p2 --> p1 & p2))) (MP_IPC _ _ L2 L1).
+    write L4 (J_IPC (p1 & p2 --> p1 --> p1 & p2)) Axiom2. 
+  - write L1 (J_IPC (Bot --> Bot)) ExFalso.
+    evident.
+    
+  
+  
+
 
 (* I'll just redefine |- later, doing this just for ease now *)
 Notation "|- a" := (J_IPC a) (at level 61, no associativity). (* does associativity matter for unary operators? *)
@@ -56,8 +76,6 @@ Ltac write_old line_number judgement justification :=
 
 Ltac write line_number judgement justification :=
   assert (line_number : judgement) by (eauto using justification with judgement_db). 
-
-Ltac evident := assumption.
 
 Theorem ex_falso_quodlibet_2 : forall p, |- Bot --> p.
 Proof.
@@ -191,3 +209,4 @@ Qed.
 (* TODO: extensions. I think extension with modus ponens is going to be a bitch. *)
 (* No: the real bitch is going to be extending the definition of sentences! *)
 (* Actually what Ima do is make a new file w Heyting's axiomatization, and then have the definition of sentences include Box and Diamond. and then just not use those till I get extensions with modal logic lol. Kinda just to have the fullest and most usable version that's completely Rocq, and actually get to writing modal logic proofs. Just kinda to see where these design decisions take me--after all, part of the point of this is learning about making something from the ground up. *)
+
