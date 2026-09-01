@@ -12,16 +12,54 @@ Notation "~~ a" := (Arrow a Bot) (at level 75, right associativity).
 Fixpoint sent_eq (a : Sentence) (b : Sentence) : bool :=
   match a, b with
   | Snt m, Snt n => n =? m
-  | Arrow s s', Arrow t t' => andb (sent_eq s t) (sent_eq s' t')
+  | Arrow s s', Arrow t t' => (sent_eq s t) && (sent_eq s' t')
   | Bot, Bot => true
   | _, _ => false
   end.
 
-Inductive IPC_Axiom : Sentence -> Prop :=
-| AS1 : forall p,  IPC_Axiom (p --> p)
-| AS2 : forall p q, IPC_Axiom (q --> (p --> q))
-| AS3 : forall p q r, IPC_Axiom ((p --> q) --> ((p --> (q --> r)) --> (p --> r)))
-| AS4 : forall p q, IPC_Axiom ((p --> Bot) --> (p --> q)).
+Definition Axiom1 (s : Sentence) : bool :=
+  match s with
+  | Arrow p q => sent_eq p q
+  | _ => false
+  end.
+
+Definition Axiom2 (s : Sentence) : bool :=
+  match s with
+  | (p --> (q --> p')) => sent_eq p p'
+  | _ => false
+  end.
+
+Definition Axiom3 (s : Sentence) : bool :=
+  match s with
+  | ((p --> q) --> ((p' --> (q' --> r)) --> (p'' --> r'))) =>
+      (sent_eq p p') && (sent_eq p' p'') && (sent_eq q q') && (sent_eq r r')
+  | _ => false
+  end.
+
+Definition Axiom4 (s : Sentence) : bool :=
+  match s with
+  | ((p --> Bot) --> (p' --> q)) => sent_eq p p'
+  | _ => false
+  end.
+
+Definition Axiom5 (s : Sentence) : bool :=
+  match s with
+  | ~~ ~~ p --> p' => sent_eq p p'
+  | _ => false
+  end.
+
+Definition IPC_axioms : list (Sentence -> bool) := Axiom1 :: Axiom2 :: Axiom3 :: Axiom4 :: nil.
+
+Definition CPC_axioms : list (Sentence -> bool) := Axiom5 :: IPC_axioms. (* hm. design choices. *)
+
+Definition orb_pred := fun (P Q : Sentence -> bool) => fun (s : Sentence) => P s || Q s.
+
+Definition is_axiom_of (system : list (Sentence -> bool)) : Sentence -> bool :=
+  fold_left orb_pred system (fun (s : Sentence) => false).
+
+Definition is_IPC_axiom := is_axiom_of IPC_axioms.
+Definition is_CPC_axiom := is_axiom_of CPC_axioms. 
+
 
 (*
 - a proof is just a list of sentences, where each line is either an instance of the axioms or follows from a lines j,k < i by modus ponens.
@@ -36,14 +74,23 @@ Inductive IPC_Axiom : Sentence -> Prop :=
                                                
 (* with the deep embedding I have a problem though. I can't think of a way to automatically check correctness of a fake proof in the middle of it, but I can for the shallow embedding. Fock. *)
 
+(* Ok to add modus ponens to this you need to think about how you're going to represent modus ponens. I think it could be a tuple: ("Modus Ponens", i, j), where i and j are line numbers *)
+(* Ok, but the axiom justifications are not going to be tuples, so how are we going to deal with justifications having multiple types? I want the types to potentially be indefinite too, to allow for derived rules... *)
+(* ah, well we can define a system as a tuple of axioms and rules. and then we can define a justification as a sum type: either an axiom or a rule. But the thing is, not all rules will be of the same type, e.g. MP will be (MP, i, j), but substitution of prop identicals will be (PROPIDENT, j) (or even no j). Well, we could have inference rules be tuples of strings and lists of indices. These aren't C arrays! *)
 
-Fixpoint valid_proof (p : Pf) : Prop :=
+Fixpoint fit_modus_ponens (ant impl consq : Sentence) : bool :=
+  match impl with
+  | p --> q => (sent_eq ant p) && (sent_eq consq q)
+  | _ => false
+  end.
+
+Fixpoint valid_proof (p : list Sentence) : bool :=
   match p with
-  | s :: p' => IPC_Axiom s /\ valid_proof p'
-  | nil => False
+  | s :: p' => (IPC_axiom_check s) && (valid_proof p')
+  | nil => false
   end. 
 
-Fixpoint locate (s : Sentence) (p : Pf) (i : nat) : option nat :=
+Fixpoint locate (s : Sentence) (p : list Sentence) (i : nat) : option nat :=
   match p with
   | s' :: p' => match sent_eq s s' with
                 | true => Some i
@@ -52,7 +99,7 @@ Fixpoint locate (s : Sentence) (p : Pf) (i : nat) : option nat :=
   | nil => None
   end. 
 
-Fixpoint earlier_in_proof' (s : Sentence) (p : Pf) (i : nat) : (bool * option nat) :=
+Fixpoint earlier_in_proof' (s : Sentence) (p : list Sentence) (i : nat) : (bool * option nat) :=
   match p with
   | s' :: p' => match sent_eq s s' with
                 | true => (true, Some i)
@@ -61,7 +108,7 @@ Fixpoint earlier_in_proof' (s : Sentence) (p : Pf) (i : nat) : (bool * option na
   | nil => (false, None)
   end. (* i will be how many lines behind s its match is *)
 
-Definition earlier_in_proof (s : Sentence) (p : Pf) (i : nat) : (bool * option nat) :=
+Definition earlier_in_proof (s : Sentence) (p : list Sentence) (i : nat) : (bool * option nat) :=
   match p with
   | s' :: p' => earlier_in_proof' s p' i
   | nil => (false, None)
