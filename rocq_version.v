@@ -14,10 +14,6 @@ Infix "&" := And (at level 59, right associativity).
 Infix "v" := Or (at level 58, right associativity). 
 Notation "~~ a" := (Arrow a Bot) (at level 57, right associativity).
 
-
-Inductive J_Supp : Sentence -> Prop :=
-| supposition : forall p, J_Supp p.
-
 Definition Modus_Ponens (P : Sentence -> Prop) : Prop :=
   forall p q, P p -> P (p --> q) -> P q.
 Hint Unfold Modus_Ponens : mp_db. 
@@ -33,8 +29,7 @@ Inductive J_IPC : Sentence -> Prop :=
 | OrR : forall p q, J_IPC (q --> (p v q))
 | OrElim : forall p q r, J_IPC ((p --> r) --> (q --> r) --> (p v q) --> r)
 | ExFalso : forall p, J_IPC (Bot --> p)
-| MP_IPC : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q
-| Supp : forall p, J_Supp p -> J_IPC p.
+| MP_IPC : forall p q, J_IPC p -> J_IPC (p --> q) -> J_IPC q.
 
 Hint Resolve MP_IPC : mp_db. 
 
@@ -79,86 +74,185 @@ Qed.
 
 
 
+(* DERIVED RULES *)
+(* a derived inference rule. NO DEDUCTION NEEDED. *)
+Theorem J_Conj : forall a b, J_IPC a -> J_IPC b -> J_IPC (a & b).
+Proof.
+  intros a b L1 L2.
+  write L3 (J_IPC (a --> b --> a & b)) AndIntro.
+  write L4 (J_IPC (b --> a & b)) (MP_IPC _ _ L1 L3).
+  write L5 (J_IPC (a & b)) (MP_IPC _ _ L2 L4).
+  evident.
+Qed.
+
+Theorem J_Conj_Cond : forall a b c, J_IPC (c --> a) -> J_IPC (c --> b) -> J_IPC (c --> (a & b)).
+Proof.
+  intros a b c L1 L2.
+  write L3 (J_IPC ((c --> a) --> (c --> a --> b --> a & b) --> c --> b --> a & b)) Axiom3.
+  write L4 (J_IPC ((c --> a --> b --> a & b) --> c --> b --> a & b)) (MP_IPC _ _ L1 L3).
+  write L5 (J_IPC ((a --> b --> a & b) --> (c --> a --> b --> a & b))) Axiom2.
+  write L6 (J_IPC (a --> b --> a & b)) AndIntro.
+  write L7 (J_IPC (c --> a --> b --> a & b)) (MP_IPC _ _ L6 L5).
+  write L8 (J_IPC (c --> b --> a & b)) (MP_IPC _ _ L7 L4).
+  write L9 (J_IPC ((c --> b) --> (c --> b --> a & b) --> c --> a & b)) Axiom3.
+  write L10 (J_IPC ((c --> b --> a & b) --> c --> a & b)) (MP_IPC _ _ L2 L9).
+  write L11 (J_IPC (c --> a & b)) (MP_IPC _ _ L8 L10).
+  evident.
+Qed.
+
+Theorem MP_bicond : forall a b, J_IPC a -> J_IPC (a <--> b) -> J_IPC b.
+Proof.
+  intros a b L1 L2.
+  write L3 (J_IPC ((a <--> b) --> (a --> b))) AndL.
+  write L4 (J_IPC (a --> b)) (MP_IPC _ _ L2 L3).
+  write L5 (J_IPC b) (MP_IPC _ _ L1 L4).
+  evident.
+Qed.
   
+(* ideally, the proof of a --> b is automatic? NO, just use the name of a previous theorem! eh almost, would need to get rid of foralls. Well no you could it automatically if you have a hint db and you know its an instance of a prev theorem *)
+Theorem antecedent_weakening : forall a b c, J_IPC (b --> c) -> J_IPC (a --> b) -> J_IPC (a --> c).
+Proof.
+  intros a b c L1 L2.
+  write L3 (J_IPC ((a --> b) --> (a --> b --> c) --> a --> c)) Axiom3.
+  write L4 (J_IPC ((a --> b --> c) --> a --> c)) (MP_IPC _ _ L2 L3).
+  write L5 (J_IPC ((b --> c) --> a --> b --> c)) Axiom2.
+  write L6 (J_IPC (a --> b --> c)) (MP_IPC _ _ L1 L5).
+  write L7 (J_IPC (a --> c)) (MP_IPC _ _ L6 L4).
+  evident.
+Qed.
+
+(* comment above applies here too *)
+Theorem consequent_strengthening : forall a b c, J_IPC (a --> b) -> J_IPC (b --> c) -> J_IPC (a --> c).
+Proof.
+  intros a b c L1 L2.
+  apply (antecedent_weakening _ _ _ L2 L1). (* isn't that cool? *)
+Qed.
+
+(* I want an apply tactic that takes a theorem and automatically does MP too *)
+(* END DERIVED RULES *)
+
+
 
 Theorem and_comm : forall p q, J_IPC (p & q <--> q & p).
 Proof.
-  Print J_IPC.  
-  
-Admitted.
-
+  intros.
+  write L1 (J_IPC (p & q --> p)) AndL.
+  write L2 (J_IPC (p & q --> q)) AndR.
+  write L3 (J_IPC (p & q --> q & p)) (J_Conj_Cond _ _ _ L2 L1).
+  write L4 (J_IPC (q & p --> q)) AndL.
+  write L5 (J_IPC (q & p --> p)) AndR.
+  write L6 (J_IPC (q & p --> p & q)) (J_Conj_Cond _ _ _ L5 L4).
+  write L7 (J_IPC (p & q <--> q & p)) (J_Conj _ _ L3 L6).
+  evident.
+Qed.
 
 Theorem Axiom4 : forall p q, J_IPC ((p --> Bot) --> p --> q).
 Proof.
   intros.
+  
   write L1 (J_IPC (~~ p --> p --> ~~ p & p)) AndIntro.
+  write L2 (J_IPC (Bot --> q)) ExFalso.
+  write L3 (J_IPC (Bot <--> p & ~~ p)) Bot_contradiction.
+  write L4 (J_IPC ((Bot <--> p & ~~ p) --> (p & ~~ p --> Bot))) AndR.
+  write L5 (J_IPC (p & ~~ p --> Bot)) (MP_IPC _ _ L3 L4).
+  write L6 (J_IPC (~~ p & p <--> p & ~~ p)) (and_comm (~~p) p).
+  write L7 (J_IPC ((~~ p & p <--> p & ~~ p) --> (~~ p & p --> p & ~~ p))) AndL.
+  write L8 (J_IPC (~~ p & p --> p & ~~ p)) (MP_IPC _ _ L6 L7).
+  
 Admitted.
 
-(* Theorem uncurrying : forall p q r, J_IPC ((p --> q --> r) --> (p & q --> r)). *)
-(* Proof. *)
-(*   intros. *)
+Theorem uncurrying : forall p q r, J_IPC ((p --> q --> r) --> (p & q --> r)).
+Proof.
+  intros.
+Admitted.
   
 
-(* Theorem currying : forall p q r, J_IPC ((p & q --> r) --> (p --> q --> r)). *)
+Theorem currying : forall p q r, J_IPC ((p & q --> r) --> (p --> q --> r)).
+Proof.
+  intros.
+Admitted.
+
+(* (* NOTE: not meant for general usage. Just to make the Deduction_Lemma proof go through. *) *)
+(* Ltac deduction_lemma_case axiom_content axiom_cons J_Pred L1 L2 L3 a := *)
+(*   write L1 (J_Pred (axiom_content --> (a --> axiom_content))) Axiom2; *)
+(*   write L2 (J_Pred axiom_content) axiom_cons; *)
+(*   write L3 (J_Pred (a --> axiom_content)) (MP_IPC _ _ L2 L1); *)
+(*   evident. *)
+
+(* Theorem IPC_deduction : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b). *)
 (* Proof. *)
-(*   intros. *)
+(*   intros a b. *)
+(*   apply conj. *)
+(*   - intros. *)
+(*     induction H.  *)
+(*     + deduction_lemma_case (p --> q --> p) Axiom2 J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case ((p --> q) --> ((p --> (q --> r)) --> (p --> r))) Axiom3 J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case (p --> q --> (p & q)) AndIntro J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case ((p & q) --> p) AndL J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case ((p & q) --> q) AndR J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case (p --> (p v q)) OrL J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case (q --> (p v q)) OrR J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case ((p --> r) --> (q --> r) --> (p v q) --> r) OrElim J_IPC L1 L2 L3 a. *)
+(*     + deduction_lemma_case (Bot --> p) ExFalso J_IPC L1 L2 L3 a. *)
+(*     + write L1 (J_IPC q) (MP_IPC _ _ j1 j2). *)
+(*       write L2 (J_IPC (q --> a --> q)) Axiom2. *)
+(*       write L3 (J_IPC (a --> q)) (MP_IPC _ _ L1 L2). *)
+(*       evident. *)
+(*     + apply Supp in H. *)
+(*       write L1 (J_IPC (p --> a --> p)) Axiom2. *)
+(*       write L2 (J_IPC (a --> p)) (MP_IPC _ _ H L1). *)
+(*       evident. *)
+(*     + apply supposition. *)
+(*   - intros L1 L2. *)
+(*     apply Supp in L2. *)
+(*     write L3 (J_IPC b) (MP_IPC _ _ L2 L1). *)
+(*     evident. *)
+(* Qed. *)
 
-(* NOTE: not meant for general usage. Just to make the Deduction_Lemma proof go through. *)
-Ltac deduction_lemma_case axiom_content axiom_cons J_Pred L1 L2 L3 a :=
-  write L1 (J_Pred (axiom_content --> (a --> axiom_content))) Axiom2;
-  write L2 (J_Pred axiom_content) axiom_cons;
-  write L3 (J_Pred (a --> axiom_content)) (MP_IPC _ _ L2 L1);
-  evident.
+(* Theorem Deduction_Lemma_gen : forall a b P, (forall x, J_IPC x -> P x) -> (J_Supp a -> P b) <-> P (a --> b). *)
+(* Proof. *)
+(* Abort. *)
 
-Theorem IPC_deduction : forall a b, (J_Supp a -> J_IPC b) <-> J_IPC (a --> b).
+(* (* deduction is the deduction lemma for whatever system you're using *) *)
+(* Ltac use deduction line_number := apply deduction; intros line_number; apply Supp in line_number. *)
+
+Theorem object_MP : forall p q, J_IPC (p --> (p --> q) --> q).
 Proof.
-  intros a b.
-  apply conj.
-  - intros.
-    induction H. 
-    + deduction_lemma_case (p --> q --> p) Axiom2 J_IPC L1 L2 L3 a.
-    + deduction_lemma_case ((p --> q) --> ((p --> (q --> r)) --> (p --> r))) Axiom3 J_IPC L1 L2 L3 a.
-    + deduction_lemma_case (p --> q --> (p & q)) AndIntro J_IPC L1 L2 L3 a.
-    + deduction_lemma_case ((p & q) --> p) AndL J_IPC L1 L2 L3 a.
-    + deduction_lemma_case ((p & q) --> q) AndR J_IPC L1 L2 L3 a.
-    + deduction_lemma_case (p --> (p v q)) OrL J_IPC L1 L2 L3 a.
-    + deduction_lemma_case (q --> (p v q)) OrR J_IPC L1 L2 L3 a.
-    + deduction_lemma_case ((p --> r) --> (q --> r) --> (p v q) --> r) OrElim J_IPC L1 L2 L3 a.
-    + deduction_lemma_case (Bot --> p) ExFalso J_IPC L1 L2 L3 a.
-    + write L1 (J_IPC q) (MP_IPC _ _ j1 j2).
-      write L2 (J_IPC (q --> a --> q)) Axiom2.
-      write L3 (J_IPC (a --> q)) (MP_IPC _ _ L1 L2).
-      evident.
-    + apply Supp in H.
-      write L1 (J_IPC (p --> a --> p)) Axiom2.
-      write L2 (J_IPC (a --> p)) (MP_IPC _ _ H L1).
-      evident.
-    + apply supposition.
-  - intros L1 L2.
-    apply Supp in L2.
-    write L3 (J_IPC b) (MP_IPC _ _ L2 L1).
-    evident.
-Qed.
-
-Theorem Deduction_Lemma_gen : forall a b P, (forall x, J_IPC x -> P x) -> (J_Supp a -> P b) <-> P (a --> b).
-Proof.
-Abort.
-
-(* deduction is the deduction lemma for whatever system you're using *)
-Ltac use deduction line_number := apply deduction; intros line_number; apply Supp in line_number.
+  intros.
+  (* this  proof would go really easily after doing switch_func_args *)
+  (* and switch_func_args would go really easily after doing currying *)
+  (* and currying is also what double_negation_intro depends on *)
+Admitted.
 
 Theorem double_negation_intro : forall p, J_IPC (p --> ~~ ~~ p).
 Proof.
   intros.
-  use IPC_deduction L1.
-  use IPC_deduction L2.
-  write L3 (J_IPC Bot) (MP_IPC _ _ L1 L2).
+  write L1 (J_IPC ((p --> Bot) --> p --> Bot)) Axiom1.
+  write L2 (J_IPC (((p --> Bot) --> p --> Bot) --> (p --> Bot) & p --> Bot)) uncurrying.
+  write L3 (J_IPC ((p --> Bot) & p --> Bot)) (MP_IPC _ _ L1 L2).
+  write L4 (J_IPC (p & ~~ p <--> ~~ p & p)) and_comm.
+  write L5 (J_IPC ((p & ~~ p <--> ~~ p & p) --> p & ~~ p --> ~~ p & p)) AndL.
+  write L6 (J_IPC (p & ~~ p --> ~~ p & p)) (MP_IPC _ _ L4 L5).
+  write L7 (J_IPC (p & ~~ p --> Bot)) (antecedent_weakening _ _ _ L3 L6).
+  write L8 (J_IPC ((p & ~~ p --> Bot) --> (p --> ~~ p --> Bot))) currying.
+  write L9 (J_IPC (p --> ~~ p --> Bot)) (MP_IPC _ _ L7 L8).
   evident.
 Qed.
+
+Theorem idk : forall p q r, J_IPC ((p --> r) --> (q --> p) --> (q --> r)).
+Proof.
+  
+
+
+
+
 
 Theorem switch_func_args_3_deductions : forall p q r, J_IPC ((p --> q --> r) --> (q --> p --> r)).
 Proof.
   intros.
+  write L1 (J_IPC ((p --> q --> r) --> p & q --> r)) uncurrying.
+  write L2 (J_IPC (p & q --> q & p))
+  
   use IPC_deduction L1.
   use IPC_deduction L2.
   use IPC_deduction L3.

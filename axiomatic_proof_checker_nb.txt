@@ -31,3 +31,7 @@ the funny thing is, I do want substitution of logical identicals lmfao. And that
 what am I even doing this for? Like, that's not clear to me. Not the meta-level why, I got that. The object-level why of what sort of proofs I want to be doing, what sort of reasoning I'm trying to isolate.
 
 I think the ideal version of the tool lets the user choose whether glossy reasoning is allowed for a certain proof. Wow, this is hard. What should it take to turn glossy reasoning on? Damn, this is hard lmfao. Design choices. 
+
+Just thought of how maybe this should go. The printed proof is, in the back end, in a certain Haskell DSL. Then there are various built in inference rules that we use. For example, substitution of (classical) identicals. Weakening the antecedent of an implication, or strengthening the consequent. (I wonder if those are used recursively often enough.) Another one is biconditionals. Well really it's that if you have |- A and and |- B, then you have |- A & B. (That one is actually _really_ easily implemented with the compiler.) (One thing with the compiler is that you want the last line of the source proof to always match the last line of the target proof. That way what you've typed always corresponds to validly being at that point in progress.)
+
+I want an apply tactic that takes a theorem and automatically does MP too
