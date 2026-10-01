@@ -1,4 +1,4 @@
-# axiomatic_proofs_in_rocq
+# sponge
 A tool for writing axiomatic proofs of propositional systems. Starting with the intuitionistic and classical logic, goal is to add modal systems.
 
 ### The idea is motivated by a few desires: 
