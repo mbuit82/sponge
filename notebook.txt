@@ -37,3 +37,6 @@ Just thought of how maybe this should go. The printed proof is, in the back end,
 I want an apply tactic that takes a theorem and automatically does MP too. Like it'll apply a theorem instead of just stating it. 
 
 Maybe the deduction lemma _would_ be good to include. Because it would be pretty complex for the compiler. 
+
+9/30
+revisited, actually starting yesterday. now using datalog, per Noah's suggestion. going great. 
