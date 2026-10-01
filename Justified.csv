@@ -1,0 +1,5 @@
+1	$ToProve($Implication($Atom(a), $Atom(a)))
+2	$ToProve($Implication($Atom(a), $Atom(a)))
+3	$ToProve($Implication($Atom(a), $Atom(a)))
+4	$ToProve($Implication($Atom(a), $Atom(a)))
+5	$ToProve($Implication($Atom(a), $Atom(a)))

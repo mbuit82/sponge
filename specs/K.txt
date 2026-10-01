@@ -1,0 +1,11 @@
+Base Logic
+classical_logic
+
+Syntax
+Lp
+
+Axioms
+K: L(p -> q) -> (Lp -> Lq)
+
+Inference Rules
+N: |- p, |- Lp

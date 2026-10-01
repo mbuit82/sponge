@@ -1,0 +1,5 @@
+Base
+intuitionistic_logic
+
+Axioms
+LEM: |- ((p -> Bot) -> Bot) -> p

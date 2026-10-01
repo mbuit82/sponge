@@ -1,0 +1,12 @@
+.include "intuitionistic.dl"
+
+#define IMP(x,y) $Implication(x,y)
+#define A $Atom("a")
+
+Claim($ToProve(IMP(A, A))). 
+
+Line(1, IMP(IMP(A, IMP(A,A)), IMP(IMP(A, IMP(IMP(A,A), A)), IMP(A,A))), "Axiom3", 0, 0, $ToProve(IMP(A, A))).
+Line(2, IMP(A, IMP(A,A)),               "Axiom2",  0, 0, $ToProve(IMP(A, A))).
+Line(3, IMP(IMP(A, IMP(IMP(A,A), A)), IMP(A,A)), "Modus Ponens", 2, 1, $ToProve(IMP(A, A))).
+Line(4, IMP(A, IMP(IMP(A,A), A)),       "Axiom2",  0, 0, $ToProve(IMP(A, A))).
+Line(5, IMP(A,A),                       "Modus Ponens", 4, 3, $ToProve(IMP(A, A))).

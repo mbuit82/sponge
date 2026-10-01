@@ -1,0 +1,32 @@
+.type Sentence = Atom {name: symbol} | Bot {} | Implication {s1: Sentence, s2: Sentence}
+.type Goal = ToProve {s: Sentence}
+
+.decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned, goal: Goal)
+.decl Justified(n: unsigned, goal: Goal)
+.decl Unjustified(n: unsigned, goal: Goal)
+.decl UnjustifiedCount(c: number, goal: Goal)
+.decl Claim(goal: Goal)
+.decl Proven(f: Sentence)
+
+Unjustified(n, goal) :- Line(n, _, _, _, _, goal), !Justified(n, goal).
+UnjustifiedCount(c, goal) :- Claim(goal), c = count : { Unjustified(_, goal) }.
+Proven(f) :- Claim($ToProve(f)),
+	Line(n, f, _, _, _, $ToProve(f)),
+	Justified(n, $ToProve(f)),
+	UnjustifiedCount(0, $ToProve(f)).
+
+.output Unjustified
+.output Justified
+.output Proven
+
+Justified(n, goal) :- Line(n, $Implication(P, P), "Axiom1", _, _, goal).
+Justified(n, goal) :- Line(n, $Implication(P, $Implication(Q, P)), "Axiom2", _, _, goal).
+Justified(n, goal) :- Line(n, $Implication($Implication(P, Q), $Implication($Implication(P, $Implication(Q, R)), $Implication(P, R))), "Axiom3", _, _, goal).
+Justified(n, goal) :- Line(n, $Implication($Implication(P, $Bot()), $Implication(P, Q)), "Axiom4", _, _, goal).
+Justified(n, goal) :- Line(n, Q, "Modus Ponens", i, j, goal),
+	i < n,
+	Justified(i, goal),
+	Line(i, P, _, _, _, goal),
+	j < n,
+	Justified(j, goal),
+	Line(j, $Implication(P, Q), _, _, _, goal).
