@@ -52,3 +52,4 @@ time-of-build-pretty.log
 __pycache__/
 pycache/
 .DS_Store
+.Rhistory
