@@ -37,7 +37,6 @@ def make_datalog_Line(sentence, name="_", n="n", i="_", j="_"):
     return_str += (name + ", " + i + ", " + j + ", " + "goal)")
     return return_str
 
-# assumes tuple format
 def axioms_to_datalog(axioms):
     return_str = ""
     for axiom_name in axioms:
