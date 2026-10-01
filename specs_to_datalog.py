@@ -1,8 +1,7 @@
-from specs import intuitionistic
+import json
 
-def operator_to_datalog(operator):
-    name, arity = operator
-    return_str = name + " {"
+def operator_to_datalog(op_name, arity):
+    return_str = op_name + " {"
     for i in range(arity):
         arg_num = i+1
         return_str += f"s{arg_num}: Sentence"
@@ -13,9 +12,10 @@ def operator_to_datalog(operator):
 
 def syntax_to_datalog(operators):
     return_str = ".type Sentence = Atom {name: symbol}"
-    for operator in operators:
+    for op_name in operators:
         return_str += " | "
-        return_str += operator_to_datalog(operator)
+        arity = operators[op_name]
+        return_str += operator_to_datalog(op_name, arity)
     return return_str + "\n"
 
 def sentence_to_datalog(sentence):
@@ -37,16 +37,18 @@ def make_datalog_Line(sentence, name="_", n="n", i="_", j="_"):
     return_str += (name + ", " + i + ", " + j + ", " + "goal)")
     return return_str
 
+# assumes tuple format
 def axioms_to_datalog(axioms):
     return_str = ""
-    for axiom in axioms:
+    for axiom_name in axioms:
         return_str += "Justified(n, goal) :- "
-        return_str += (make_datalog_Line(axiom[1], axiom[0]) + ".\n")
+        axiom_content = axioms[axiom_name]
+        return_str += (make_datalog_Line(axiom_content, axiom_name) + ".\n")
     return return_str
 
-def inference_rule_to_datalog(inference_rule):
-    name, judgements = inference_rule
-    premises, conclusion = judgements[:-1], judgements[-1] # conclusion is a sentence. i.e., either a str or a list
+def inference_rule_to_datalog(rule_name, rule_content):
+    premises = rule_content["premises"]
+    conclusion = rule_content["conclusion"]
 
     # conclusion
     if len(premises) == 1:
@@ -56,7 +58,7 @@ def inference_rule_to_datalog(inference_rule):
     else:
         raise ValueError("should be one or two premises for an inference rule for now")
     return_str = "Justified(n, goal) :- "
-    return_str += (make_datalog_Line(conclusion, name, "n", i, j) + ",\n\t")
+    return_str += (make_datalog_Line(conclusion, rule_name, "n", i, j) + ",\n\t")
 
     # now premises
     for i, prem in enumerate(premises):
@@ -69,15 +71,32 @@ def inference_rule_to_datalog(inference_rule):
 
 def inference_rules_to_datalog(inference_rules):
     return_str = ""
-    for rule in inference_rules:
-        return_str += (inference_rule_to_datalog(rule) + "\n")
+    for rule_name in inference_rules:
+        rule_content = inference_rules[rule_name]
+        return_str += (inference_rule_to_datalog(rule_name, rule_content) + "\n")
     return return_str
 
+def get_system_specs(system_name):
+    json_filename = "specs/" + system_name + ".json"
+    system_specs = json.load(open(json_filename, "r"))
+    assert system_specs["system_name"] == system_name, "something's gone wrong with names"
+    base_system = system_specs["base_system"]
+    if base_system:
+        operators, axioms, inference_rules = get_system_specs(base_system)
+        operators = operators | system_specs["operators"] if system_specs["operators"] else operators
+        axioms = axioms | system_specs["axioms"] if system_specs["axioms"] else axioms
+        inference_rules = inference_rules | system_specs["inference_rules"] if system_specs["inference_rules"] else inference_rules
+    else:
+        operators = system_specs["operators"]
+        axioms = system_specs["axioms"]
+        inference_rules = system_specs["inference_rules"]
+    return operators, axioms, inference_rules
 
-def compile_datalog_engine(system_spec):
-    datalog_filename = system_spec.system_name + ".dl"
+def compile_datalog_engine(system_name):
+    operators, axioms, inference_rules = get_system_specs(system_name)
+    datalog_filename = "datalog_engines/" + system_name + ".dl"
     with open(datalog_filename, "w", encoding="utf-8") as f:
-        f.write(syntax_to_datalog(system_spec.operators))
+        f.write(syntax_to_datalog(operators))
         f.write(".type Goal = ToProve {s: Sentence}\n\n")
         f.write(".decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned, goal: Goal)\n")
         f.write(".decl Justified(n: unsigned, goal: Goal)\n")
@@ -89,7 +108,9 @@ def compile_datalog_engine(system_spec):
         f.write("UnjustifiedCount(c, goal) :- Claim(goal), c = count : { Unjustified(_, goal) }.\n")
         f.write("Proven(f) :- Claim($ToProve(f)),\n\tLine(n, f, _, _, _, $ToProve(f)),\n\tJustified(n, $ToProve(f)),\n\tUnjustifiedCount(0, $ToProve(f)).\n\n")
         f.write(".output Unjustified\n.output Justified\n.output Proven\n\n")
-        f.write(axioms_to_datalog(system_spec.axioms))
-        f.write(inference_rules_to_datalog(system_spec.inference_rules))
+        f.write(axioms_to_datalog(axioms))
+        f.write(inference_rules_to_datalog(inference_rules))
 
-compile_datalog_engine(intuitionistic)
+compile_datalog_engine("intuitionistic")
+compile_datalog_engine("classical")
+compile_datalog_engine("K")

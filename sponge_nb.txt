@@ -38,5 +38,12 @@ I want an apply tactic that takes a theorem and automatically does MP too. Like 
 
 Maybe the deduction lemma _would_ be good to include. Because it would be pretty complex for the compiler. 
 
+
+
 9/30
 revisited, actually starting yesterday. now using datalog, per Noah's suggestion. going great. 
+
+
+
+10/1
+C is too low-level, no dicts and all the arrays would be hell, but I don't wanna use python, so I will use Haskell. For the intermediate data I settled on using a json file, and then I think I'll translate that into a Haskell struct, whose values are maps probably
