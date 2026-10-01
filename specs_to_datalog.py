@@ -18,34 +18,35 @@ def syntax_to_datalog(operators):
         return_str += operator_to_datalog(op_name, arity)
     return return_str + "\n"
 
-def sentence_to_datalog(sentence):
-    if isinstance(sentence, str):
-        return sentence
+def sentence_to_datalog(sentence, operators):
+    if len(sentence) == 1:
+        if sentence[0] not in operators:
+            return sentence[0]
     constructor = sentence[0]
     arguments = sentence[1:]
     args_str = ""
     for i, arg in enumerate(arguments):
-        args_str += sentence_to_datalog(arg)
+        args_str += sentence_to_datalog(arg, operators)
         if i != len(arguments) - 1:
             args_str += ", "
     return "$" + constructor + "(" + args_str + ")"
 
-def make_datalog_Line(sentence, name="_", n="n", i="_", j="_"):
+def make_datalog_Line(sentence, operators, name="_", n="n", i="_", j="_"):
     return_str = "Line(" + n + ", "
-    return_str += (sentence_to_datalog(sentence) + ", ")
+    return_str += (sentence_to_datalog(sentence, operators) + ", ")
     name = ("\"" + name + "\"") if name != "_" else name
     return_str += (name + ", " + i + ", " + j + ", " + "goal)")
     return return_str
 
-def axioms_to_datalog(axioms):
+def axioms_to_datalog(axioms, operators):
     return_str = ""
     for axiom_name in axioms:
         return_str += "Justified(n, goal) :- "
         axiom_content = axioms[axiom_name]
-        return_str += (make_datalog_Line(axiom_content, axiom_name) + ".\n")
+        return_str += (make_datalog_Line(axiom_content, operators, axiom_name) + ".\n")
     return return_str
 
-def inference_rule_to_datalog(rule_name, rule_content):
+def inference_rule_to_datalog(rule_name, rule_content, operators):
     premises = rule_content["premises"]
     conclusion = rule_content["conclusion"]
 
@@ -57,22 +58,22 @@ def inference_rule_to_datalog(rule_name, rule_content):
     else:
         raise ValueError("should be one or two premises for an inference rule for now")
     return_str = "Justified(n, goal) :- "
-    return_str += (make_datalog_Line(conclusion, rule_name, "n", i, j) + ",\n\t")
+    return_str += (make_datalog_Line(conclusion, operators, rule_name, "n", i, j) + ",\n\t")
 
     # now premises
     for i, prem in enumerate(premises):
         ix_var = "i" if i == 0 else "j" # guaranteed len 1 or 2 at this point bc of above error
         return_str += (ix_var + " < n,\n\t")
         return_str += "Justified(" + ix_var + ", goal),\n\t"
-        return_str += (make_datalog_Line(prem, "_", ix_var) + ",\n\t")
+        return_str += (make_datalog_Line(prem, operators, "_", ix_var) + ",\n\t")
     return_str = return_str[:-3] + "." # remove last comma, add period
     return return_str
 
-def inference_rules_to_datalog(inference_rules):
+def inference_rules_to_datalog(inference_rules, operators):
     return_str = ""
     for rule_name in inference_rules:
         rule_content = inference_rules[rule_name]
-        return_str += (inference_rule_to_datalog(rule_name, rule_content) + "\n")
+        return_str += (inference_rule_to_datalog(rule_name, rule_content, operators) + "\n")
     return return_str
 
 def get_system_specs(system_name):
@@ -107,8 +108,8 @@ def compile_datalog_engine(system_name):
         f.write("UnjustifiedCount(c, goal) :- Claim(goal), c = count : { Unjustified(_, goal) }.\n")
         f.write("Proven(f) :- Claim($ToProve(f)),\n\tLine(n, f, _, _, _, $ToProve(f)),\n\tJustified(n, $ToProve(f)),\n\tUnjustifiedCount(0, $ToProve(f)).\n\n")
         f.write(".output Unjustified\n.output Justified\n.output Proven\n\n")
-        f.write(axioms_to_datalog(axioms))
-        f.write(inference_rules_to_datalog(inference_rules))
+        f.write(axioms_to_datalog(axioms, operators))
+        f.write(inference_rules_to_datalog(inference_rules, operators))
 
 compile_datalog_engine("intuitionistic")
 compile_datalog_engine("classical")
