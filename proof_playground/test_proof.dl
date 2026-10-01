@@ -1,4 +1,4 @@
-.include "intuitionistic.dl"
+#include "../datalog_engines/intuitionistic.dl"
 
 #define IMP(x,y) $Implication(x,y)
 #define A $Atom("a")
