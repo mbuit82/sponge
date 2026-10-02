@@ -51,3 +51,12 @@ C is too low-level, no dicts and all the arrays would be hell, but I don't wanna
 But yeah making fast progress yay now I just need to think about what actually using this will look like
 
 Think I have too many levels of abstraction lol. I'll have user, then user -> json, then json -> Haskell, then Haskell -> Datalog. What good is json -> Haskell? To think about tomorrow. 
+
+
+
+10/2
+Ditching the JSON idea for now. Can't get fucking aeson to load lmao. Had to make the thing a project which is not something I wanted to do right then. So I just wrote them as Haskell RawSpecs, and it works just fine. I think I could even cut out the entire JSON thing—like just have the user input compile into these Haskell objects. That way one of the translation layers mentioned yesterday will go away, and exactly the one that didn't seem to be any good. 
+
+But would be a good idea to make the Haskell project if I want things to live in more than one file. For proof translations I will. 
+
+Also small note on a strongly typed system—I think this is the biggest project I've built completely from scratch using a strongly typed system. And I was really surprised that there were no errors. Like, no _runtime_ errors! (Well a minor one because i forgot a not, but besides that nothing!) So typing changes how you do test cases, since you leave to test cases what wasn't covered by your type system. 

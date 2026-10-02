@@ -84,13 +84,12 @@ premises_to_datalog ops rule =
     where prems = premises rule
 
 inference_rule_to_datalog ops rule =
-    intercalate ",\n\t" (concLine : premLines) ++ "."
+    intercalate ",\n\t" (concLine : premLines) ++ ".\n"
     where 
         concLine = conclusion_to_datalog ops rule
         premLines = premises_to_datalog ops rule
 
-inference_rules_to_datalog ops rules =
-    concat [ inference_rule_to_datalog ops rule ++ "\n" | rule <- rules]
+inference_rules_to_datalog ops rules = concatMap (inference_rule_to_datalog ops) rules
 
 data RawSpec = RawSpec
   { system_name :: String,
