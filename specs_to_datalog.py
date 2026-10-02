@@ -83,9 +83,9 @@ def get_system_specs(system_name):
     base_system = system_specs["base_system"]
     if base_system:
         operators, axioms, inference_rules = get_system_specs(base_system)
-        operators = operators | system_specs["operators"] if system_specs["operators"] else operators
-        axioms = axioms | system_specs["axioms"] if system_specs["axioms"] else axioms
-        inference_rules = inference_rules | system_specs["inference_rules"] if system_specs["inference_rules"] else inference_rules
+        operators = operators | system_specs["operators"]
+        axioms = axioms | system_specs["axioms"]
+        inference_rules = inference_rules | system_specs["inference_rules"]
     else:
         operators = system_specs["operators"]
         axioms = system_specs["axioms"]
