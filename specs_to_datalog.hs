@@ -6,97 +6,114 @@ import System.IO
 type Sentence = Tree String
 lf :: String -> Sentence -- helper for writing trees bc leaves are uglyyyy
 lf name = Node name []
+
 data Operator = Operator {
     operatorName :: String, 
     arity :: Int}
+
 data Axiom = Axiom {
     axiomName :: String, 
     axiomContent :: Sentence}
+
 data InferenceRule = InferenceRule {
     ruleName :: String,
     premises :: [Sentence], 
     conclusion :: Sentence}
 
-operatorToDatalog :: Operator -> String
-operatorToDatalog op = 
-    operatorName op ++ " {" ++ (intercalate ", " args) ++ "}"
-    where 
-        args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity op)]]
-    
-syntaxToDatalog :: [Operator] -> String
-syntaxToDatalog ops =
-    ".type Sentence = Atom {name: symbol}" ++ 
-    concatMap (\op -> " | " ++ operatorToDatalog op) ops ++ 
-    "\n"
+data Spec = Spec
+  { specName :: String,
+    baseSystem :: Maybe Spec,
+    newOperators :: [Operator],
+    newAxioms :: [Axiom],
+    newInferenceRules :: [InferenceRule]
+  }
 
-sentenceToDatalog :: [Operator] -> Sentence -> String
-sentenceToDatalog ops sentence =
-    let opNames = map (\op -> operatorName op) ops in
-        if null (subForest sentence) && not (elem (rootLabel sentence) opNames)
-        then rootLabel sentence
-        else "$" ++ (rootLabel sentence) ++ "(" ++ argsStr ++ ")"
-    where argsStr = intercalate ", " (map (\sentence -> sentenceToDatalog ops sentence) (subForest sentence))
-
-makeDatalogLine :: [Operator] -> Sentence -> String -> String -> String -> String -> String
-makeDatalogLine ops sentence name n i j =
-    "Line(" ++ 
-        n ++ ", " ++
-        sentenceToDatalog ops sentence ++ ", " ++
-        editedName ++ ", " ++ 
-        i ++ ", " ++ 
-        j ++ ", " ++ 
-        "goal)"
-    where editedName = if name == "_" then name else "\"" ++ name ++ "\""
-
-axiomToDatalog :: [Operator] -> Axiom -> String
-axiomToDatalog ops axiom = 
-    "Justified(n, goal) :- " ++ 
-    makeDatalogLine ops (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
-    ".\n"
-
-axiomsToDatalog :: [Operator] -> [Axiom] -> String
-axiomsToDatalog ops axioms = concatMap (axiomToDatalog ops) axioms
-
-conclusionToDatalog :: [Operator] -> InferenceRule -> String 
-conclusionToDatalog ops rule = 
-    "Justified(n, goal) :- " ++ 
-    makeDatalogLine ops (conclusion rule) (ruleName rule) "n" "i" jv
-    where jv = case premises rule of 
-            [_] -> "_"
-            [_, _] -> "j"
-            _ -> error "should be one or two premises for an inference rule for now" 
-
-premisesToDatalog :: [Operator] -> InferenceRule -> [String] 
-premisesToDatalog ops rule =
-    concat [ [v ++ " < n", "Justified(" ++ v ++ ", goal)", makeDatalogLine ops prem "_" v "_" "_"] | (v, prem) <- zip ["i", "j"] prems]
-    where prems = premises rule
-
-inferenceRuleToDatalog :: [Operator] -> InferenceRule -> String 
-inferenceRuleToDatalog ops rule =
-    intercalate ",\n\t" (concLine : premLines) ++ ".\n"
-    where 
-        concLine = conclusionToDatalog ops rule
-        premLines = premisesToDatalog ops rule
-
-inferenceRulesToDataog :: [Operator] -> [InferenceRule] -> String
-inferenceRulesToDataog ops rules = concatMap (inferenceRuleToDatalog ops) rules
-
-data RawSpec = RawSpec
-  { systemName :: String,
-    baseSystem :: Maybe RawSpec,
+data Logic = Logic
+  { logicName :: String,
     operators :: [Operator],
     axioms :: [Axiom],
     inferenceRules :: [InferenceRule]
   }
 
-getSystemSpecs :: RawSpec -> ([Operator], [Axiom], [InferenceRule])
-getSystemSpecs spec = 
+operatorToDatalog :: Operator -> String
+operatorToDatalog op = 
+    " | " ++ operatorName op ++ " {" ++ (intercalate ", " args) ++ "}"
+    where 
+        args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity op)]]
+    
+syntaxToDatalog :: Logic -> String
+syntaxToDatalog logic =
+    ".type Sentence = Atom {name: symbol}" ++ 
+    concatMap operatorToDatalog (operators logic) ++ 
+    "\n"
+
+sentenceToDatalog :: Logic -> Sentence -> String
+sentenceToDatalog logic sentence =
+    if not (elem (rootLabel sentence) (map operatorName (operators logic)))
+    then rootLabel sentence
+    else "$" ++ (rootLabel sentence) ++ "(" ++ argsStr ++ ")"
+    where argsStr = intercalate ", " 
+            (map (sentenceToDatalog logic) (subForest sentence))
+
+makeDatalogLine :: Logic -> Sentence -> String -> String -> String -> String -> String
+makeDatalogLine logic sentence name n i j =
+    "Line(" ++ 
+        n ++ ", " ++
+        sentenceToDatalog logic sentence ++ ", " ++
+        (if name == "_" then name else "\"" ++ name ++ "\"") ++ ", " ++ 
+        i ++ ", " ++ 
+        j ++ ", " ++ 
+        "goal)"
+
+axiomToDatalog :: Logic -> Axiom -> String
+axiomToDatalog logic axiom = 
+    "Justified(n, goal) :- " ++ 
+    makeDatalogLine logic (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
+    ".\n"
+
+axiomsToDatalog :: Logic -> String
+axiomsToDatalog logic = concatMap (axiomToDatalog logic) (axioms logic)
+
+conclusionToDatalog :: Logic -> InferenceRule -> String 
+conclusionToDatalog logic rule = 
+    "Justified(n, goal) :- " ++ 
+    makeDatalogLine logic (conclusion rule) (ruleName rule) "n" "i" jv
+    where jv = case premises rule of 
+            [_] -> "_"
+            [_, _] -> "j"
+            _ -> error "should be one or two premises for an inference rule for now"
+
+premisesToDatalog :: Logic -> InferenceRule -> [String] 
+premisesToDatalog logic rule =
+    concat [ [  v ++ " < n", 
+                "Justified(" ++ v ++ ", goal)", 
+                makeDatalogLine logic prem "_" v "_" "_"] 
+            | (v, prem) <- zip ["i", "j"] (premises rule)]
+
+inferenceRuleToDatalog :: Logic -> InferenceRule -> String 
+inferenceRuleToDatalog logic rule =
+    intercalate ",\n\t" (concLine : premLines) ++ ".\n"
+    where 
+        concLine = conclusionToDatalog logic rule
+        premLines = premisesToDatalog logic rule
+
+inferenceRulesToDataog :: Logic -> String
+inferenceRulesToDataog logic = concatMap (inferenceRuleToDatalog logic) (inferenceRules logic)
+
+getLogic :: Spec -> Logic
+getLogic spec = 
     case (baseSystem spec) of
-        Nothing -> (operators spec, axioms spec, inferenceRules spec)
-        Just b -> let (bops, baxs, brules) = getSystemSpecs b in
-                        (bops ++ operators spec, 
-                            baxs ++ axioms spec, 
-                            brules ++ inferenceRules spec)
+        Nothing -> (Logic { 
+                        logicName = specName spec, 
+                        operators = newOperators spec, 
+                        axioms = newAxioms spec, 
+                        inferenceRules = newInferenceRules spec })
+        Just base -> let baseLogic = getLogic base in
+                    (Logic { 
+                        logicName = specName spec, 
+                        operators = operators baseLogic ++ newOperators spec, 
+                        axioms = axioms baseLogic ++ newAxioms spec, 
+                        inferenceRules = inferenceRules baseLogic ++ newInferenceRules spec })
 
 sharedDatalog :: String
 sharedDatalog = unlines [
@@ -113,44 +130,44 @@ sharedDatalog = unlines [
     ".output Unjustified\n.output Justified\n.output Proven\n"
     ]
 
-compileDatalogEngine :: RawSpec -> IO ()
+compileDatalogEngine :: Spec -> IO ()
 compileDatalogEngine spec =
-    withFile ("datalog_engines/" ++ systemName spec ++ ".dl") WriteMode $ \h -> do
+    withFile ("datalog_engines/" ++ specName spec ++ ".dl") WriteMode $ \h -> do
         hSetEncoding h utf8
-        hPutStr h (syntaxToDatalog operators)
+        hPutStr h (syntaxToDatalog logic)
         hPutStr h sharedDatalog
-        hPutStr h (axiomsToDatalog operators axioms)
-        hPutStr h (inferenceRulesToDataog operators inferenceRules)
+        hPutStr h (axiomsToDatalog logic)
+        hPutStr h (inferenceRulesToDataog logic)
     where 
-        (operators, axioms, inferenceRules) = getSystemSpecs spec
+        logic = getLogic spec
 
-specIntuitionistic :: RawSpec
-specIntuitionistic = RawSpec {
-    systemName = "intuitionistic",
+specIntuitionistic :: Spec
+specIntuitionistic = Spec {
+    specName = "intuitionistic",
     baseSystem = Nothing,
-    operators = [Operator "Bot" 0, Operator "Implication" 2],
-    axioms = [
+    newOperators = [Operator "Bot" 0, Operator "Implication" 2],
+    newAxioms = [
         Axiom "Axiom1" (Node "Implication" [lf "P", lf "P"]),
         Axiom "Axiom2" (Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "P"]]),
         Axiom "Axiom3" (Node "Implication" [Node "Implication" [lf "P", lf "Q"], Node "Implication" [Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "R"]], Node "Implication" [lf "P", lf "R"]]]),
         Axiom "Axiom4" (Node "Implication" [Node "Implication" [lf "P", lf "Bot"], Node "Implication" [lf "P", lf "Q"]])],
-    inferenceRules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
+    newInferenceRules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
 }
 
-specClassical :: RawSpec
-specClassical = RawSpec {
-    systemName = "classical",
+specClassical :: Spec
+specClassical = Spec {
+    specName = "classical",
     baseSystem = Just specIntuitionistic,
-    operators = [],
-    axioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
-    inferenceRules = []
+    newOperators = [],
+    newAxioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
+    newInferenceRules = []
 }
 
-specK :: RawSpec
-specK = RawSpec {
-    systemName = "K",
+specK :: Spec
+specK = Spec {
+    specName = "K",
     baseSystem = Just specClassical,
-    operators = [Operator "Box" 1],
-    axioms = [Axiom "K Axiom" (Node "Implication" [Node "Box" [Node "Implication" [lf "P", lf "Q"]], Node "Implication" [Node "Box" [lf "P"], Node "Box" [lf "Q"]]])],
-    inferenceRules = [InferenceRule "N" [lf "P"] (Node "Box" [lf "P"])]
+    newOperators = [Operator "Box" 1],
+    newAxioms = [Axiom "K Axiom" (Node "Implication" [Node "Box" [Node "Implication" [lf "P", lf "Q"]], Node "Implication" [Node "Box" [lf "P"], Node "Box" [lf "Q"]]])],
+    newInferenceRules = [InferenceRule "N" [lf "P"] (Node "Box" [lf "P"])]
 }
