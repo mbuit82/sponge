@@ -49,3 +49,5 @@ revisited, actually starting yesterday. now using datalog, per Noah's suggestion
 C is too low-level, no dicts and all the arrays would be hell, but I don't wanna use python, so I will use Haskell. For the intermediate data I settled on using a json file, and then I think I'll translate that into a Haskell struct, whose values are maps probably
 
 But yeah making fast progress yay now I just need to think about what actually using this will look like
+
+Think I have too many levels of abstraction lol. I'll have user, then user -> json, then json -> Haskell, then Haskell -> Datalog. What good is json -> Haskell? To think about tomorrow. 
