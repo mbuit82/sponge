@@ -4,16 +4,14 @@ import Data.List
 import System.IO
 
 type Sentence = Tree String
-lf :: String -> Sentence -- helper for writing trees bc leaves are uglyyyy
+-- helper for writing trees bc leaves are uglyyyy
+-- once I get a front end I won't need this tho
+lf :: String -> Sentence 
 lf name = Node name []
 
-data Operator = Operator {
-    operatorName :: String, 
-    arity :: Int}
+data Operator = Operator {operatorName :: String, arity :: Int}
 
-data Axiom = Axiom {
-    axiomName :: String, 
-    axiomContent :: Sentence}
+data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence}
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
@@ -39,19 +37,24 @@ syntaxToDatalog logic =
     concatMap operatorToDatalog (operators logic) ++ 
     "\n"
 
-sentenceToDatalog :: Logic -> Sentence -> String
-sentenceToDatalog logic sentence =
+formulaToDatalog :: Bool -> Logic -> Sentence -> String
+formulaToDatalog varBool logic sentence =
     if not (elem (rootLabel sentence) (map operatorName (operators logic)))
-    then rootLabel sentence
+    then if varBool
+            then rootLabel sentence
+            else "$Atom(\"" ++ (rootLabel sentence) ++ "\")"
     else "$" ++ (rootLabel sentence) ++ "(" ++ argsStr ++ ")"
     where argsStr = intercalate ", " 
-            (map (sentenceToDatalog logic) (subForest sentence))
+            (map (formulaToDatalog varBool logic) (subForest sentence))
+
+schemaToDatalog :: Logic -> Sentence -> String
+schemaToDatalog = formulaToDatalog False
 
 makeDatalogLine :: Logic -> Sentence -> String -> String -> String -> String -> String
 makeDatalogLine logic sentence name n i j =
     "Line(" ++ 
         n ++ ", " ++
-        sentenceToDatalog logic sentence ++ ", " ++
+        schemaToDatalog logic sentence ++ ", " ++
         (if name == "_" then name else "\"" ++ name ++ "\"") ++ ", " ++ 
         i ++ ", " ++ 
         j ++ ", " ++ 
@@ -174,3 +177,58 @@ specK = Spec {
     newAxioms = [Axiom "K Axiom" (Node "Implication" [Node "Box" [Node "Implication" [lf "P", lf "Q"]], Node "Implication" [Node "Box" [lf "P"], Node "Box" [lf "Q"]]])],
     newInferenceRules = [InferenceRule "N" [lf "P"] (Node "Box" [lf "P"])]
 }
+
+
+-- FROM HERE BELOW, PROOFS
+
+data Line = Line {
+    lineNumber :: Int,
+    lineContent :: Sentence,
+    justification :: (String, Int, Int)
+}
+
+data Proof = Proof {
+    proofName :: String, -- I don't NEED to add this (yet) technically. 
+    proofGoal :: Sentence,
+    proofLogic :: Logic,
+    proofContent :: [Line]
+}
+
+sentenceToDatalog :: Logic -> Sentence -> String
+sentenceToDatalog = formulaToDatalog False
+
+lineToDatalog :: Proof -> Line -> String
+lineToDatalog proof line = 
+    let (justificationText, i, j) = justification line in
+        "Line(" ++ show (lineNumber line) ++ ", " ++
+        sentenceToDatalog (proofLogic proof) (lineContent line) ++ 
+        justificationText ++ ", " ++
+        show i ++ ", " ++ 
+        show j ++ ", " ++
+        "$ToProve(" ++ sentenceToDatalog (proofLogic proof) (proofGoal proof) ++ 
+        -- "), " ++ (proofName proof) ++ 
+        ").\n"
+
+proofToDatalog :: Proof -> String
+proofToDatalog proof =
+    "Claim($ToProve(" ++ 
+    sentenceToDatalog (proofLogic proof) (proofGoal proof) ++ 
+    ")).\n\n" ++
+    concatMap (lineToDatalog proof) (proofContent proof)
+
+l1 = Line 1 (Node "Implication" [Node "Implication" [lf "A", Node "Implication" [lf "A", lf "A"]], Node "Implication" [Node "Implication" [lf "A", Node "Implication" [Node "Implication" [lf "A", lf "A"], lf "A"]], Node "Implication" [lf "A", lf "A"]]]) ("Axiom3", 0, 0)
+l2 = Line 2 (Node "Implication" [lf "A", Node "Implication" [lf "A", lf "A"]]) ("Axiom2", 0, 0)
+l3 = Line 3 (Node "Implication" [Node "Implication" [lf "A", Node "Implication" [Node "Implication" [lf "A", lf "A"], lf "A"]], Node "Implication" [lf "A", lf "A"]]) ("Modus Ponens", 2, 1)
+l4 = Line 4 (Node "Implication" [lf "A", Node "Implication" [Node "Implication" [lf "A", lf "A"], lf "A"]]) ("Axiom2", 0, 0)
+l5 = Line 5 (Node "Implication" [lf "A", lf "A"]) ("Modus Ponens", 4, 3)
+
+axiom1Proof = Proof "axiom1 proof" (Node "Implication" [lf "A", lf "A"]) (getLogic specIntuitionistic) [l1, l2, l3, l4, l5]
+
+
+-- Claim($ToProve(IMP(A, A))). 
+
+-- Line(1, IMP(IMP(A, IMP(A,A)), IMP(IMP(A, IMP(IMP(A,A), A)), IMP(A,A))), "Axiom3", 0, 0, $ToProve(IMP(A, A))).
+-- Line(2, IMP(A, IMP(A,A)),               "Axiom2",  0, 0, $ToProve(IMP(A, A))).
+-- Line(3, IMP(IMP(A, IMP(IMP(A,A), A)), IMP(A,A)), "Modus Ponens", 2, 1, $ToProve(IMP(A, A))).
+-- Line(4, IMP(A, IMP(IMP(A,A), A)),       "Axiom2",  0, 0, $ToProve(IMP(A, A))).
+-- Line(5, IMP(A,A),                       "Modus Ponens", 4, 3, $ToProve(IMP(A, A))).
