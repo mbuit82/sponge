@@ -20,14 +20,6 @@ data InferenceRule = InferenceRule {
     premises :: [Sentence], 
     conclusion :: Sentence}
 
-data Spec = Spec
-  { specName :: String,
-    baseSystem :: Maybe Spec,
-    newOperators :: [Operator],
-    newAxioms :: [Axiom],
-    newInferenceRules :: [InferenceRule]
-  }
-
 data Logic = Logic
   { logicName :: String,
     operators :: [Operator],
@@ -100,10 +92,21 @@ inferenceRuleToDatalog logic rule =
 inferenceRulesToDataog :: Logic -> String
 inferenceRulesToDataog logic = concatMap (inferenceRuleToDatalog logic) (inferenceRules logic)
 
+
+-- FROM HERE BELOW, SPEC STUFF
+
+data Spec = Spec
+  { specName :: String,
+    baseSystem :: Maybe Spec,
+    newOperators :: [Operator],
+    newAxioms :: [Axiom],
+    newInferenceRules :: [InferenceRule]
+  }
+
 getLogic :: Spec -> Logic
 getLogic spec = 
     case (baseSystem spec) of
-        Nothing -> (Logic { 
+        Nothing ->  (Logic { 
                         logicName = specName spec, 
                         operators = newOperators spec, 
                         axioms = newAxioms spec, 
