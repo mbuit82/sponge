@@ -7,7 +7,7 @@ type Sentence = Tree String
 lf :: String -> Sentence -- helper for writing trees bc leaves are uglyyyy
 lf name = Node name []
 data Operator = Operator {
-    op_name :: String, 
+    operator_name :: String, 
     arity :: Int}
 data Axiom = Axiom {
     axiom_name :: String, 
@@ -37,58 +37,60 @@ inference_rule_to_datalog :: [Operator] -> InferenceRule -> String
 
 inference_rules_to_datalog :: [Operator] -> [InferenceRule] -> String
 
-operator_to_datalog operator = 
-    op_name operator ++ " {" ++ (intercalate ", " args) ++ "}"
+operator_to_datalog op = 
+    operator_name op ++ " {" ++ (intercalate ", " args) ++ "}"
     where 
-        args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity operator)]]
+        args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity op)]]
     
-syntax_to_datalog operators =
+syntax_to_datalog ops =
     ".type Sentence = Atom {name: symbol}" ++ 
-    concatMap (\op -> " | " ++ operator_to_datalog op) operators ++ 
+    concatMap (\op -> " | " ++ operator_to_datalog op) ops ++ 
     "\n"
 
-sentence_to_datalog operators sentence =
-    let op_names = map (\op -> op_name op) operators in
+sentence_to_datalog ops sentence =
+    let op_names = map (\op -> operator_name op) ops in
         if null (subForest sentence) && not (elem (rootLabel sentence) op_names)
         then rootLabel sentence
         else "$" ++ (rootLabel sentence) ++ "(" ++ args_str ++ ")"
-    where args_str = intercalate ", " (map (\sentence -> sentence_to_datalog operators sentence) (subForest sentence))
+    where args_str = intercalate ", " (map (\sentence -> sentence_to_datalog ops sentence) (subForest sentence))
 
-make_datalog_Line operators sentence name n i j =
+make_datalog_Line ops sentence name n i j =
     "Line(" ++ 
         n ++ ", " ++
-        sentence_to_datalog operators sentence ++ ", " ++
+        sentence_to_datalog ops sentence ++ ", " ++
         edited_name ++ ", " ++ 
         i ++ ", " ++ 
         j ++ ", " ++ 
         "goal)"
     where edited_name = if name == "_" then name else "\"" ++ name ++ "\""
 
-axiom_to_datalog operators axiom = 
-    "Justified(n, goal) :- " ++ make_datalog_Line operators (axiom_content axiom) (axiom_name axiom) "n" "_" "_" ++ ".\n"
-
-axioms_to_datalog operators axioms = concat (map (axiom_to_datalog operators) axioms)
-
-conclusion_to_datalog operators rule = 
+axiom_to_datalog ops axiom = 
     "Justified(n, goal) :- " ++ 
-    make_datalog_Line operators (conclusion rule) (rule_name rule) "n" "i" jv
+    make_datalog_Line ops (axiom_content axiom) (axiom_name axiom) "n" "_" "_" ++ 
+    ".\n"
+
+axioms_to_datalog ops axioms = concatMap (axiom_to_datalog ops) axioms
+
+conclusion_to_datalog ops rule = 
+    "Justified(n, goal) :- " ++ 
+    make_datalog_Line ops (conclusion rule) (rule_name rule) "n" "i" jv
     where jv = case premises rule of 
             [_] -> "_"
             [_, _] -> "j"
             _ -> error "should be one or two premises for an inference rule for now" 
 
-premises_to_datalog operators rule =
-    concat [ [v ++ " < n", "Justified(" ++ v ++ ", goal)", make_datalog_Line operators prem "_" v "_" "_"] | (v, prem) <- zip ["i", "j"] prems]
+premises_to_datalog ops rule =
+    concat [ [v ++ " < n", "Justified(" ++ v ++ ", goal)", make_datalog_Line ops prem "_" v "_" "_"] | (v, prem) <- zip ["i", "j"] prems]
     where prems = premises rule
 
-inference_rule_to_datalog operators rule =
+inference_rule_to_datalog ops rule =
     intercalate ",\n\t" (concLine : premLines) ++ "."
     where 
-        concLine = conclusion_to_datalog operators rule
-        premLines = premises_to_datalog operators rule
+        concLine = conclusion_to_datalog ops rule
+        premLines = premises_to_datalog ops rule
 
-inference_rules_to_datalog operators rules =
-    concat [ inference_rule_to_datalog operators rule ++ "\n" | rule <- rules]
+inference_rules_to_datalog ops rules =
+    concat [ inference_rule_to_datalog ops rule ++ "\n" | rule <- rules]
 
 data RawSpec = RawSpec
   { system_name :: String,
@@ -133,8 +135,8 @@ compile_datalog_engine spec =
     where 
         (operators, axioms, inference_rules) = get_system_specs spec
 
-intuitionistic_spec :: RawSpec
-intuitionistic_spec = RawSpec {
+spec_intuitionistic :: RawSpec
+spec_intuitionistic = RawSpec {
     system_name = "intuitionistic",
     base_system = Nothing,
     operators = [Operator "Bot" 0, Operator "Implication" 2],
@@ -146,11 +148,20 @@ intuitionistic_spec = RawSpec {
     inference_rules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
 }
 
-classical_spec :: RawSpec
-classical_spec = RawSpec {
+spec_classical :: RawSpec
+spec_classical = RawSpec {
     system_name = "classical",
-    base_system = Just intuitionistic_spec,
+    base_system = Just spec_intuitionistic,
     operators = [],
     axioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
     inference_rules = []
+}
+
+spec_K :: RawSpec
+spec_K = RawSpec {
+    system_name = "K",
+    base_system = Just spec_classical,
+    operators = [Operator "Box" 1],
+    axioms = [Axiom "K Axiom" (Node "Implication" [Node "Box" [Node "Implication" [lf "P", lf "Q"]], Node "Implication" [Node "Box" [lf "P"], Node "Box" [lf "Q"]]])],
+    inference_rules = [InferenceRule "N" [lf "P"] (Node "Box" [lf "P"])]
 }
