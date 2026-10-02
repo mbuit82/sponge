@@ -1,5 +1,5 @@
 # sponge
-A tool for writing axiomatic proofs of propositional systems. Starting with the intuitionistic and classical logic, goal is to add modal systems.
+A tool for writing axiomatic proofs of propositional systems. The hope is to focus on modal systems but it really doesn't matter—the point is to use it not to do tedious Hilbert-style proofs in ugly axiomatizations, but rather fun proofs where we can abstract that tediousness away.
 
 ### The idea is motivated by a few desires: 
 - I really like doing axiomatic proofs of propositional systems, especially modal logics (just because there's more going on than the duller Hilbert-style systems for intuitionistic and classical propositional logic), so I want a centralized place where I can keep track of all the proofs I've done so I can reuse them (this is especially relevant when logics are contained within each other, like in modal logic). Paper is only contingently centralized. Something on a computer less so. 
