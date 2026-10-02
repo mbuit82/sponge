@@ -4,8 +4,9 @@ import Data.List
 import GHC.Generics (Generic)
 import System.IO
 
-
 type Sentence = Tree String
+lf :: String -> Sentence -- helper for writing trees bc leaves are uglyyyy
+lf name = Node name []
 data Operator = Operator {
     op_name :: String, 
     arity :: Int}
@@ -14,7 +15,7 @@ data Axiom = Axiom {
     axiom_content :: Sentence}
 data InferenceRule = InferenceRule {
     rule_name :: String,
-    premises :: List Sentence, 
+    premises :: [Sentence], 
     conclusion :: Sentence}
 
 operator_to_datalog :: Operator -> String
@@ -50,7 +51,7 @@ syntax_to_datalog operators =
 -- NOT TESTED!!
 sentence_to_datalog operators sentence =
     let op_names = map (\op -> op_name op) operators in
-        if null (subForest sentence) && elem (rootLabel sentence) op_names
+        if null (subForest sentence) && not (elem (rootLabel sentence) op_names)
         then rootLabel sentence
         else "$" ++ (rootLabel sentence) ++ "(" ++ args_str ++ ")"
     where args_str = intercalate ", " (map (\sentence -> sentence_to_datalog operators sentence) (subForest sentence))
@@ -91,27 +92,44 @@ inference_rules_to_datalog operators inference_rules =
     concat [ inference_rule_to_datalog operators rule ++ "\n" | rule <- inference_rules]
 
 data RawSpec = RawSpec
-  { name :: String,
-    base :: Maybe String,
-    ops :: [Operator],
-    axs :: [Axiom],
-    rules :: [InferenceRule]
+  { system_name :: String,
+    base_system :: Maybe RawSpec,
+    operators :: [Operator],
+    axioms :: [Axiom],
+    inference_rules :: [InferenceRule]
   } deriving (Generic)
 
-json_to_haskell :: String -> RawSpec
-json_to_haskell = undefined
 
+intuitionistic_spec :: RawSpec
+intuitionistic_spec = RawSpec {
+    system_name = "intuitionistic",
+    base_system = Nothing,
+    operators = [Operator "Bot" 0, Operator "Implication" 2],
+    axioms = [
+        Axiom "Axiom1" (Node "Implication" [lf "P", lf "P"]),
+        Axiom "Axiom2" (Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "P"]]),
+        Axiom "Axiom3" (Node "Implication" [Node "Implication" [lf "P", lf "Q"], Node "Implication" [Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "R"]], Node "Implication" [lf "P", lf "R"]]]),
+        Axiom "Axiom4" (Node "Implication" [Node "Implication" [lf "P", lf "Bot"], Node "Implication" [lf "P", lf "Q"]])],
+    inference_rules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
+}
 
+classical_spec :: RawSpec
+classical_spec = RawSpec {
+    system_name = "classical",
+    base_system = Just intuitionistic_spec,
+    operators = [],
+    axioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
+    inference_rules = []
+}
 
-get_system_specs :: String -> ([Operator], [Axiom], [InferenceRule])
-get_system_specs system_name = 
-    case (base spec) of
-        Nothing -> (ops spec, axs spec, rules spec)
+get_system_specs :: RawSpec -> ([Operator], [Axiom], [InferenceRule])
+get_system_specs spec = 
+    case (base_system spec) of
+        Nothing -> (operators spec, axioms spec, inference_rules spec)
         Just b -> let (bops, baxs, brules) = get_system_specs b in
-                        (bops ++ ops spec, 
-                            baxs ++ axs spec, 
-                            brules ++ rules spec)
-    where spec = json_to_haskell system_name
+                        (bops ++ operators spec, 
+                            baxs ++ axioms spec, 
+                            brules ++ inference_rules spec)
 
 shared_datalog :: String
 shared_datalog = unlines [
@@ -128,13 +146,14 @@ shared_datalog = unlines [
     ".output Unjustified\n.output Justified\n.output Proven\n"
     ]
 
-compile_datalog_engine :: String -> IO ()
-compile_datalog_engine system_name =
-    withFile ("datalog_engines/" ++ system_name ++ ".dl") WriteMode $ \h -> do
+compile_datalog_engine :: RawSpec -> IO ()
+compile_datalog_engine spec =
+    withFile ("datalog_engines/" ++ system_name spec ++ ".dl") WriteMode $ \h -> do
         hSetEncoding h utf8
         hPutStr h (syntax_to_datalog operators)
         hPutStr h shared_datalog
         hPutStr h (axioms_to_datalog operators axioms)
         hPutStr h (inference_rules_to_datalog operators inference_rules)
     where 
-        (operators, axioms, inference_rules) = get_system_specs system_name
+        (operators, axioms, inference_rules) = get_system_specs spec
+
