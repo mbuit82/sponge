@@ -1,7 +1,6 @@
 import qualified Data.Map as Map
 import Data.Tree
 import Data.List
-import GHC.Generics (Generic)
 import System.IO
 
 type Sentence = Tree String
@@ -26,6 +25,8 @@ sentence_to_datalog :: [Operator] -> Sentence -> String
 
 make_datalog_Line :: [Operator] -> Sentence -> String -> String -> String -> String -> String
 
+axiom_to_datalog :: [Operator] -> Axiom -> String
+
 axioms_to_datalog :: [Operator] -> [Axiom] -> String
 
 conclusion_to_datalog :: [Operator] -> InferenceRule -> String 
@@ -36,19 +37,16 @@ inference_rule_to_datalog :: [Operator] -> InferenceRule -> String
 
 inference_rules_to_datalog :: [Operator] -> [InferenceRule] -> String
 
--- tested
 operator_to_datalog operator = 
     op_name operator ++ " {" ++ (intercalate ", " args) ++ "}"
     where 
         args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity operator)]]
     
--- tested
 syntax_to_datalog operators =
     ".type Sentence = Atom {name: symbol}" ++ 
     concatMap (\op -> " | " ++ operator_to_datalog op) operators ++ 
     "\n"
 
--- NOT TESTED!!
 sentence_to_datalog operators sentence =
     let op_names = map (\op -> op_name op) operators in
         if null (subForest sentence) && not (elem (rootLabel sentence) op_names)
@@ -66,30 +64,31 @@ make_datalog_Line operators sentence name n i j =
         "goal)"
     where edited_name = if name == "_" then name else "\"" ++ name ++ "\""
 
-axioms_to_datalog operators axioms =
-    let func = (\axiom -> "Justified(n, goal) :- " ++ make_datalog_Line operators (axiom_content axiom) (axiom_name axiom) "n" "_" "_" ++ ".\n") in 
-        concat (map func axioms)
+axiom_to_datalog operators axiom = 
+    "Justified(n, goal) :- " ++ make_datalog_Line operators (axiom_content axiom) (axiom_name axiom) "n" "_" "_" ++ ".\n"
 
-conclusion_to_datalog operators inference_rule = 
+axioms_to_datalog operators axioms = concat (map (axiom_to_datalog operators) axioms)
+
+conclusion_to_datalog operators rule = 
     "Justified(n, goal) :- " ++ 
-    make_datalog_Line operators (conclusion inference_rule) (rule_name inference_rule) "n" "i" jv
-    where jv = case premises inference_rule of 
+    make_datalog_Line operators (conclusion rule) (rule_name rule) "n" "i" jv
+    where jv = case premises rule of 
             [_] -> "_"
             [_, _] -> "j"
             _ -> error "should be one or two premises for an inference rule for now" 
 
-premises_to_datalog operators inference_rule =
+premises_to_datalog operators rule =
     concat [ [v ++ " < n", "Justified(" ++ v ++ ", goal)", make_datalog_Line operators prem "_" v "_" "_"] | (v, prem) <- zip ["i", "j"] prems]
-    where prems = premises inference_rule
+    where prems = premises rule
 
-inference_rule_to_datalog operators inference_rule =
+inference_rule_to_datalog operators rule =
     intercalate ",\n\t" (concLine : premLines) ++ "."
     where 
-        concLine = conclusion_to_datalog operators inference_rule
-        premLines = premises_to_datalog operators inference_rule
+        concLine = conclusion_to_datalog operators rule
+        premLines = premises_to_datalog operators rule
 
-inference_rules_to_datalog operators inference_rules =
-    concat [ inference_rule_to_datalog operators rule ++ "\n" | rule <- inference_rules]
+inference_rules_to_datalog operators rules =
+    concat [ inference_rule_to_datalog operators rule ++ "\n" | rule <- rules]
 
 data RawSpec = RawSpec
   { system_name :: String,
@@ -97,30 +96,7 @@ data RawSpec = RawSpec
     operators :: [Operator],
     axioms :: [Axiom],
     inference_rules :: [InferenceRule]
-  } deriving (Generic)
-
-
-intuitionistic_spec :: RawSpec
-intuitionistic_spec = RawSpec {
-    system_name = "intuitionistic",
-    base_system = Nothing,
-    operators = [Operator "Bot" 0, Operator "Implication" 2],
-    axioms = [
-        Axiom "Axiom1" (Node "Implication" [lf "P", lf "P"]),
-        Axiom "Axiom2" (Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "P"]]),
-        Axiom "Axiom3" (Node "Implication" [Node "Implication" [lf "P", lf "Q"], Node "Implication" [Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "R"]], Node "Implication" [lf "P", lf "R"]]]),
-        Axiom "Axiom4" (Node "Implication" [Node "Implication" [lf "P", lf "Bot"], Node "Implication" [lf "P", lf "Q"]])],
-    inference_rules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
-}
-
-classical_spec :: RawSpec
-classical_spec = RawSpec {
-    system_name = "classical",
-    base_system = Just intuitionistic_spec,
-    operators = [],
-    axioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
-    inference_rules = []
-}
+  }
 
 get_system_specs :: RawSpec -> ([Operator], [Axiom], [InferenceRule])
 get_system_specs spec = 
@@ -157,3 +133,24 @@ compile_datalog_engine spec =
     where 
         (operators, axioms, inference_rules) = get_system_specs spec
 
+intuitionistic_spec :: RawSpec
+intuitionistic_spec = RawSpec {
+    system_name = "intuitionistic",
+    base_system = Nothing,
+    operators = [Operator "Bot" 0, Operator "Implication" 2],
+    axioms = [
+        Axiom "Axiom1" (Node "Implication" [lf "P", lf "P"]),
+        Axiom "Axiom2" (Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "P"]]),
+        Axiom "Axiom3" (Node "Implication" [Node "Implication" [lf "P", lf "Q"], Node "Implication" [Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "R"]], Node "Implication" [lf "P", lf "R"]]]),
+        Axiom "Axiom4" (Node "Implication" [Node "Implication" [lf "P", lf "Bot"], Node "Implication" [lf "P", lf "Q"]])],
+    inference_rules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
+}
+
+classical_spec :: RawSpec
+classical_spec = RawSpec {
+    system_name = "classical",
+    base_system = Just intuitionistic_spec,
+    operators = [],
+    axioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
+    inference_rules = []
+}
