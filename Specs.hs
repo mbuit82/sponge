@@ -2,7 +2,6 @@ module Specs where
 
 import Core
 
-import Data.Tree
 import Data.List
 import System.IO
 
@@ -31,6 +30,7 @@ getLogic spec =
 
 sharedDatalog :: String
 sharedDatalog = unlines [
+    "",
     ".type Goal = ToProve {s: Sentence}\n",
     ".decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned, goal: Goal)",
     ".decl Justified(n: unsigned, goal: Goal)",
@@ -46,8 +46,15 @@ sharedDatalog = unlines [
 
 compileDatalogEngine :: Spec -> IO ()
 compileDatalogEngine spec =
+    -- I want to check that all axioms and inference rules are well-formed. 
+    -- use the all function and the isWff function.
+    -- Also here check that all inference rules have max 2 premises
+    -- I think this ideally happens not here, but like in a check function. 
+    -- for now I can run that check function here
+    -- well like I want it to happen _before_ I apply all the transformations on proofs. Like it should be the _first_ thing that happens. 
     withFile ("datalog_engines/" ++ specName spec ++ ".dl") WriteMode $ \h -> do
         hSetEncoding h utf8
+        hPutStr h ".type Sentence = Atom {name: symbol}"
         hPutStr h (syntaxToDatalog logic)
         hPutStr h sharedDatalog
         hPutStr h (axiomsToDatalog logic)
@@ -55,18 +62,22 @@ compileDatalogEngine spec =
     where 
         logic = getLogic spec
 
+impl :: Operator
+impl = Operator "Implication" 2
+bot :: Operator
+bot = Operator "Bot" 0
 
 specIntuitionistic :: Spec
 specIntuitionistic = Spec {
     specName = "intuitionistic",
     baseSystem = Nothing,
-    newOperators = [Operator "Bot" 0, Operator "Implication" 2],
+    newOperators = [bot, impl],
     newAxioms = [
-        Axiom "Axiom1" (Node "Implication" [lf "P", lf "P"]),
-        Axiom "Axiom2" (Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "P"]]),
-        Axiom "Axiom3" (Node "Implication" [Node "Implication" [lf "P", lf "Q"], Node "Implication" [Node "Implication" [lf "P", Node "Implication" [lf "Q", lf "R"]], Node "Implication" [lf "P", lf "R"]]]),
-        Axiom "Axiom4" (Node "Implication" [Node "Implication" [lf "P", lf "Bot"], Node "Implication" [lf "P", lf "Q"]])],
-    newInferenceRules = [InferenceRule "Modus Ponens" [lf "P", Node "Implication" [lf "P", lf "Q"]] (lf "Q")]
+        Axiom "Axiom1" (OpNode impl [Atom "P", Atom "P"]),
+        Axiom "Axiom2" (OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "P"]]),
+        Axiom "Axiom3" (OpNode impl [OpNode impl [Atom "P", Atom "Q"], OpNode impl [OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "R"]], OpNode impl [Atom "P", Atom "R"]]]),
+        Axiom "Axiom4" (OpNode impl [OpNode impl [Atom "P", OpNode bot []], OpNode impl [Atom "P", Atom "Q"]])],
+    newInferenceRules = [InferenceRule "Modus Ponens" (Atom "P", Just (OpNode impl [Atom "P", Atom "Q"])) (Atom "Q")]
 }
 
 specClassical :: Spec
@@ -74,15 +85,18 @@ specClassical = Spec {
     specName = "classical",
     baseSystem = Just specIntuitionistic,
     newOperators = [],
-    newAxioms = [Axiom "Axiom5" (Node "Implication" [Node "Implication" [Node "Implication" [lf "P", lf "Bot"], lf "Bot"], lf "P"])],
+    newAxioms = [Axiom "Axiom5" (OpNode impl [OpNode impl [OpNode impl [Atom "P", OpNode bot []], OpNode bot []], Atom "P"])],
     newInferenceRules = []
 }
+
+box :: Operator
+box = Operator "Box" 1
 
 specK :: Spec
 specK = Spec {
     specName = "K",
     baseSystem = Just specClassical,
-    newOperators = [Operator "Box" 1],
-    newAxioms = [Axiom "K Axiom" (Node "Implication" [Node "Box" [Node "Implication" [lf "P", lf "Q"]], Node "Implication" [Node "Box" [lf "P"], Node "Box" [lf "Q"]]])],
-    newInferenceRules = [InferenceRule "N" [lf "P"] (Node "Box" [lf "P"])]
+    newOperators = [box],
+    newAxioms = [Axiom "K Axiom" (OpNode impl [OpNode box [OpNode impl [Atom "P", Atom "Q"]], OpNode impl [OpNode box [Atom "P"], OpNode box [Atom "Q"]]])],
+    newInferenceRules = [InferenceRule "N" (Atom "P", Nothing) (OpNode box [Atom "P"])]
 }

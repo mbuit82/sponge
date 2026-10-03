@@ -1,23 +1,21 @@
 module Core where
 
-import Data.Tree
 import Data.List
 
-type Sentence = Tree String
--- helper for writing trees bc leaves are uglyyyy
--- once I get a front end I won't need this tho
-lf :: String -> Sentence 
-lf name = Node name []
-
 data Operator = Operator {operatorName :: String, arity :: Int}
+
+data Sentence = Atom {atomName :: String}
+              | OpNode {topOp :: Operator, args :: [Sentence]}
 
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence}
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
-    premises :: [Sentence], 
+    premises :: (Sentence, Maybe Sentence), -- strictly enforce having two
     conclusion :: Sentence}
 
+-- well, by design, the operators in the axioms and inference rules need to be in the operators. 
+-- how can I enforce that with the type system? not sure I can
 data Logic = Logic
   { logicName :: String,
     operators :: [Operator],
@@ -25,75 +23,113 @@ data Logic = Logic
     inferenceRules :: [InferenceRule]
   }
 
-operatorToDatalog :: Operator -> String
-operatorToDatalog op = 
+constructorToDatalog :: Operator -> String
+constructorToDatalog op = 
     " | " ++ operatorName op ++ " {" ++ (intercalate ", " args) ++ "}"
     where 
         args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity op)]]
     
 syntaxToDatalog :: Logic -> String
-syntaxToDatalog logic =
-    ".type Sentence = Atom {name: symbol}" ++ 
-    concatMap operatorToDatalog (operators logic) ++ 
-    "\n"
+syntaxToDatalog logic = concatMap constructorToDatalog (operators logic)
 
-formulaToDatalog :: Bool -> Logic -> Sentence -> String
-formulaToDatalog varBool logic sentence =
-    if not (elem (rootLabel sentence) (map operatorName (operators logic)))
-    then if varBool
-            then rootLabel sentence
-            else "$Atom(\"" ++ (rootLabel sentence) ++ "\")"
-    else "$" ++ (rootLabel sentence) ++ "(" ++ argsStr ++ ")"
-    where argsStr = intercalate ", " 
-            (map (formulaToDatalog varBool logic) (subForest sentence))
+-- headedByOperator :: Logic -> Sentence -> Bool
+-- headedByOperator l s = (elem (rootLabel s) (map operatorName (operators l)))
 
-schemaToDatalog :: Logic -> Sentence -> String
+formulaToDatalog :: Bool -> Sentence -> String
+formulaToDatalog varBool sentence =
+    case sentence of 
+        Atom name -> if varBool
+                        then name
+                        else "$Atom(\"" ++ name ++ "\")"
+        OpNode op args -> "$" ++ (operatorName op) ++ "(" ++ argsStr ++ ")"
+            where argsStr = intercalate ", " 
+                    (map (formulaToDatalog varBool) args)
+
+schemaToDatalog :: Sentence -> String
 schemaToDatalog = formulaToDatalog True
 
-sentenceToDatalog :: Logic -> Sentence -> String
+sentenceToDatalog :: Sentence -> String
 sentenceToDatalog = formulaToDatalog False
 
-makeDatalogLine :: Logic -> Sentence -> String -> String -> String -> String -> String
-makeDatalogLine logic sentence name n i j =
+makeDatalogLine :: Sentence -> String -> String -> String -> String -> String
+makeDatalogLine sentence name n i j =
     "Line(" ++ 
         n ++ ", " ++
-        schemaToDatalog logic sentence ++ ", " ++
+        schemaToDatalog sentence ++ ", " ++
         (if name == "_" then name else "\"" ++ name ++ "\"") ++ ", " ++ 
         i ++ ", " ++ 
         j ++ ", " ++ 
         "goal)"
 
-axiomToDatalog :: Logic -> Axiom -> String
-axiomToDatalog logic axiom = 
+axiomToDatalog :: Axiom -> String
+axiomToDatalog axiom = 
     "Justified(n, goal) :- " ++ 
-    makeDatalogLine logic (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
+    makeDatalogLine (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
     ".\n"
 
 axiomsToDatalog :: Logic -> String
-axiomsToDatalog logic = concatMap (axiomToDatalog logic) (axioms logic)
+axiomsToDatalog logic = concatMap axiomToDatalog (axioms logic)
 
-conclusionToDatalog :: Logic -> InferenceRule -> String 
-conclusionToDatalog logic rule = 
+conclusionToDatalog :: InferenceRule -> String 
+conclusionToDatalog rule = 
     "Justified(n, goal) :- " ++ 
-    makeDatalogLine logic (conclusion rule) (ruleName rule) "n" "i" jv
-    where jv = case premises rule of 
-            [_] -> "_"
-            [_, _] -> "j"
-            _ -> error "should be one or two premises for an inference rule for now"
+    makeDatalogLine (conclusion rule) (ruleName rule) "n" "i" jv
+    where jv = case snd (premises rule) of 
+            Nothing -> "_"
+            Just _ -> "j"
 
-premisesToDatalog :: Logic -> InferenceRule -> [String] 
-premisesToDatalog logic rule =
+premisesToDatalog :: InferenceRule -> [String] 
+premisesToDatalog rule =
     concat [ [  v ++ " < n", 
                 "Justified(" ++ v ++ ", goal)", 
-                makeDatalogLine logic prem "_" v "_" "_"] 
-            | (v, prem) <- zip ["i", "j"] (premises rule)]
+                makeDatalogLine prem "_" v "_" "_"] 
+            | (v, prem) <- zip ["i", "j"] premList]
+    where premList = case snd (premises rule) of
+                        Nothing -> [fst (premises rule)]
+                        Just s -> [fst (premises rule), s]
 
-inferenceRuleToDatalog :: Logic -> InferenceRule -> String 
-inferenceRuleToDatalog logic rule =
+inferenceRuleToDatalog :: InferenceRule -> String 
+inferenceRuleToDatalog rule =
     intercalate ",\n\t" (concLine : premLines) ++ ".\n"
     where 
-        concLine = conclusionToDatalog logic rule
-        premLines = premisesToDatalog logic rule
+        concLine = conclusionToDatalog rule
+        premLines = premisesToDatalog rule
 
 inferenceRulesToDataog :: Logic -> String
-inferenceRulesToDataog logic = concatMap (inferenceRuleToDatalog logic) (inferenceRules logic)
+inferenceRulesToDataog logic = concatMap inferenceRuleToDatalog (inferenceRules logic)
+
+-- getOperatorWithName :: [Operator] -> String -> Maybe Operator
+-- getOperatorWithName ops name = find ((== name) . operatorName) ops
+
+isWff :: Sentence -> Bool
+-- ideally, we don't have a need for this sentence. That's the magic of the type system!
+isWff sentence =
+    case sentence of
+        Atom _ -> True
+        OpNode op args -> if arity op == length args 
+            then all isWff args
+            else False
+
+-- isAtom :: Logic -> Sentence -> Bool
+-- isAtom l s = not headedByOperator l s
+
+-- isInstance :: Logic -> Sentence -> Sentence -> Bool
+-- -- the first Sentence is a sentence, second is a schema
+-- -- need to think about naming for sentences/formulae
+-- -- for now, assume everything is well-formed. 
+-- isInstance logic sentence schema =
+--     if isAtom logic schema
+--     then True
+--     else -- we know the schema is an operator
+--         if rootLabel schema == 
+
+
+
+--         cases schema of
+--             Node nodeName children -> 
+
+--     if (sentence rootLabel) == (schema rootLabel)
+--     case schema of 
+--         Node nodeName [] ->
+--         Node nodeName [subTree] ->
+        

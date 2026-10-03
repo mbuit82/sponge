@@ -3,10 +3,8 @@ module Proofs where
 import Core
 import Specs
 
-import Data.Tree
 import Data.List
 import System.IO
-
 
 data Line = Line {
     lineNumber :: Int,
@@ -25,18 +23,18 @@ lineToDatalog :: Proof -> Line -> String
 lineToDatalog proof line = 
     let (justificationText, i, j) = justification line in
         "Line(" ++ show (lineNumber line) ++ ", " ++
-        sentenceToDatalog (proofLogic proof) (lineContent line) ++ ", " ++ 
+        sentenceToDatalog (lineContent line) ++ ", " ++ 
         "\"" ++ justificationText ++ "\", " ++
         show i ++ ", " ++ 
         show j ++ ", " ++
-        "$ToProve(" ++ sentenceToDatalog (proofLogic proof) (proofGoal proof) ++ 
+        "$ToProve(" ++ sentenceToDatalog (proofGoal proof) ++ 
         -- (proofName proof) ++ -- would need more than just turning this on
         ")).\n"
 
 proofToDatalog :: Proof -> String
 proofToDatalog proof =
     "Claim($ToProve(" ++ 
-    sentenceToDatalog (proofLogic proof) (proofGoal proof) ++ 
+    sentenceToDatalog (proofGoal proof) ++ 
     ")).\n\n" ++
     concatMap (lineToDatalog proof) (proofContent proof)
     
@@ -47,10 +45,10 @@ compileDatalogProof proof =
         hPutStr h ("#include \"../datalog_engines/" ++ (logicName (proofLogic proof)) ++ ".dl\"\n\n")
         hPutStr h (proofToDatalog proof)
 
-l1 = Line 1 (Node "Implication" [Node "Implication" [lf "A", Node "Implication" [lf "A", lf "A"]], Node "Implication" [Node "Implication" [lf "A", Node "Implication" [Node "Implication" [lf "A", lf "A"], lf "A"]], Node "Implication" [lf "A", lf "A"]]]) ("Axiom3", 0, 0)
-l2 = Line 2 (Node "Implication" [lf "A", Node "Implication" [lf "A", lf "A"]]) ("Axiom2", 0, 0)
-l3 = Line 3 (Node "Implication" [Node "Implication" [lf "A", Node "Implication" [Node "Implication" [lf "A", lf "A"], lf "A"]], Node "Implication" [lf "A", lf "A"]]) ("Modus Ponens", 2, 1)
-l4 = Line 4 (Node "Implication" [lf "A", Node "Implication" [Node "Implication" [lf "A", lf "A"], lf "A"]]) ("Axiom2", 0, 0)
-l5 = Line 5 (Node "Implication" [lf "A", lf "A"]) ("Modus Ponens", 4, 3)
+l1 = Line 1 (OpNode impl [OpNode impl [Atom "A", OpNode impl [Atom "A", Atom "A"]], OpNode impl [OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]], OpNode impl [Atom "A", Atom "A"]]]) ("Axiom3", 0, 0)
+l2 = Line 2 (OpNode impl [Atom "A", OpNode impl [Atom "A", Atom "A"]]) ("Axiom2", 0, 0)
+l3 = Line 3 (OpNode impl [OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]], OpNode impl [Atom "A", Atom "A"]]) ("Modus Ponens", 2, 1)
+l4 = Line 4 (OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]]) ("Axiom2", 0, 0)
+l5 = Line 5 (OpNode impl [Atom "A", Atom "A"]) ("Modus Ponens", 4, 3)
 
-axiom1Proof = Proof "axiom1" (Node "Implication" [lf "A", lf "A"]) (getLogic specIntuitionistic) [l1, l2, l3, l4, l5]
+axiom1Proof = Proof "axiom1" (OpNode impl [Atom "A", Atom "A"]) (getLogic specIntuitionistic) [l1, l2, l3, l4, l5]
