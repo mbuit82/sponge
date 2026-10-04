@@ -1,9 +1,7 @@
 module Proofs where
 
 import Core
-import Specs
 
-import Data.List
 import System.IO
 
 data Line = Line {
@@ -45,30 +43,20 @@ compileDatalogProof proof =
         hPutStr h ("#include \"../datalog_engines/" ++ (logicName (proofLogic proof)) ++ ".dl\"\n\n")
         hPutStr h (proofToDatalog proof)
 
-l1 = Line 1 (OpNode impl [OpNode impl [Atom "A", OpNode impl [Atom "A", Atom "A"]], OpNode impl [OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]], OpNode impl [Atom "A", Atom "A"]]]) ("Axiom3", 0, 0)
-l2 = Line 2 (OpNode impl [Atom "A", OpNode impl [Atom "A", Atom "A"]]) ("Axiom2", 0, 0)
-l3 = Line 3 (OpNode impl [OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]], OpNode impl [Atom "A", Atom "A"]]) ("Modus Ponens", 2, 1)
-l4 = Line 4 (OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]]) ("Axiom2", 0, 0)
-l5 = Line 5 (OpNode impl [Atom "A", Atom "A"]) ("Modus Ponens", 4, 3)
-
-axiom1Proof = Proof "axiom1" (OpNode impl [Atom "A", Atom "A"]) (getLogic specIntuitionistic) [l1, l2, l3, l4, l5]
-
-isInstance :: Logic -> Sentence -> Sentence -> Bool
--- the first Sentence is a sentence, second is a schema
--- need to think about naming for sentences/formulae
--- for now, assume everything is well-formed. 
-isInstance logic sentence schema =
-    case schema of
-        Atom _ -> True
-        OpNode schemaOp schemaArgs ->
-            case sentence of
-                Atom _ -> False
-                OpNode sentOp sentArgs -> 
-                    schemaOp == sentOp && all (\p -> isInstance logic (fst p) (snd p)) (zip sentArgs schemaArgs)
+deductionAxiom1Schema :: Sentence
+deductionAxiom1Schema = (OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "P"]])
+deductionAxiom2Schema :: Sentence
+deductionAxiom2Schema = (OpNode impl [OpNode impl [Atom "P", Atom "Q"], OpNode impl [OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "R"]], OpNode impl [Atom "P", Atom "R"]]])
+matchesDeductionAxiom1 :: Axiom -> Bool
+matchesDeductionAxiom1 axiom = haveSameStructure (axiomContent axiom) deductionAxiom1Schema
+matchesDeductionAxiom2 :: Axiom -> Bool
+matchesDeductionAxiom2 axiom = haveSameStructure (axiomContent axiom) deductionAxiom2Schema
 
 deductionTransformation :: Logic -> Sentence -> Line -> [Line]
 deductionTransformation logic hyp line =
     case justification line of
-        "Modus Ponens" ->
-        "Deduction" -> undefined
-        _ -> -- has to be an axiom. Ah, so I'm assuming that I'll do this step last, in case I want to add support for proofs. 
+        ("Modus Ponens", ixp, ixpq) -> undefined
+        ("Deduction", _, _) -> undefined
+        (axnm, _, _) -> -- I think I do want to do it by what the thing says. or just assume it's an axiom
+            
+            undefined -- has to be an axiom. Ah, so I'm assuming that I'll do this step last, in case I want to add support for proofs. 

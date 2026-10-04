@@ -7,6 +7,9 @@ data Operator = Operator {
     arity :: Int
 } deriving Eq
 
+impl :: Operator
+impl = Operator "Implication" 2
+
 data Sentence = Atom {atomName :: String}
               | OpNode {topOp :: Operator, args :: [Sentence]}
 
@@ -111,22 +114,40 @@ aritiesCheck sentence =
             then all aritiesCheck args
             else False
 
-isInLogic :: Logic -> Sentence -> Bool
-isInLogic logic sentence =
+isWff :: Logic -> Sentence -> Bool
+isWff logic sentence =
     case sentence of
         Atom _ -> True
         OpNode op args -> if elem op (operators logic)
-            then all (isInLogic logic) args
+            then all (isWff logic) args
             else False
 
 axiomsWf :: Logic -> Bool
-axiomsWf logic = all (isInLogic logic) (map axiomContent (axioms logic))
+axiomsWf logic = all (isWff logic) (map axiomContent (axioms logic))
 
 inferenceRuleWf :: Logic -> InferenceRule -> Bool
 inferenceRuleWf logic rule = 
-    isInLogic logic (conclusion rule) && case premises rule of
-        (p1, Nothing) -> isInLogic logic p1
-        (p1, Just p2) -> isInLogic logic p1 && isInLogic logic p2
+    isWff logic (conclusion rule) && case premises rule of
+        (p1, Nothing) -> isWff logic p1
+        (p1, Just p2) -> isWff logic p1 && isWff logic p2
 
 inferenceRulesWf :: Logic -> Bool
 inferenceRulesWf logic = all (inferenceRuleWf logic) (inferenceRules logic)
+-- END RUNTIME CHECKS
+
+
+isInstance :: Sentence -> Sentence -> Bool
+-- the first Sentence is a sentence, second is a schema
+-- need to think about naming for sentences/formulae
+-- for now, assume everything is well-formed. 
+isInstance sentence schema =
+    case schema of
+        Atom _ -> True
+        OpNode schemaOp schemaArgs ->
+            case sentence of
+                Atom _ -> False
+                OpNode sentOp sentArgs -> 
+                    schemaOp == sentOp && all (\p -> isInstance (fst p) (snd p)) (zip sentArgs schemaArgs)
+
+haveSameStructure :: Sentence -> Sentence -> Bool
+haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1

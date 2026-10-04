@@ -62,8 +62,6 @@ compileDatalogEngine spec =
     where 
         logic = getLogic spec
 
-impl :: Operator
-impl = Operator "Implication" 2
 bot :: Operator
 bot = Operator "Bot" 0
 
