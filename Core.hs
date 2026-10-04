@@ -2,7 +2,10 @@ module Core where
 
 import Data.List
 
-data Operator = Operator {operatorName :: String, arity :: Int}
+data Operator = Operator {
+    operatorName :: String, 
+    arity :: Int
+} deriving Eq
 
 data Sentence = Atom {atomName :: String}
               | OpNode {topOp :: Operator, args :: [Sentence]}
@@ -98,38 +101,32 @@ inferenceRuleToDatalog rule =
 inferenceRulesToDataog :: Logic -> String
 inferenceRulesToDataog logic = concatMap inferenceRuleToDatalog (inferenceRules logic)
 
--- getOperatorWithName :: [Operator] -> String -> Maybe Operator
--- getOperatorWithName ops name = find ((== name) . operatorName) ops
 
-isWff :: Sentence -> Bool
--- ideally, we don't have a need for this sentence. That's the magic of the type system!
-isWff sentence =
+-- RUNTIME CHECKS
+aritiesCheck :: Sentence -> Bool
+aritiesCheck sentence =
     case sentence of
         Atom _ -> True
         OpNode op args -> if arity op == length args 
-            then all isWff args
+            then all aritiesCheck args
             else False
 
--- isAtom :: Logic -> Sentence -> Bool
--- isAtom l s = not headedByOperator l s
+isInLogic :: Logic -> Sentence -> Bool
+isInLogic logic sentence =
+    case sentence of
+        Atom _ -> True
+        OpNode op args -> if elem op (operators logic)
+            then all (isInLogic logic) args
+            else False
 
--- isInstance :: Logic -> Sentence -> Sentence -> Bool
--- -- the first Sentence is a sentence, second is a schema
--- -- need to think about naming for sentences/formulae
--- -- for now, assume everything is well-formed. 
--- isInstance logic sentence schema =
---     if isAtom logic schema
---     then True
---     else -- we know the schema is an operator
---         if rootLabel schema == 
+axiomsWf :: Logic -> Bool
+axiomsWf logic = all (isInLogic logic) (map axiomContent (axioms logic))
 
+inferenceRuleWf :: Logic -> InferenceRule -> Bool
+inferenceRuleWf logic rule = 
+    isInLogic logic (conclusion rule) && case premises rule of
+        (p1, Nothing) -> isInLogic logic p1
+        (p1, Just p2) -> isInLogic logic p1 && isInLogic logic p2
 
-
---         cases schema of
---             Node nodeName children -> 
-
---     if (sentence rootLabel) == (schema rootLabel)
---     case schema of 
---         Node nodeName [] ->
---         Node nodeName [subTree] ->
-        
+inferenceRulesWf :: Logic -> Bool
+inferenceRulesWf logic = all (inferenceRuleWf logic) (inferenceRules logic)
