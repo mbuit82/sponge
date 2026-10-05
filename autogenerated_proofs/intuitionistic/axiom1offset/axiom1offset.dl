@@ -1,0 +1,9 @@
+#include "../../../datalog_engines/intuitionistic.dl"
+
+Goal($Implication($Atom("A"), $Atom("A"))).
+
+Line(11, $Implication($Implication($Atom("A"), $Implication($Atom("A"), $Atom("A"))), $Implication($Implication($Atom("A"), $Implication($Implication($Atom("A"), $Atom("A")), $Atom("A"))), $Implication($Atom("A"), $Atom("A")))), "Axiom3", 0, 0).
+Line(12, $Implication($Atom("A"), $Implication($Atom("A"), $Atom("A"))), "Axiom2", 0, 0).
+Line(13, $Implication($Implication($Atom("A"), $Implication($Implication($Atom("A"), $Atom("A")), $Atom("A"))), $Implication($Atom("A"), $Atom("A"))), "Modus Ponens", 12, 11).
+Line(14, $Implication($Atom("A"), $Implication($Implication($Atom("A"), $Atom("A")), $Atom("A"))), "Axiom2", 0, 0).
+Line(15, $Implication($Atom("A"), $Atom("A")), "Modus Ponens", 14, 13).

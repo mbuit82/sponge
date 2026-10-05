@@ -17,13 +17,6 @@ getRefLines rfLines =
         Nothing -> (0, 0)
         Just (i, j) -> (i, j)
 
--- data Proof = Proof {
---     proofName :: String, -- I don't NEED to add this (yet) technically. 
---     proofGoal :: Sentence,
---     proofLogic :: Logic,
---     proofContent :: [Line]
--- }
-
 lineToDatalog :: Line -> String
 lineToDatalog line = 
     let (i, j) = getRefLines (refLines line) in

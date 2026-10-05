@@ -104,7 +104,7 @@ inferenceRulesToDataog :: Logic -> String
 inferenceRulesToDataog logic = concatMap inferenceRuleToDatalog (inferenceRules logic)
 
 
--- RUNTIME CHECKS
+-- RUNTIME CHECKS FOR LATER
 aritiesCheck :: Sentence -> Bool
 aritiesCheck sentence =
     case sentence of
