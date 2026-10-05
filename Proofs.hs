@@ -10,6 +10,7 @@ data Line = Line {
     justification :: String,
     refLines :: Maybe (Int, Int)
 }
+-- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. 
 
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
 getRefLines rfLines = 
@@ -67,6 +68,8 @@ data Transformandum = Transformandum { seen :: [Line], curr :: Maybe Line, toSee
 
 -- transforms take a sentence and map them to the new sentences to be added, in reverse order.
 -- I think I want to modify the current line too to add the offset? Transform should take an offset I think
+-- Yes, transforms will have to handle the actual line number/line reference modification
+-- though am wondering if I can use noChangeTransform? would have to generalize it
 type Transform = Int -> Line -> [Line]
 
 -- when we run a transform on a _proof state_, we want to return the transformation ++ seen, and then take the next element and make that the next current. 
@@ -90,10 +93,10 @@ intoTransformandum proofContent =
         fstLine : tail -> Transformandum [] (Just fstLine) tail 0
 
 noChangeTransform :: Transform
-noChangeTransform offset (Line n c just rfs) = 
+noChangeTransform offset (Line n c justification rfs) = 
     case rfs of
-        Nothing -> [Line (n + offset) c just rfs]
-        Just (i, j) -> [Line (n + offset) c just (Just (i + offset, j + offset))]
+        Nothing -> [Line (n + offset) c justification rfs]
+        Just (i, j) -> [Line (n + offset) c justification (Just (i + offset, j + offset))]
 
 applyOffsetToProof :: Int -> [Line] -> [Line]
 applyOffsetToProof offset proofLines = concatMap (noChangeTransform offset) proofLines

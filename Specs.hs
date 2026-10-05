@@ -5,6 +5,63 @@ import Core
 import Data.List
 import System.IO
 
+
+-- moved these functions here because these are exclusively for making engines
+constructorToDatalog :: Operator -> String
+constructorToDatalog op = 
+    " | " ++ operatorName op ++ " {" ++ (intercalate ", " args) ++ "}"
+    where 
+        args = ["s" ++ show i ++ ": Sentence" | i <- [1 .. (arity op)]]
+    
+syntaxToDatalog :: Logic -> String
+syntaxToDatalog logic = concatMap constructorToDatalog (operators logic)
+
+makeDatalogLine :: Sentence -> String -> String -> String -> String -> String
+makeDatalogLine sentence name n i j =
+    "Line(" ++ 
+        n ++ ", " ++
+        schemaToDatalog sentence ++ ", " ++
+        (if name == "_" then name else "\"" ++ name ++ "\"") ++ ", " ++ 
+        i ++ ", " ++ 
+        j ++ ")"
+
+axiomToDatalog :: Axiom -> String
+axiomToDatalog axiom = 
+    "Justified(n) :- " ++ 
+    makeDatalogLine (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
+    ".\n"
+
+axiomsToDatalog :: Logic -> String
+axiomsToDatalog logic = concatMap axiomToDatalog (axioms logic)
+
+conclusionToDatalog :: InferenceRule -> String 
+conclusionToDatalog rule = 
+    "Justified(n) :- " ++ 
+    makeDatalogLine (conclusion rule) (ruleName rule) "n" "i" jv
+    where jv = case snd (premises rule) of 
+            Nothing -> "_"
+            Just _ -> "j"
+
+premisesToDatalog :: InferenceRule -> [String] 
+premisesToDatalog rule =
+    concat [ [  v ++ " < n", 
+                "Justified(" ++ v ++ ")", 
+                makeDatalogLine prem "_" v "_" "_"] 
+            | (v, prem) <- zip ["i", "j"] premList]
+    where premList = case snd (premises rule) of
+                        Nothing -> [fst (premises rule)]
+                        Just s -> [fst (premises rule), s]
+
+inferenceRuleToDatalog :: InferenceRule -> String 
+inferenceRuleToDatalog rule =
+    intercalate ",\n\t" (concLine : premLines) ++ ".\n"
+    where 
+        concLine = conclusionToDatalog rule
+        premLines = premisesToDatalog rule
+
+inferenceRulesToDataog :: Logic -> String
+inferenceRulesToDataog logic = concatMap inferenceRuleToDatalog (inferenceRules logic)
+
 data Spec = Spec
   { specName :: String,
     baseSystem :: Maybe Spec,
