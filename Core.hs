@@ -64,8 +64,7 @@ makeDatalogLine sentence name n i j =
         schemaToDatalog sentence ++ ", " ++
         (if name == "_" then name else "\"" ++ name ++ "\"") ++ ", " ++ 
         i ++ ", " ++ 
-        j ++ ", " ++ 
-        "goal)"
+        j ++ ")"
 
 axiomToDatalog :: Axiom -> String
 axiomToDatalog axiom = 
