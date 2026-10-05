@@ -1,0 +1,11 @@
+Syntax
+Bot | (P -> P)
+
+Axioms
+Axiom1: |- (P -> P)
+Axiom2: |- (P -> (Q -> P))
+Axiom3: |- ((P -> Q) -> ((P -> (Q -> R)) -> (P -> R)))
+Axiom4: |- ((P -> Bot) -> (P -> R))
+
+Inference Rules
+Modus Ponens: |- p, |- (p -> q), |- q

@@ -1,0 +1,8 @@
+Theorem: |- (A -> A)
+
+Proof
+1. |- ((A -> (A -> A)) -> ((A -> ((A -> A) -> A)) -> (A -> A))) by Axiom3
+2. |- (A -> (A -> A))                                           by Axiom2
+3. |- ((A -> ((A -> A) -> A)) -> (A -> A))                      by Modus Ponens, 2 1
+4. |- (A -> ((A -> A) -> A))                                    by Axiom2
+5. |- (A -> A)                                                  by Modus Ponens, 4 3
