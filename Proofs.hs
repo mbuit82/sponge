@@ -3,12 +3,14 @@ module Proofs where
 import Core
 
 import System.IO
+import Data.Maybe
 
 data Line = Line {
     lineNumber :: Int,
     lineContent :: Sentence,
     justification :: String,
-    refLines :: Maybe (Int, Int)
+    refLines :: Maybe (Int, Int),
+    userNumber :: Maybe Int -- the original line number the user used
 }
 -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. 
 
@@ -93,27 +95,26 @@ intoTransformandum proofContent =
         fstLine : tail -> Transformandum [] (Just fstLine) tail 0
 
 applyOffset :: Int -> Line -> Line
-applyOffset offset (Line n c justification rfs) = 
+applyOffset offset (Line n c justification rfs uNum) = 
     case rfs of
-        Nothing -> Line (n + offset) c justification rfs
-        Just (i, j) -> Line (n + offset) c justification (Just (i + offset, j + offset))
+        Nothing -> Line (n + offset) c justification rfs uNum
+        Just (i, j) -> Line (n + offset) c justification (Just (i + offset, j + offset)) uNum
 
 applyOffsetToLines :: Int -> [Line] -> [Line]
 applyOffsetToLines offset lines = map (applyOffset offset) lines
 
--- I want this to be the definition of a transform. 
+-- I want this to be what a transform looks like. 
 axiomCaseDeduction :: Sentence -> Line -> [Line]
-axiomCaseDeduction hyp line = 
-    let n = lineNumber line in
-        [   
-            line,
-            Line (n + 1) (makeKC (lineContent line) hyp) "Axiom2" Nothing,
-            Line (n + 2) (OpNode impl [hyp, lineContent line]) "Modus Ponens" (Just (n + 1, n + 2))
-        ]
+axiomCaseDeduction hyp (Line lNum c justification rfs uNum) = 
+    [   
+        Line lNum c justification rfs Nothing,
+        Line (lNum + 1) (makeKC c hyp) "Axiom2" Nothing Nothing,
+        Line (lNum + 2) (OpNode impl [hyp, c]) "Modus Ponens" (Just (lNum, lNum + 1)) uNum
+    ]
 
 hypCaseDeduction :: Line -> [Line]
-hypCaseDeduction line = 
-    [Line (lineNumber line) (OpNode impl [lineContent line, lineContent line]) "Axiom1" Nothing]
+hypCaseDeduction (Line lNum c justification rfs uNum) = 
+    [Line lNum (OpNode impl [c, c]) "Axiom1" Nothing uNum]
 
 axiomCaseWithOffset :: Sentence -> Int -> Line -> [Line]
 axiomCaseWithOffset hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
@@ -121,13 +122,21 @@ axiomCaseWithOffset hyp offset line = applyOffsetToLines offset (axiomCaseDeduct
 hypCaseWithOffset :: Int -> Line -> [Line]
 hypCaseWithOffset offset line = applyOffsetToLines offset (hypCaseDeduction line)
 
+findLineWithUserNum :: [Line] -> Int -> Maybe Line
+findLineWithUserNum lines uNum =
+    case lines of
+        [] -> Nothing
+        x : xs -> case userNumber x of
+                    Just uNum -> Just x
+                    _ -> findLineWithUserNum xs uNum
+
 modusPonensCaseWithOffset :: Sentence -> Line -> Line -> Int -> Line -> [Line]
 modusPonensCaseWithOffset hyp pLine pqLine offset currLine = -- pLine and pq Line will come already transformed! (need to make sure of that)
     let n = lineNumber currLine + offset in 
         [
-            Line n (makeSC hyp (lineContent pLine) (lineContent currLine)) "Axiom3" Nothing,
-            Line (n + 1) (OpNode impl [OpNode impl [hyp, lineContent pqLine], OpNode impl [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)),
-            Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1))
+            Line n (makeSC hyp (lineContent pLine) (lineContent currLine)) "Axiom3" Nothing Nothing,
+            Line (n + 1) (OpNode impl [OpNode impl [hyp, lineContent pqLine], OpNode impl [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
+            Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
         ]
 
 useDeductionPrime :: Sentence -> Transformandum -> Transformandum
@@ -137,8 +146,8 @@ useDeductionPrime hyp state =
         Just line -> case justification line of
                         "Modus Ponens" -> useDeductionPrime hyp (applyTransform (modusPonensCaseWithOffset hyp pLine pqLine) state)
                                             where 
-                                                pLine = undefined -- getLineWithContent (seen state) -- problem . keepking track of original line numbers (having none when there is none) will solve it
-                                                pqLine = undefined
+                                                pLine = fromJust (findLineWithUserNum (seen state) (fst (fromJust (refLines line))))
+                                                pqLine = fromJust (findLineWithUserNum (seen state) (snd (fromJust (refLines line))))
                         "Assumption" -> useDeductionPrime hyp (applyTransform hypCaseWithOffset state)
                         _ -> useDeductionPrime hyp (applyTransform (axiomCaseWithOffset hyp) state)
 
