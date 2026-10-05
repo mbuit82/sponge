@@ -68,7 +68,7 @@ makeDatalogLine sentence name n i j =
 
 axiomToDatalog :: Axiom -> String
 axiomToDatalog axiom = 
-    "Justified(n, goal) :- " ++ 
+    "Justified(n) :- " ++ 
     makeDatalogLine (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
     ".\n"
 
@@ -77,7 +77,7 @@ axiomsToDatalog logic = concatMap axiomToDatalog (axioms logic)
 
 conclusionToDatalog :: InferenceRule -> String 
 conclusionToDatalog rule = 
-    "Justified(n, goal) :- " ++ 
+    "Justified(n) :- " ++ 
     makeDatalogLine (conclusion rule) (ruleName rule) "n" "i" jv
     where jv = case snd (premises rule) of 
             Nothing -> "_"
@@ -86,7 +86,7 @@ conclusionToDatalog rule =
 premisesToDatalog :: InferenceRule -> [String] 
 premisesToDatalog rule =
     concat [ [  v ++ " < n", 
-                "Justified(" ++ v ++ ", goal)", 
+                "Justified(" ++ v ++ ")", 
                 makeDatalogLine prem "_" v "_" "_"] 
             | (v, prem) <- zip ["i", "j"] premList]
     where premList = case snd (premises rule) of

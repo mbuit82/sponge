@@ -30,17 +30,16 @@ getLogic spec =
 
 sharedDatalog :: String
 sharedDatalog = unlines [
-    "",
-    ".type Goal = ToProve {s: Sentence}\n",
-    ".decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned, goal: Goal)",
-    ".decl Justified(n: unsigned, goal: Goal)",
-    ".decl Unjustified(n: unsigned, goal: Goal)",
-    ".decl UnjustifiedCount(c: number, goal: Goal)",
-    ".decl Claim(goal: Goal)",
+    "\n",
+    ".decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)",
+    ".decl Justified(n: unsigned)",
+    ".decl Unjustified(n: unsigned)",
+    ".decl UnjustifiedCount(c: number)",
+    ".decl Goal(goal: Sentence)",
     ".decl Proven(f: Sentence)\n",
-    "Unjustified(n, goal) :- Line(n, _, _, _, _, goal), !Justified(n, goal).",
-    "UnjustifiedCount(c, goal) :- Claim(goal), c = count : { Unjustified(_, goal) }.",
-    "Proven(f) :- Claim($ToProve(f)),\n\tLine(n, f, _, _, _, $ToProve(f)),\n\tJustified(n, $ToProve(f)),\n\tUnjustifiedCount(0, $ToProve(f)).\n",
+    "Unjustified(n) :- Line(n, _, _, _, _), !Justified(n).",
+    "UnjustifiedCount(c) :- c = count : { Unjustified(_) }.",
+    "Proven(f) :- Goal(f),\n\tLine(n, f, _, _, _),\n\tJustified(n),\n\tUnjustifiedCount(0).\n",
     ".output Unjustified\n.output Justified\n.output Proven\n"
     ]
 
