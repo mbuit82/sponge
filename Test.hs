@@ -18,4 +18,4 @@ testPureProof :: IO ()
 testPureProof = compileDatalogProof "axiom1" (OpNode impl [Atom "A", Atom "A"]) (getLogic specIntuitionistic) [l1, l2, l3, l4, l5]
 
 testOffset :: IO ()
-testOffset = compileDatalogProof "axiom1offset" (OpNode impl [Atom "A", Atom "A"]) (getLogic specIntuitionistic) (applyOffsetToProof 10 [l1, l2, l3, l4, l5])
+testOffset = compileDatalogProof "axiom1offset" (OpNode impl [Atom "A", Atom "A"]) (getLogic specIntuitionistic) (applyOffsetToLines 10 [l1, l2, l3, l4, l5])

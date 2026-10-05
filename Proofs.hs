@@ -80,10 +80,10 @@ applyTransform transform oldState =
         Just currLine -> 
             case toSee oldState of
                 [] -> 
-                    let applied = transform (offset oldState) currLine in 
+                    let applied = reverse (transform (offset oldState) currLine) in 
                         Transformandum (applied ++ seen oldState) Nothing [] ((length applied) - 1 + offset oldState)
                 nxt : tail -> 
-                    let applied = transform (offset oldState) currLine in
+                    let applied = reverse (transform (offset oldState) currLine) in
                         Transformandum (applied ++ seen oldState) (Just nxt) tail ((length applied) - 1 + offset oldState)
 
 intoTransformandum :: [Line] -> Transformandum
@@ -92,62 +92,55 @@ intoTransformandum proofContent =
         [] -> error "can't transform a proof with no steps!"
         fstLine : tail -> Transformandum [] (Just fstLine) tail 0
 
-noChangeTransform :: Transform
-noChangeTransform offset (Line n c justification rfs) = 
+applyOffset :: Int -> Line -> Line
+applyOffset offset (Line n c justification rfs) = 
     case rfs of
-        Nothing -> [Line (n + offset) c justification rfs]
-        Just (i, j) -> [Line (n + offset) c justification (Just (i + offset, j + offset))]
+        Nothing -> Line (n + offset) c justification rfs
+        Just (i, j) -> Line (n + offset) c justification (Just (i + offset, j + offset))
 
-applyOffsetToProof :: Int -> [Line] -> [Line]
-applyOffsetToProof offset proofLines = concatMap (noChangeTransform offset) proofLines
+applyOffsetToLines :: Int -> [Line] -> [Line]
+applyOffsetToLines offset lines = map (applyOffset offset) lines
 
--- transformKC :: Sentence -> Transform
--- transformKC hyp offset line = 
---     [
---         Line (lineNumber line + 2 + offset) (OpNode impl [hyp, lineContent line]) "Modus Ponens" Just ((lineNumber line + offset), (lineNumber line + offset)),
---         Line (lineNumber line + 1 + offset) (makeKC (lineContent line) hyp) "Axiom2" Nothing,
---         line
---     ]
+-- I want this to be the definition of a transform. 
+axiomCaseDeduction :: Sentence -> Line -> [Line]
+axiomCaseDeduction hyp line = 
+    let n = lineNumber line in
+        [   
+            line,
+            Line (n + 1) (makeKC (lineContent line) hyp) "Axiom2" Nothing,
+            Line (n + 2) (OpNode impl [hyp, lineContent line]) "Modus Ponens" (Just (n + 1, n + 2))
+        ]
 
--- citedProofTransform :: Transform
--- citedProofTransform line = 
+hypCaseDeduction :: Line -> [Line]
+hypCaseDeduction line = 
+    [Line (lineNumber line) (OpNode impl [lineContent line, lineContent line]) "Axiom1" Nothing]
 
+axiomCaseWithOffset :: Sentence -> Int -> Line -> [Line]
+axiomCaseWithOffset hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
 
+hypCaseWithOffset :: Int -> Line -> [Line]
+hypCaseWithOffset offset line = applyOffsetToLines offset (hypCaseDeduction line)
 
+modusPonensCaseWithOffset :: Sentence -> Line -> Line -> Int -> Line -> [Line]
+modusPonensCaseWithOffset hyp pLine pqLine offset currLine = -- pLine and pq Line will come already transformed! (need to make sure of that)
+    let n = lineNumber currLine + offset in 
+        [
+            Line n (makeSC hyp (lineContent pLine) (lineContent currLine)) "Axiom3" Nothing,
+            Line (n + 1) (OpNode impl [OpNode impl [hyp, lineContent pqLine], OpNode impl [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)),
+            Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1))
+        ]
 
+useDeductionPrime :: Sentence -> Transformandum -> Transformandum
+useDeductionPrime hyp state =
+    case (curr state) of
+        Nothing -> state -- we've reached the end! 
+        Just line -> case justification line of
+                        "Modus Ponens" -> useDeductionPrime hyp (applyTransform (modusPonensCaseWithOffset hyp pLine pqLine) state)
+                                            where 
+                                                pLine = undefined -- getLineWithContent (seen state) -- problem . keepking track of original line numbers (having none when there is none) will solve it
+                                                pqLine = undefined
+                        "Assumption" -> useDeductionPrime hyp (applyTransform hypCaseWithOffset state)
+                        _ -> useDeductionPrime hyp (applyTransform (axiomCaseWithOffset hyp) state)
 
-    
-
-
--- axiomTransform :: Sentence -> Line -> Offset Line
--- axiomTransform hyp line = 
---     Offset 
---     [
---         line,
---         Line (lineNumber line + 1) (makeKC (lineContent line) hyp) ("Axiom2", 0, 0),
---         Line (lineNumber line + 2) (OpNode impl [hyp, lineContent line]) ("Modus Ponens", (lineNumber line), (lineNumber line))
---     ]
---     2
-
--- modusPonensTransform :: ??? -- I think this requires access to a full proof since I cite earlier lines
-
--- runWithOffset :: Offset a -> (a -> Offset a) -> Offset a
--- runWithOffset input transform =
---     let res = transform input in 
---         Offset (rawLine res) (offset input + offset res) -- do I want to concat here? 
-
--- deductionTransformation :: Logic -> Sentence -> Line -> [Line]
--- -- the int is the offset
--- -- I think I coudl use a monad
--- deductionTransformation logic hyp line =
---     case justification line of
---         ("Modus Ponens", ixp, ixpq) -> undefined
---         ("Hypothesis", _, _) -> [Line (lineNumber line) (OpNode impl [lineContent line, lineContent line]) ("Axiom1", 0, 0)]
---         (citedAxiomName, _, _) -> 
---             [line, 
---             Line (lineNumber line + 1) (makeKC (lineContent line) hyp) ("Axiom2", 0, 0),
---             Line (lineNumber line + 2) (OpNode impl [hyp, lineContent line]) ("Modus Ponens", (lineNumber line), (lineNumber line))]
-            
---             -- I think I do want to do it by what the thing says. or just assume it's an axiom
-            
---             undefined -- has to be an axiom. Ah, so I'm assuming that I'll do this transformation last, in case I want to add support for proofs. 
+useDeduction :: Sentence -> [Line] -> [Line]
+useDeduction hyp oldProof = reverse (seen (useDeductionPrime hyp (intoTransformandum oldProof)))

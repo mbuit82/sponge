@@ -59,8 +59,8 @@ inferenceRuleToDatalog rule =
         concLine = conclusionToDatalog rule
         premLines = premisesToDatalog rule
 
-inferenceRulesToDataog :: Logic -> String
-inferenceRulesToDataog logic = concatMap inferenceRuleToDatalog (inferenceRules logic)
+inferenceRulesToDatalog :: Logic -> String
+inferenceRulesToDatalog logic = concatMap inferenceRuleToDatalog (inferenceRules logic)
 
 data Spec = Spec
   { specName :: String,
@@ -114,7 +114,7 @@ compileDatalogEngine spec =
         hPutStr h (syntaxToDatalog logic)
         hPutStr h sharedDatalog
         hPutStr h (axiomsToDatalog logic)
-        hPutStr h (inferenceRulesToDataog logic)
+        hPutStr h (inferenceRulesToDatalog logic)
     where 
         logic = getLogic spec
 
