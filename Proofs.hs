@@ -11,7 +11,7 @@ data Line = Line {
     justification :: String,
     refLines :: Maybe (Int, Int),
     userNumber :: Maybe Int -- the original line number the user used
-}
+} deriving Show
 -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. 
 
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
@@ -66,33 +66,33 @@ makeSC p q r = (OpNode impl [OpNode impl [p, q], OpNode impl [OpNode impl [p, Op
 
 
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
-data Transformandum = Transformandum { seen :: [Line], curr :: Maybe Line, toSee :: [Line], offset :: Int}
+data Transformant = Transformant { transformata :: [Line], curr :: Maybe Line, transformanda :: [Line], offset :: Int}
 
--- transforms take a sentence and map them to the new sentences to be added, in reverse order.
--- I think I want to modify the current line too to add the offset? Transform should take an offset I think
--- Yes, transforms will have to handle the actual line number/line reference modification
+-- transformations take a sentence and map them to the new sentences to be added, in reverse order.
+-- I think I want to modify the current line too to add the offset? Transformation should take an offset I think
+-- Yes, transformations will have to handle the actual line number/line reference modification
 -- though am wondering if I can use noChangeTransform? would have to generalize it
-type Transform = Int -> Line -> [Line]
+type Transformation = Int -> Line -> [Line]
 
--- when we run a transform on a _proof state_, we want to return the transformation ++ seen, and then take the next element and make that the next current. 
-applyTransform :: Transform -> Transformandum -> Transformandum
-applyTransform transform oldState =
+-- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
+applyTransformation :: Transformation -> Transformant -> Transformant
+applyTransformation transformation oldState =
     case curr oldState of
-        Nothing -> error "can't apply transform to when we have no current step!"
+        Nothing -> error "can't apply transformation to when we have no current step!" -- we could just return oldState but that would be defective behavior so I'll leave it like this
         Just currLine -> 
-            case toSee oldState of
+            case transformanda oldState of
                 [] -> 
-                    let applied = reverse (transform (offset oldState) currLine) in 
-                        Transformandum (applied ++ seen oldState) Nothing [] ((length applied) - 1 + offset oldState)
+                    let applied = reverse (transformation (offset oldState) currLine) in 
+                        Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState)
                 nxt : tail -> 
-                    let applied = reverse (transform (offset oldState) currLine) in
-                        Transformandum (applied ++ seen oldState) (Just nxt) tail ((length applied) - 1 + offset oldState)
+                    let applied = reverse (transformation (offset oldState) currLine) in
+                        Transformant (applied ++ transformata oldState) (Just nxt) tail ((length applied) - 1 + offset oldState)
 
-intoTransformandum :: [Line] -> Transformandum
-intoTransformandum proofContent = 
+intoTransformant :: [Line] -> Transformant
+intoTransformant proofContent = 
     case proofContent of
-        [] -> error "can't transform a proof with no steps!"
-        fstLine : tail -> Transformandum [] (Just fstLine) tail 0
+        [] -> error "can't transformation a proof with no steps!"
+        fstLine : tail -> Transformant [] (Just fstLine) tail 0
 
 applyOffset :: Int -> Line -> Line
 applyOffset offset (Line n c justification rfs uNum) = 
@@ -103,7 +103,7 @@ applyOffset offset (Line n c justification rfs uNum) =
 applyOffsetToLines :: Int -> [Line] -> [Line]
 applyOffsetToLines offset lines = map (applyOffset offset) lines
 
--- I want this to be what a transform looks like. 
+-- I want this to be what a transformation looks like. 
 axiomCaseDeduction :: Sentence -> Line -> [Line]
 axiomCaseDeduction hyp (Line lNum c justification rfs uNum) = 
     [   
@@ -116,22 +116,22 @@ hypCaseDeduction :: Line -> [Line]
 hypCaseDeduction (Line lNum c justification rfs uNum) = 
     [Line lNum (OpNode impl [c, c]) "Axiom1" Nothing uNum]
 
-axiomCaseWithOffset :: Sentence -> Int -> Line -> [Line]
-axiomCaseWithOffset hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
-
-hypCaseWithOffset :: Int -> Line -> [Line]
-hypCaseWithOffset offset line = applyOffsetToLines offset (hypCaseDeduction line)
-
 findLineWithUserNum :: [Line] -> Int -> Maybe Line
 findLineWithUserNum lines uNum =
     case lines of
         [] -> Nothing
-        x : xs -> case userNumber x of
-                    Just uNum -> Just x
-                    _ -> findLineWithUserNum xs uNum
+        l : tail -> case userNumber l of
+                    Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum tail uNum
+                    _ -> findLineWithUserNum tail uNum
 
-modusPonensCaseWithOffset :: Sentence -> Line -> Line -> Int -> Line -> [Line]
-modusPonensCaseWithOffset hyp pLine pqLine offset currLine = -- pLine and pq Line will come already transformed! (need to make sure of that)
+axiomCaseTransformation :: Sentence -> Transformation
+axiomCaseTransformation hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
+
+hypCaseTransformation :: Transformation
+hypCaseTransformation offset line = applyOffsetToLines offset (hypCaseDeduction line)
+
+modusPonensCaseTransformation :: Sentence -> Line -> Line -> Transformation
+modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pq Line will come already transformed! (need to make sure of that)
     let n = lineNumber currLine + offset in 
         [
             Line n (OpNode impl [lineContent pLine, OpNode impl [lineContent pqLine, OpNode impl [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
@@ -139,17 +139,17 @@ modusPonensCaseWithOffset hyp pLine pqLine offset currLine = -- pLine and pq Lin
             Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
         ]
 
-useDeductionPrime :: Sentence -> Transformandum -> Transformandum
+useDeductionPrime :: Sentence -> Transformant -> Transformant
 useDeductionPrime hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-                        "Modus Ponens" -> useDeductionPrime hyp (applyTransform (modusPonensCaseWithOffset hyp pLine pqLine) state)
+                        "Modus Ponens" -> useDeductionPrime hyp (applyTransformation (modusPonensCaseTransformation hyp pLine pqLine) state)
                                             where 
-                                                pLine = fromJust (findLineWithUserNum (seen state) (fst (fromJust (refLines line))))
-                                                pqLine = fromJust (findLineWithUserNum (seen state) (snd (fromJust (refLines line))))
-                        "Assumption" -> useDeductionPrime hyp (applyTransform hypCaseWithOffset state)
-                        _ -> useDeductionPrime hyp (applyTransform (axiomCaseWithOffset hyp) state)
+                                                pLine = fromJust (findLineWithUserNum (transformata state) (fst (fromJust (refLines line))))
+                                                pqLine = fromJust (findLineWithUserNum (transformata state) (snd (fromJust (refLines line))))
+                        "Assumption" -> useDeductionPrime hyp (applyTransformation hypCaseTransformation state)
+                        _ -> useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
 
 useDeduction :: Sentence -> [Line] -> [Line]
-useDeduction hyp oldProof = reverse (seen (useDeductionPrime hyp (intoTransformandum oldProof)))
+useDeduction hyp oldProof = reverse (transformata (useDeductionPrime hyp (intoTransformant oldProof)))

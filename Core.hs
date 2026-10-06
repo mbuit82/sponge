@@ -5,13 +5,13 @@ import Data.List
 data Operator = Operator {
     operatorName :: String, 
     arity :: Int
-} deriving Eq
+} deriving (Eq, Show)
 
 impl :: Operator
 impl = Operator "Implication" 2
 
 data Sentence = Atom {atomName :: String}
-              | OpNode {topOp :: Operator, args :: [Sentence]}
+              | OpNode {topOp :: Operator, args :: [Sentence]} deriving (Eq, Show)
 
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence}
 
