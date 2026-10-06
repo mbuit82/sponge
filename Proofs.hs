@@ -12,7 +12,7 @@ data Line = Line {
     refLines :: Maybe (Int, Int),
     userNumber :: Maybe Int -- the original line number the user used
 } deriving Show
--- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. 
+-- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
 
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
 getRefLines rfLines = 
@@ -67,7 +67,7 @@ applyTransformation transformation oldState =
 intoTransformant :: [Line] -> Transformant
 intoTransformant proofContent = 
     case proofContent of
-        [] -> error "can't transformation a proof with no steps!"
+        [] -> error "can't transformation a proof with no steps!" -- not really sure what should happen here either
         fstLine : tail -> Transformant [] (Just fstLine) tail 0
 
 applyOffset :: Int -> Line -> Line
