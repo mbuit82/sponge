@@ -21,7 +21,11 @@ data Sentence = Atom {atomName :: String}
               | OpNode {topOp :: Operator, args :: [Sentence]} deriving Eq
 instance Show Sentence where 
     show (Atom str) = str
-    show (OpNode op args) = (show op) ++ "(" ++ intercalate ", " (map show args) ++ ")"
+    show (OpNode (Operator opN opS 0) []) = opS
+    show (OpNode (Operator opN opS 1) [arg]) = opS ++ "(" ++ show arg ++ ")"
+    show (OpNode (Operator opN opS 2) [arg1, arg2]) = "(" ++ show arg1 ++ " " ++ opS ++ " " ++ show arg2 ++ ")"
+    show (OpNode (Operator opN opS _) args) = error "either ternary or something's gone wrong with an operator definition"
+        -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- ternary+, but for would be indicative that something's gone wrong
 
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} -- low key not necessary
 
@@ -105,30 +109,40 @@ haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
 
 -- user input to Haskell
-exportCurrToken :: Maybe String -> [String]
-exportCurrToken Nothing = [] -- :: [[Char]]
-exportCurrToken (Just a) = [a] -- :: [[Char]]
 
-tokenize' :: [Operator] -> String -> Maybe String -> [String]
-tokenize' ops [] beingBuilt = exportCurrToken beingBuilt
+data Token = LPToken | RPToken | OpToken Operator | AtomToken String
+instance Show Token where
+    show LPToken = "("
+    show RPToken = ")"
+    show (OpToken operator) = operatorSymbol operator
+    show (AtomToken str) = str
+
+exportCurrToken :: Maybe String -> [Token]
+exportCurrToken Nothing = [] -- :: [[Char]]
+exportCurrToken (Just a) = [AtomToken a] -- :: [[Char]]
+
+getOpWithSymbol :: [Operator] -> String -> Maybe Operator
+getOpWithSymbol [] name = Nothing
+getOpWithSymbol (op : rem) name =
+    if operatorSymbol op == name then (Just op) else getOpWithSymbol rem name
+
+tokenize' :: [Operator] -> String -> Maybe String -> [Token]
+tokenize' ops [] beingBuilt = exportCurrToken beingBuilt -- we're never going to have an operator at the end is what this is saying... 
 tokenize' ops (char : remChars) beingBuilt =
-    if fromMaybe [] beingBuilt `elem` (map operatorName ops) -- "(" is dummy since it's never going to be an operator
-        then exportCurrToken beingBuilt ++ tokenize' ops (char : remChars) Nothing -- now we can do no spaces after operators!
-        else case char of 
-            '(' -> exportCurrToken beingBuilt ++ ["("] ++ tokenize' ops remChars Nothing
-            ')' -> exportCurrToken beingBuilt ++ [")"] ++ tokenize' ops remChars Nothing
-            ' ' -> exportCurrToken beingBuilt          ++ tokenize' ops remChars Nothing
-            ',' -> exportCurrToken beingBuilt          ++ tokenize' ops remChars Nothing -- for stuff after "by" and in general why not
+    if fromMaybe [] beingBuilt `elem` (map operatorSymbol ops)
+        then  [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))] ++ tokenize' ops (char : remChars) Nothing -- now we can do no spaces after operators!
+        else case char of -- we know that the currently being built is _not_ an operator, so we can treat it as not one (or something that's not one yet)
+            '(' -> exportCurrToken beingBuilt ++ [LPToken] ++ tokenize' ops remChars Nothing
+            ')' -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops remChars Nothing
+            ' ' -> exportCurrToken beingBuilt              ++ tokenize' ops remChars Nothing
+            ',' -> exportCurrToken beingBuilt              ++ tokenize' ops remChars Nothing -- for stuff after "by" and in general why not
             char -> tokenize' ops remChars (Just (fromMaybe [] beingBuilt ++ [char]))
 
-dummyOpSymbols = ["->", "~", "Box"]
-
-tokenize :: [Operator] -> String -> [String]
+tokenize :: [Operator] -> String -> [Token]
 tokenize ops str = tokenize' ops str Nothing
 
 parse' :: [String] -> Maybe [String] -> Tree String
 parse' tokens currArg = undefined
 
-
-parse :: [String] -> Tree String
+parse :: [Token] -> Sentence
 parse = undefined
