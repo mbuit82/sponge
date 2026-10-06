@@ -108,8 +108,8 @@ haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
 
--- user input to Haskell
 
+-- user input to Haskell
 data Token = LPToken | RPToken | OpToken Operator | AtomToken String
 instance Show Token where
     show LPToken = "("
