@@ -134,8 +134,8 @@ modusPonensCaseWithOffset :: Sentence -> Line -> Line -> Int -> Line -> [Line]
 modusPonensCaseWithOffset hyp pLine pqLine offset currLine = -- pLine and pq Line will come already transformed! (need to make sure of that)
     let n = lineNumber currLine + offset in 
         [
-            Line n (makeSC hyp (lineContent pLine) (lineContent currLine)) "Axiom3" Nothing Nothing,
-            Line (n + 1) (OpNode impl [OpNode impl [hyp, lineContent pqLine], OpNode impl [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
+            Line n (OpNode impl [lineContent pLine, OpNode impl [lineContent pqLine, OpNode impl [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
+            Line (n + 1) (OpNode impl [lineContent pqLine, OpNode impl [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
             Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
         ]
 

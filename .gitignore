@@ -56,3 +56,6 @@ pycache/
 
 boneyard/
 sponge_nb.txt
+*Justified.csv
+*Proven.csv
+*Unjustified.csv
