@@ -1,0 +1,13 @@
+Base
+classical
+
+Syntax
+Box P
+
+Axioms
+(Box (P -> Q) -> (Box P -> Box Q))
+
+Inference Rules
+N: |- P, |- Box P
+
+NOTE: think will ultimatley scrap these. see 10/6 in sponge_nb.txt

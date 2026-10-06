@@ -1,19 +1,29 @@
 module Core where
 
 import Data.List
+import Data.Maybe
+import Data.Tree
 
 data Operator = Operator {
-    operatorName :: String, 
+    operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
+    operatorSymbol :: String, -- what the user will write. relevant at tokenizer level. 
     arity :: Int
-} deriving (Eq, Show)
+}
+instance Show Operator where
+    show op = operatorName op
+instance Eq Operator where -- TODO: think about. I think it ultimately doesn't matter lol but still, think about. 
+    op1 == op2 = operatorName op1 == operatorName op2 -- datalog will throw an error if there is more than one constructor with the same name for the Sentence predicate so all good there
 
 impl :: Operator
-impl = Operator "Implication" 2
+impl = Operator "Implication" "->" 2
 
 data Sentence = Atom {atomName :: String}
-              | OpNode {topOp :: Operator, args :: [Sentence]} deriving (Eq, Show)
+              | OpNode {topOp :: Operator, args :: [Sentence]} deriving Eq
+instance Show Sentence where 
+    show (Atom str) = str
+    show (OpNode op args) = (show op) ++ "(" ++ intercalate ", " (map show args) ++ ")"
 
-data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence}
+data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} -- low key not necessary
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
@@ -92,3 +102,33 @@ isInstance sentence schema =
 
 haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
+
+
+-- user input to Haskell
+exportCurrToken :: Maybe String -> [String]
+exportCurrToken Nothing = [] -- :: [[Char]]
+exportCurrToken (Just a) = [a] -- :: [[Char]]
+
+tokenize' :: [Operator] -> String -> Maybe String -> [String]
+tokenize' ops [] beingBuilt = exportCurrToken beingBuilt
+tokenize' ops (char : remChars) beingBuilt =
+    if fromMaybe [] beingBuilt `elem` (map operatorName ops) -- "(" is dummy since it's never going to be an operator
+        then exportCurrToken beingBuilt ++ tokenize' ops (char : remChars) Nothing -- now we can do no spaces after operators!
+        else case char of 
+            '(' -> exportCurrToken beingBuilt ++ ["("] ++ tokenize' ops remChars Nothing
+            ')' -> exportCurrToken beingBuilt ++ [")"] ++ tokenize' ops remChars Nothing
+            ' ' -> exportCurrToken beingBuilt          ++ tokenize' ops remChars Nothing
+            ',' -> exportCurrToken beingBuilt          ++ tokenize' ops remChars Nothing -- for stuff after "by" and in general why not
+            char -> tokenize' ops remChars (Just (fromMaybe [] beingBuilt ++ [char]))
+
+dummyOpSymbols = ["->", "~", "Box"]
+
+tokenize :: [Operator] -> String -> [String]
+tokenize ops str = tokenize' ops str Nothing
+
+parse' :: [String] -> Maybe [String] -> Tree String
+parse' tokens currArg = undefined
+
+
+parse :: [String] -> Tree String
+parse = undefined

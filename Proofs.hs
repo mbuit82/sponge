@@ -11,8 +11,20 @@ data Line = Line {
     justification :: String,
     refLines :: Maybe (Int, Int),
     userNumber :: Maybe Int -- the original line number the user used
-} deriving Show
--- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
+} -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
+instance Show Line where
+    show line = show (lineNumber line) ++ " " ++
+                userNumberHuh (userNumber line) ++ ". " ++ 
+                show (lineContent line) ++ "\t" ++ 
+                "by " ++ justification line ++ refLinesHuh (refLines line)
+
+refLinesHuh :: Maybe (Int, Int) -> String
+refLinesHuh Nothing = []
+refLinesHuh (Just (a, b)) = "(" ++ show a ++ ", " ++ show b ++ ")"
+
+userNumberHuh :: Maybe Int -> String
+userNumberHuh Nothing = "-"
+userNumberHuh (Just n) = "(" ++ show n ++ ")"
 
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
 getRefLines rfLines = 
@@ -127,23 +139,23 @@ modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pq
             Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
         ]
 
-useDeductionPrime :: Sentence -> Transformant -> Transformant
-useDeductionPrime hyp state =
+useDeduction' :: Sentence -> Transformant -> Transformant
+useDeduction' hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-                        "Modus Ponens" -> useDeductionPrime hyp (applyTransformation (modusPonensCaseTransformation hyp pLine pqLine) state)
+                        "Modus Ponens" -> useDeduction' hyp (applyTransformation (modusPonensCaseTransformation hyp pLine pqLine) state)
                                             where 
                                                 pLine = fromJust (findLineWithUserNum (transformata state) (fst (fromJust (refLines line))))
                                                 pqLine = fromJust (findLineWithUserNum (transformata state) (snd (fromJust (refLines line))))
                         "Assumption" -> if lineContent line == hyp 
-                                            then useDeductionPrime hyp (applyTransformation hypCaseTransformation state) 
-                                            else useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
-                        _ -> useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                                            then useDeduction' hyp (applyTransformation hypCaseTransformation state) 
+                                            else useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                        _ -> useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
 
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lines = map (\(Line n c j r _) -> Line n c j r (Just n)) lines
 
 useDeduction :: Sentence -> [Line] -> [Line]
 useDeduction hyp oldProof = 
-    resetUserNumbers (reverse (transformata (useDeductionPrime hyp (intoTransformant oldProof))))
+    resetUserNumbers (reverse (transformata (useDeduction' hyp (intoTransformant oldProof))))

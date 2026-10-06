@@ -1,11 +1,13 @@
 Syntax
-Bot | (P -> P)
+P | Bot | (P -> P)
+~P := (P -> Bot)
 
 Axioms
-Axiom1: |- (P -> P)
 Axiom2: |- (P -> (Q -> P))
 Axiom3: |- ((P -> Q) -> ((P -> (Q -> R)) -> (P -> R)))
-Axiom4: |- ((P -> Bot) -> (P -> R))
+Axiom4: |- ((P -> Bot) -> (P -> Q))
 
 Inference Rules
-Modus Ponens: |- p, |- (p -> q), |- q
+Modus Ponens: |- P, |- (P -> Q), |- Q
+
+NOTE: think will ultimatley scrap these. see 10/6 in sponge_nb.txt. But this is good for just what info I want in there, however it is ultimately encoded

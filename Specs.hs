@@ -119,7 +119,7 @@ compileDatalogEngine spec =
         logic = getLogic spec
 
 bot :: Operator
-bot = Operator "Bot" 0
+bot = Operator "Bot" "Bot" 0
 
 specIntuitionistic :: Spec
 specIntuitionistic = Spec {
@@ -143,7 +143,7 @@ specClassical = Spec {
 }
 
 box :: Operator
-box = Operator "Box" 1
+box = Operator "Box" "Box" 1
 
 specK :: Spec
 specK = Spec {

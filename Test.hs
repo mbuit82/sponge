@@ -1,6 +1,7 @@
 import Core
 import Specs
 import Proofs
+import Data.List
 
 testEngines :: IO ()
 testEngines = do
@@ -34,9 +35,9 @@ testDeduction = compileDatalogProof "exfalso_deduction" (OpNode impl [OpNode bot
 
 
 -- TEST: deduction twice
-ddll1 = Line 1 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 1)
-ddll2 = Line 2 (Atom "A") "Assumption" Nothing (Just 2)
-ddll3 = Line 3 (OpNode bot []) "Modus Ponens" (Just (2, 1)) (Just 3)
+ddll1 = Line 1 (Atom "A") "Assumption" Nothing (Just 1)
+ddll2 = Line 2 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 2)
+ddll3 = Line 3 (OpNode bot []) "Modus Ponens" (Just (1, 2)) (Just 3)
 ddll4 = Line 4 (OpNode impl [OpNode bot [], (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []])]) "Axiom2" Nothing (Just 4)
 ddll5 = Line 5 (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []]) "Modus Ponens" (Just (3, 4)) (Just 5)
 ddll6 = Line 6 (OpNode impl [(OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []]), Atom "B"]) "Axiom5" Nothing (Just 6)
