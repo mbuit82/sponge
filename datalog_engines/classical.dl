@@ -18,7 +18,6 @@ Proven(f) :- Goal(f),
 .output Justified
 .output Proven
 
-Justified(n) :- Line(n, $Implication(P, P), "Axiom1", _, _).
 Justified(n) :- Line(n, $Implication(P, $Implication(Q, P)), "Axiom2", _, _).
 Justified(n) :- Line(n, $Implication($Implication(P, Q), $Implication($Implication(P, $Implication(Q, R)), $Implication(P, R))), "Axiom3", _, _).
 Justified(n) :- Line(n, $Implication($Implication(P, $Bot()), $Implication(P, Q)), "Axiom4", _, _).

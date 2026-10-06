@@ -43,28 +43,18 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
         hPutStr h ("#include \"../../../datalog_engines/" ++ (logicName proofLogic) ++ ".dl\"\n\n")
         hPutStr h (proofToDatalog proofGoal proofLines)
 
--- right now, I will assume my current axiomatization (i.e. we have Axiom1) and we can only do one deduction lemma at a time. 
--- I think we could do more than one at a time if we just start the transformation with the farthest deduction lemma occurrence? 
--- I think we'd need to move them all to the beginning, and then do that. Which is def feasible. Also sound bc of weakening. 
--- So would it work for an axiomatization of linear logic? relevant reference: https://link.springer.com/article/10.1007/BF01888221
--- Just realized I do need to change the lineNumber. Fuck. (Because inference rules depend on the line number being smaller than current)
-
 
 
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
 data Transformant = Transformant { transformata :: [Line], curr :: Maybe Line, transformanda :: [Line], offset :: Int}
 
--- transformations take a sentence and map them to the new sentences to be added, in reverse order.
--- I think I want to modify the current line too to add the offset? Transformation should take an offset I think
--- Yes, transformations will have to handle the actual line number/line reference modification
--- though am wondering if I can use noChangeTransform? would have to generalize it
 type Transformation = Int -> Line -> [Line]
 
 -- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
 applyTransformation :: Transformation -> Transformant -> Transformant
 applyTransformation transformation oldState =
     case curr oldState of
-        Nothing -> error "can't apply transformation to when we have no current step!" -- we could just return oldState but that would be defective behavior so I'll leave it like this
+        Nothing -> error "can't apply transformation to when we have no current step!" -- we could just return oldState but that would be defective behavior so I'll leave it like this. not really sure what should happpen in this case
         Just currLine -> 
             case transformanda oldState of
                 [] -> 
@@ -104,8 +94,15 @@ axiomCaseDeduction hyp (Line lNum c justification rfs uNum) =
     ]
 
 hypCaseDeduction :: Line -> [Line]
-hypCaseDeduction (Line lNum c justification rfs uNum) = 
-    [Line lNum (OpNode impl [c, c]) "Axiom1" Nothing uNum]
+hypCaseDeduction (Line n c justification rfs uNum) = 
+    [
+        Line n (OpNode impl [OpNode impl [c, OpNode impl [c, c]], OpNode impl [OpNode impl [c, OpNode impl [OpNode impl [c, c], c]], OpNode impl [c, c]]]) "Axiom3" Nothing Nothing,
+        Line (n + 1) (OpNode impl [c, OpNode impl [c, c]]) "Axiom2" Nothing Nothing,
+        Line (n + 2) (OpNode impl [OpNode impl [c, OpNode impl [OpNode impl [c, c], c]], OpNode impl [c, c]]) "Modus Ponens" (Just (n + 1, n)) Nothing,
+        Line (n + 3) (OpNode impl [c, OpNode impl [OpNode impl [c, c], c]]) "Axiom2" Nothing Nothing,
+        Line (n + 4) (OpNode impl [c, c]) "Modus Ponens" (Just (n + 3, n + 2)) uNum
+    ]
+    -- [Line lNum (OpNode impl [c, c]) "Axiom1" Nothing uNum]
 
 findLineWithUserNum :: [Line] -> Int -> Maybe Line
 findLineWithUserNum lines uNum =
@@ -144,11 +141,9 @@ useDeductionPrime hyp state =
                                             else useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
                         _ -> useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
 
-resetUserNumber :: Line -> Line
-resetUserNumber (Line lNum c j rfs _) = Line lNum c j rfs (Just lNum)
-
 resetUserNumbers :: [Line] -> [Line]
-resetUserNumbers lines = map resetUserNumber lines
+resetUserNumbers lines = map (\(Line n c j r _) -> Line n c j r (Just n)) lines
 
 useDeduction :: Sentence -> [Line] -> [Line]
-useDeduction hyp oldProof = resetUserNumbers (reverse (transformata (useDeductionPrime hyp (intoTransformant oldProof))))
+useDeduction hyp oldProof = 
+    resetUserNumbers (reverse (transformata (useDeductionPrime hyp (intoTransformant oldProof))))
