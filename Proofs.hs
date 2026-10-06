@@ -112,8 +112,8 @@ findLineWithUserNum lines uNum =
     case lines of
         [] -> Nothing
         l : tail -> case userNumber l of
-                    Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum tail uNum
-                    _ -> findLineWithUserNum tail uNum
+                        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum tail uNum
+                        _ -> findLineWithUserNum tail uNum
 
 axiomCaseTransformation :: Sentence -> Transformation
 axiomCaseTransformation hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
@@ -144,5 +144,11 @@ useDeductionPrime hyp state =
                                             else useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
                         _ -> useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
 
+resetUserNumber :: Line -> Line
+resetUserNumber (Line lNum c j rfs _) = Line lNum c j rfs (Just lNum)
+
+resetUserNumbers :: [Line] -> [Line]
+resetUserNumbers lines = map resetUserNumber lines
+
 useDeduction :: Sentence -> [Line] -> [Line]
-useDeduction hyp oldProof = reverse (transformata (useDeductionPrime hyp (intoTransformant oldProof)))
+useDeduction hyp oldProof = resetUserNumbers (reverse (transformata (useDeductionPrime hyp (intoTransformant oldProof))))
