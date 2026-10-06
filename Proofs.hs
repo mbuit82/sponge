@@ -43,20 +43,6 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
         hPutStr h ("#include \"../../../datalog_engines/" ++ (logicName proofLogic) ++ ".dl\"\n\n")
         hPutStr h (proofToDatalog proofGoal proofLines)
 
-kC :: Sentence
-kC = (OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "P"]])
-sC :: Sentence
-sC = (OpNode impl [OpNode impl [Atom "P", Atom "Q"], OpNode impl [OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "R"]], OpNode impl [Atom "P", Atom "R"]]])
-matchesKC :: Axiom -> Bool
-matchesKC axiom = haveSameStructure (axiomContent axiom) kC
-matchesSC :: Axiom -> Bool
-matchesSC axiom = haveSameStructure (axiomContent axiom) sC
-
-makeKC :: Sentence -> Sentence -> Sentence
-makeKC p q = (OpNode impl [p, OpNode impl [q, p]])
-makeSC :: Sentence -> Sentence -> Sentence -> Sentence
-makeSC p q r = (OpNode impl [OpNode impl [p, q], OpNode impl [OpNode impl [p, OpNode impl [q, r]], OpNode impl [p, r]]])
-
 -- right now, I will assume my current axiomatization (i.e. we have Axiom1) and we can only do one deduction lemma at a time. 
 -- I think we could do more than one at a time if we just start the transformation with the farthest deduction lemma occurrence? 
 -- I think we'd need to move them all to the beginning, and then do that. Which is def feasible. Also sound bc of weakening. 
@@ -103,12 +89,17 @@ applyOffset offset (Line n c justification rfs uNum) =
 applyOffsetToLines :: Int -> [Line] -> [Line]
 applyOffsetToLines offset lines = map (applyOffset offset) lines
 
+
+
+
+
+-- EXAMPLE: Deduction lemma. 
 -- I want this to be what a transformation looks like. 
 axiomCaseDeduction :: Sentence -> Line -> [Line]
 axiomCaseDeduction hyp (Line lNum c justification rfs uNum) = 
     [   
         Line lNum c justification rfs Nothing,
-        Line (lNum + 1) (makeKC c hyp) "Axiom2" Nothing Nothing,
+        Line (lNum + 1) (OpNode impl [c, (OpNode impl [hyp, c])]) "Axiom2" Nothing Nothing,
         Line (lNum + 2) (OpNode impl [hyp, c]) "Modus Ponens" (Just (lNum, lNum + 1)) uNum
     ]
 
@@ -131,7 +122,7 @@ hypCaseTransformation :: Transformation
 hypCaseTransformation offset line = applyOffsetToLines offset (hypCaseDeduction line)
 
 modusPonensCaseTransformation :: Sentence -> Line -> Line -> Transformation
-modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pq Line will come already transformed! (need to make sure of that)
+modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pqLine are already transformed
     let n = lineNumber currLine + offset in 
         [
             Line n (OpNode impl [lineContent pLine, OpNode impl [lineContent pqLine, OpNode impl [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
@@ -148,7 +139,9 @@ useDeductionPrime hyp state =
                                             where 
                                                 pLine = fromJust (findLineWithUserNum (transformata state) (fst (fromJust (refLines line))))
                                                 pqLine = fromJust (findLineWithUserNum (transformata state) (snd (fromJust (refLines line))))
-                        "Assumption" -> useDeductionPrime hyp (applyTransformation hypCaseTransformation state)
+                        "Assumption" -> if lineContent line == hyp 
+                                            then useDeductionPrime hyp (applyTransformation hypCaseTransformation state) 
+                                            else useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
                         _ -> useDeductionPrime hyp (applyTransformation (axiomCaseTransformation hyp) state)
 
 useDeduction :: Sentence -> [Line] -> [Line]
