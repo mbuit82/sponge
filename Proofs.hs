@@ -4,6 +4,8 @@ import Core
 
 import System.IO
 import Data.Maybe
+import Data.List
+import Data.Char
 
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
 getRefLines rfLines = 
@@ -118,23 +120,70 @@ modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pq
             Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
         ]
 
-useDeduction' :: Sentence -> Transformant -> Transformant
-useDeduction' hyp state =
+-- deduction should be the last transformation that happens
+useDeduction' :: Logic -> Sentence -> Transformant -> Transformant
+useDeduction' logic hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-                        "Modus Ponens" -> useDeduction' hyp (applyTransformation (modusPonensCaseTransformation hyp pLine pqLine) state)
+                        "Modus Ponens" -> useDeduction' logic hyp (applyTransformation (modusPonensCaseTransformation hyp pLine pqLine) state)
                                             where 
                                                 pLine = fromJust (findLineWithUserNum (transformata state) (fst (fromJust (refLines line))))
                                                 pqLine = fromJust (findLineWithUserNum (transformata state) (snd (fromJust (refLines line))))
                         "Assumption" -> if lineContent line == hyp 
-                                            then useDeduction' hyp (applyTransformation hypCaseTransformation state) 
-                                            else useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
-                        _ -> useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                                            then useDeduction' logic hyp (applyTransformation hypCaseTransformation state) 
+                                            else useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                        just -> if just `elem` (map axiomName (axioms logic))
+                                    then useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                                    else error "unknown justification for deduction"
 
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lines = map (\(Line n c j r _) -> Line n c j r (Just n)) lines
 
-useDeduction :: Sentence -> [Line] -> [Line]
-useDeduction hyp oldProof = 
-    resetUserNumbers (reverse (transformata (useDeduction' hyp (intoTransformant oldProof))))
+useDeduction :: Logic -> Sentence -> [Line] -> [Line]
+useDeduction logic hyp oldProof = 
+    resetUserNumbers (reverse (transformata (useDeduction' logic hyp (intoTransformant oldProof))))
+
+
+
+
+
+
+getProofGoal :: [Operator] -> String -> String -> Sentence
+getProofGoal ops seen toSee =
+    case toSee of
+        '|' : '-' : ' ' : rem -> parseSentence ops rem
+        [] -> error "proof has no goal!"
+        c : tail -> getProofGoal ops (seen ++ [c]) tail
+
+-- function to use after getting the goal
+-- For now, use this one, but am thinking of having a general one where deduction is one of many last-transformations done
+parseUserProofWithDeduction :: Logic -> Sentence -> [String] -> [Line]
+parseUserProofWithDeduction logic deductionRelativeGoal proofLines = 
+    case proofLines of
+        [] -> [] 
+        fl : rem -> if isInfixOf "deduction" fl
+                        then case deductionRelativeGoal of
+                                OpNode impl [lArg, rArg] -> useDeduction logic lArg (parseUserProofWithDeduction logic rArg rem)
+                        else if ((all isSpace fl) || fl == "Proof")
+                            then parseUserProofWithDeduction logic deductionRelativeGoal rem
+                            else getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal rem
+
+splitByProofLine :: [String] -> (String, [String])
+splitByProofLine fileLines = 
+    case fileLines of
+        [] -> error "file has no lines!"
+        l : tl -> (l, tl)
+
+parseUserProofFile :: Logic -> String -> (Sentence, [Line])
+parseUserProofFile logic fileContent =
+    let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
+        let goal = getProofGoal (operators logic) [] goalLine in
+        (goal, parseUserProofWithDeduction logic goal pfLines)
+
+userToDatalog :: Logic -> String -> IO ()
+userToDatalog logic proofName = do
+    fileContent <- readFile ("hand_proofs/" ++ (logicName logic) ++ "/" ++ proofName ++ ".txt")
+    let (goal, proofLines) = parseUserProofFile logic fileContent in
+        compileDatalogProof proofName goal logic proofLines
+    

@@ -167,9 +167,6 @@ tokenize' ops (char : remChars) beingBuilt =
 tokenize :: [Operator] -> String -> [Token]
 tokenize ops str = tokenize' ops str Nothing
 
-push :: a -> [a] -> [a]
-push x stack = x : stack
-
 pop :: [a] -> [a]
 pop [] = error "Stack underflow from pop"
 pop (x:xs) = xs
