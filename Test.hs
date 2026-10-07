@@ -50,3 +50,56 @@ proofAfterDeductionTwice = useDeduction (OpNode impl [Atom "A", OpNode bot []]) 
 testDeductionTwice :: IO ()
 testDeductionTwice = compileDatalogProof "axiom4_deductiontwice" (OpNode impl [OpNode impl [Atom "A", OpNode bot []], OpNode impl [Atom "A", Atom "B"]]) (getLogic specClassical) proofAfterDeductionTwice
 
+
+testOps = [bot, box, impl]
+parseTest0 = parse testOps "A" == Atom "A"
+parseTest1 = parse testOps "Bot" == OpNode bot []
+parseTest2 = parse testOps "(A -> A)" == OpNode impl [Atom "A", Atom "A"]
+parseTest3 = parse testOps "(A -> C)" == OpNode impl [Atom "A", Atom "C"]
+parseTest4 = parse testOps "(A -> Bot)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest5 = parse testOps "(A -> (B -> A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest6 = parse testOps "BoxA" == OpNode box [Atom "A"]
+parseTest7 = parse testOps "Box(A)" == OpNode box [Atom "A"]
+parseTest8 = parse testOps "(BoxA)" == OpNode box [Atom "A"]
+parseTest9 = parse testOps "Box A" == OpNode box [Atom "A"]
+parseTest10 = parse testOps "Box (A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
+parseTest11 = parse testOps "Box(A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
+parseTest12 = parse testOps "(A -> Box (A -> Bot))" == OpNode impl [Atom "A", OpNode box [OpNode impl [Atom "A", OpNode bot []]]]
+parseTest13 = parse testOps "A -> A" == OpNode impl [Atom "A", Atom "A"]
+parseTest14 = parse testOps "Box A -> B" == OpNode impl [OpNode box [Atom "A"], Atom "B"]
+parseTest15 = parse testOps "~A" == OpNode impl [Atom "A", OpNode bot []]
+parseTest16 = parse testOps "~(A)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest17 = parse testOps "(~A)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest18 = parse testOps "~ A" == OpNode impl [Atom "A", OpNode bot []]
+parseTest19 = parse testOps "(A -> (B -> ~ A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
+parseTest20 = parse testOps "(A -> B -> A)" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest21 = parse testOps "A -> B -> A" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest22 = parse testOps "A -> B -> ~A" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
+
+parseTests :: IO ()
+parseTests = do
+    print parseTest0
+    print parseTest1
+    print parseTest2
+    print parseTest3
+    print parseTest4
+    print parseTest5
+    print parseTest6
+    print parseTest7
+    print parseTest8
+    print parseTest9
+    print parseTest10
+    print parseTest11
+    print parseTest12
+    print parseTest13
+    print parseTest14
+    print parseTest15
+    print parseTest16
+    print parseTest17
+    print parseTest18
+    print parseTest19
+    print parseTest20
+    print parseTest21
+    print parseTest22
+
+

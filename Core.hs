@@ -8,11 +8,11 @@ data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
     operatorSymbol :: String, -- what the user will write. relevant at tokenizer level. 
     arity :: Int
-}
-instance Show Operator where
-    show op = operatorName op
-instance Eq Operator where -- TODO: think about. I think it ultimately doesn't matter lol but still, think about. 
-    op1 == op2 = operatorName op1 == operatorName op2 -- datalog will throw an error if there is more than one constructor with the same name for the Sentence predicate so all good there
+} deriving (Eq, Show) -- you've seriously fucked up if the three don't match, but I think only operatorName really needs to
+-- instance Show Operator where
+--     show op = operatorName op
+-- instance Eq Operator where -- TODO: think about. I think it ultimately doesn't matter lol but still, think about. 
+--     op1 == op2 = operatorName op1 == operatorName op2 -- datalog will throw an error if there is more than one constructor with the same name for the Sentence predicate so all good there
 
 impl :: Operator
 impl = Operator "Implication" "->" 2
@@ -127,7 +127,10 @@ getOpWithSymbol (op : rem) name =
     if operatorSymbol op == name then (Just op) else getOpWithSymbol rem name
 
 tokenize' :: [Operator] -> String -> Maybe String -> [Token]
-tokenize' ops [] beingBuilt = exportCurrToken beingBuilt -- we're never going to have an operator at the end is what this is saying... 
+tokenize' ops [] beingBuilt = 
+    if fromMaybe [] beingBuilt `elem` (map operatorSymbol ops)
+        then [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))]
+        else exportCurrToken beingBuilt
 tokenize' ops (char : remChars) beingBuilt =
     if fromMaybe [] beingBuilt `elem` (map operatorSymbol ops)
         then  [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))] ++ tokenize' ops (char : remChars) Nothing -- now we can do no spaces after operators!
@@ -141,8 +144,58 @@ tokenize' ops (char : remChars) beingBuilt =
 tokenize :: [Operator] -> String -> [Token]
 tokenize ops str = tokenize' ops str Nothing
 
-parse' :: [String] -> Maybe [String] -> Tree String
-parse' tokens currArg = undefined
+push :: a -> [a] -> [a]
+push x stack = x : stack
 
-parse :: [Token] -> Sentence
-parse = undefined
+pop :: [a] -> [a]
+pop [] = error "Stack underflow from pop"
+pop (x:xs) = xs
+
+fetch :: [a] -> a
+fetch [] = error "Stack underflow from fetch"
+fetch (x:xs) = x
+
+getNextSentence :: [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
+getNextSentence [] [sent] toSee = (sent, toSee)
+getNextSentence opStack sentStack toSee =
+    case toSee of
+        [] -> case sentStack of 
+                [sent] -> (sent, [])
+                sent : remS -> error "have lots of sentences here"
+                _ -> error "shid"
+        LPToken : rem -> getNextSentence (LPToken : opStack) sentStack rem
+        RPToken : rem -> case fetch opStack of
+                            OpToken op -> case sentStack of
+                                            rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) rem -- this should really be pop until you see a LPToken
+                                            _ -> error "not enough args"
+                            LPToken -> getNextSentence (pop opStack) sentStack rem -- sandwiched something lol (unary or nullary operator that over-parenthesized)
+                            _ -> error "should have been an operator on the stack but there wasn't"
+        AtomToken a : rem -> getNextSentence opStack (Atom a : sentStack) rem
+        OpToken op : rem -> case arity op of
+                                0 -> getNextSentence opStack (OpNode op [] : sentStack) rem
+                                1 -> let (nextSent, newRem) = getNextSentence [] [] rem in
+                                        getNextSentence opStack (OpNode op [nextSent] : sentStack) newRem
+                                2 -> getNextSentence (OpToken op : opStack) sentStack rem
+                                _ -> error "not doing n-ary predicates yet"
+
+
+
+-- parse' :: [Token] -> [Sentence] -> [Token] -> Sentence
+-- -- associativity and precedence are dealt with at the RPToken case
+-- -- for no top-level parentheses, edit the [] case
+-- parse' opStack sentStack toSee =
+--     case toSee of
+--         [] -> undefined -- we're done?
+--         LPToken : rem -> parse' (LPToken : opStack) sentStack rem
+--         RPToken : rem -> case fetch opStack of -- I think we can do it so that we only put binary operators on the opStack
+--                             OpToken op -> undefined
+--                             _ -> error "should have been an operator here"
+--         AtomToken a : rem -> parse' opStack (Atom a : sentStack) rem
+--         OpToken op : rem -> case arity op of
+--                                 0 -> parse' opStack (OpNode op [] : sentStack) rem
+--                                 1 -> undefined -- get the next sentence in toSee, and make that the argument, and push that to the sentence stack
+--                                 2 -> parse' (OpToken op : opStack) sentStack rem
+
+parse :: [Operator] -> String -> Sentence
+parse ops input = fst (getNextSentence [] [] (tokenize ops input))
+
