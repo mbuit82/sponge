@@ -68,17 +68,18 @@ parseTest9 = parseSentence testOps "Box A" == OpNode box [Atom "A"]
 parseTest10 = parseSentence testOps "Box (A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
 parseTest11 = parseSentence testOps "Box(A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
 parseTest12 = parseSentence testOps "(A -> Box (A -> Bot))" == OpNode impl [Atom "A", OpNode box [OpNode impl [Atom "A", OpNode bot []]]]
--- currently pass all up to here (expected, tolerable: we can parseSentence the fully parenthesized fragment)
 parseTest13 = parseSentence testOps "A -> A" == OpNode impl [Atom "A", Atom "A"]
-parseTest14 = parseSentence testOps "Box A -> B" == OpNode impl [OpNode box [Atom "A"], Atom "B"]
-parseTest15 = parseSentence testOps "~A" == OpNode impl [Atom "A", OpNode bot []]
-parseTest16 = parseSentence testOps "~(A)" == OpNode impl [Atom "A", OpNode bot []]
-parseTest17 = parseSentence testOps "(~A)" == OpNode impl [Atom "A", OpNode bot []]
-parseTest18 = parseSentence testOps "~ A" == OpNode impl [Atom "A", OpNode bot []]
-parseTest19 = parseSentence testOps "(A -> (B -> ~ A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
-parseTest20 = parseSentence testOps "(A -> B -> A)" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
-parseTest21 = parseSentence testOps "A -> B -> A" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
-parseTest22 = parseSentence testOps "A -> B -> ~A" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
+parseTest14 = parseSentence testOps "(A -> A) -> (A -> A)" == OpNode impl [OpNode impl [Atom "A", Atom "A"], OpNode impl [Atom "A", Atom "A"]]
+parseTest15 = parseSentence testOps "Box A -> B" == OpNode impl [OpNode box [Atom "A"], Atom "B"]
+-- currently pass all up to here (expected, tolerable: we can parseSentence the fully parenthesized fragment, and no top level)
+parseTest16 = parseSentence testOps "~A" == OpNode impl [Atom "A", OpNode bot []]
+parseTest17 = parseSentence testOps "~(A)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest18 = parseSentence testOps "(~A)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest19 = parseSentence testOps "~ A" == OpNode impl [Atom "A", OpNode bot []]
+parseTest20 = parseSentence testOps "(A -> (B -> ~ A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
+parseTest21 = parseSentence testOps "(A -> B -> A)" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest22 = parseSentence testOps "A -> B -> A" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest23 = parseSentence testOps "A -> B -> ~A" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
 
 parseTests :: IO ()
 parseTests = do

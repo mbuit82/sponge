@@ -67,14 +67,11 @@ userNumberHuh Nothing = "-"
 userNumberHuh (Just n) = "(" ++ show n ++ ")"
 
 formulaToDatalog :: Bool -> Sentence -> String
-formulaToDatalog varBool sentence =
-    case sentence of 
-        Atom name -> if varBool
-                        then name
-                        else "$Atom(\"" ++ name ++ "\")"
-        OpNode op args -> "$" ++ (operatorName op) ++ "(" ++ argsStr ++ ")"
-            where argsStr = intercalate ", " 
-                    (map (formulaToDatalog varBool) args)
+formulaToDatalog True (Atom name) = name
+formulaToDatalog False (Atom name) = "$Atom(\"" ++ name ++ "\")"
+formulaToDatalog varBool (OpNode op args) = 
+    "$" ++ (operatorName op) ++ "(" ++ argsStr ++ ")"
+        where argsStr = intercalate ", " (map (formulaToDatalog varBool) args)
 
 schemaToDatalog :: Sentence -> String
 schemaToDatalog = formulaToDatalog True
@@ -85,20 +82,16 @@ sentenceToDatalog = formulaToDatalog False
 
 -- RUNTIME CHECKS FOR LATER
 aritiesCheck :: Sentence -> Bool
-aritiesCheck sentence =
-    case sentence of
-        Atom _ -> True
-        OpNode op args -> if arity op == length args 
-            then all aritiesCheck args
-            else False
+aritiesCheck (Atom a) = True
+aritiesCheck (OpNode op args)
+    | arity op == length args = all aritiesCheck args
+    | otherwise = False
 
 isWff :: Logic -> Sentence -> Bool
-isWff logic sentence =
-    case sentence of
-        Atom _ -> True
-        OpNode op args -> if elem op (operators logic)
-            then all (isWff logic) args
-            else False
+isWff logic (Atom _) = True
+isWff logic (OpNode op args)
+    | elem op (operators logic) = all (isWff logic) args
+    | otherwise = False
 
 axiomsWf :: Logic -> Bool
 axiomsWf logic = all (isWff logic) (map axiomContent (axioms logic))
@@ -118,14 +111,12 @@ isInstance :: Sentence -> Sentence -> Bool
 -- the first Sentence is a sentence, second is a schema
 -- need to think about naming for sentences/formulae
 -- for now, assume everything is well-formed. 
-isInstance sentence schema =
-    case schema of
-        Atom _ -> True
-        OpNode schemaOp schemaArgs ->
-            case sentence of
-                Atom _ -> False
-                OpNode sentOp sentArgs -> 
-                    schemaOp == sentOp && all (\p -> isInstance (fst p) (snd p)) (zip sentArgs schemaArgs)
+isInstance sentence (Atom _) = True
+isInstance sentence (OpNode schemaOp schemaArgs) =
+    case sentence of 
+        Atom _ -> False
+        OpNode sentOp sentArgs -> 
+            schemaOp == sentOp && all (\p -> isInstance (fst p) (snd p)) (zip sentArgs schemaArgs)
 
 haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
@@ -176,13 +167,13 @@ fetch [] = error "Stack underflow from fetch"
 fetch (x:xs) = x
 
 getNextSentence :: [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
-getNextSentence [] [sent] toSee = (sent, toSee)
+-- getNextSentence [OpToken binOp] [rArg, lArg] [] = (OpNode binOp [lArg, rArg], []) -- my attempt at no top level parentheses. The problem is tha we never get there
+getNextSentence [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
+getNextSentence opStack [] [] = error "shid we reached the end and we have no sentences lel"
+getNextSentence opStack [sent] [] = error "this case doesn't make sense really"
+getNextSentence opStack (sent:remS) [] = error "check for a missing set of parentheses?"
 getNextSentence opStack sentStack toSee =
     case toSee of
-        [] -> case sentStack of 
-                [sent] -> (sent, [])
-                sent : remS -> error "check for a missing set of parentheses?"
-                _ -> error "shid"
         LPToken : rem -> getNextSentence (LPToken : opStack) sentStack rem
         RPToken : rem -> case fetch opStack of
                             OpToken op -> case sentStack of
@@ -198,8 +189,13 @@ getNextSentence opStack sentStack toSee =
                                 2 -> getNextSentence (OpToken op : opStack) sentStack rem
                                 _ -> error "not doing n-ary predicates yet"
 
+-- lmao so we just add an extra set of parentheses onto everything lol. 
+getTopLevelSentence :: [Token] -> Sentence
+-- getTopLevelSentence (LPToken : rem) = fst (getNextSentence [] [] (LPToken:rem)) -- we have a first paren, so guessing we have a last. If we don't or if unbalanced we'll throw an error somewhre prolly
+getTopLevelSentence toks = fst (getNextSentence [] [] (LPToken : toks ++ [RPToken]))
+
 parseSentence :: [Operator] -> String -> Sentence
-parseSentence ops input = fst (getNextSentence [] [] (tokenize ops input))
+parseSentence ops input = getTopLevelSentence (tokenize ops input)
 
 getLineNumFromLine :: String -> String -> (Int, String)
 getLineNumFromLine seen toSee = 

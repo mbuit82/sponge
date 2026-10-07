@@ -8,10 +8,8 @@ import Data.List
 import Data.Char
 
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
-getRefLines rfLines = 
-    case rfLines of
-        Nothing -> (0, 0)
-        Just (i, j) -> (i, j)
+getRefLines Nothing = (0,0)
+getRefLines (Just (i,j)) = (i,j)
 
 lineToDatalog :: Line -> String
 lineToDatalog line = 
@@ -57,11 +55,10 @@ applyTransformation transformation oldState =
                     let applied = reverse (transformation (offset oldState) currLine) in
                         Transformant (applied ++ transformata oldState) (Just nxt) tail ((length applied) - 1 + offset oldState)
 
+-- the first arg is supposed to be a proof
 intoTransformant :: [Line] -> Transformant
-intoTransformant proofContent = 
-    case proofContent of
-        [] -> error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-        fstLine : tail -> Transformant [] (Just fstLine) tail 0
+intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
+intoTransformant (fstLine:tail) = Transformant [] (Just fstLine) tail 0
 
 applyOffset :: Int -> Line -> Line
 applyOffset offset (Line n c justification rfs uNum) = 
@@ -150,36 +147,31 @@ useDeduction logic hyp oldProof =
 
 
 getProofGoal :: [Operator] -> String -> String -> Sentence
-getProofGoal ops seen toSee =
-    case toSee of
-        '|' : '-' : ' ' : rem -> parseSentence ops rem
-        [] -> error "proof has no goal!"
-        c : tail -> getProofGoal ops (seen ++ [c]) tail
+getProofGoal ops seen [] = error "proof has no goal!"
+getProofGoal ops seen ('|' : '-' : ' ' : rem) = parseSentence ops rem
+getProofGoal ops seen (c:tail) = getProofGoal ops (seen ++ [c]) tail
 
 -- function to use after getting the goal
 -- For now, use this one, but am thinking of having a general one where deduction is one of many last-transformations done
 parseUserProofWithDeduction :: Logic -> Sentence -> [String] -> [Line]
-parseUserProofWithDeduction logic deductionRelativeGoal proofLines = 
-    case proofLines of
-        [] -> [] 
-        fl : rem -> if isInfixOf "deduction" fl
-                        then case deductionRelativeGoal of
-                                OpNode impl [lArg, rArg] -> useDeduction logic lArg (parseUserProofWithDeduction logic rArg rem)
-                        else if ((all isSpace fl) || fl == "Proof")
-                            then parseUserProofWithDeduction logic deductionRelativeGoal rem
-                            else getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal rem
+parseUserProofWithDeduction logic deductionRelativeGoal [] = []
+parseUserProofWithDeduction logic deductionRelativeGoal (fl : rem)
+    | isInfixOf "deduction" fl =
+        case deductionRelativeGoal of
+            OpNode impl [lArg, rArg] -> useDeduction logic lArg (parseUserProofWithDeduction logic rArg rem)
+            _ -> error "ope should have implication in goal to use deduction"
+    | (all isSpace fl) || fl == "Proof" = parseUserProofWithDeduction logic deductionRelativeGoal rem -- ignore conditions
+    | otherwise = getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal rem
 
 splitByProofLine :: [String] -> (String, [String])
-splitByProofLine fileLines = 
-    case fileLines of
-        [] -> error "file has no lines!"
-        l : tl -> (l, tl)
+splitByProofLine [] = error "file has no lines!"
+splitByProofLine (l:tl) = (l, tl)
 
 parseUserProofFile :: Logic -> String -> (Sentence, [Line])
 parseUserProofFile logic fileContent =
     let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
         let goal = getProofGoal (operators logic) [] goalLine in
-        (goal, parseUserProofWithDeduction logic goal pfLines)
+            (goal, parseUserProofWithDeduction logic goal pfLines)
 
 userToDatalog :: Logic -> String -> IO ()
 userToDatalog logic proofName = do
