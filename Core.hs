@@ -43,6 +43,29 @@ data Logic = Logic
     inferenceRules :: [InferenceRule]
   }
 
+-- for proofs
+data Line = Line {
+    lineNumber :: Int,
+    lineContent :: Sentence,
+    justification :: String,
+    refLines :: Maybe (Int, Int),
+    userNumber :: Maybe Int -- the original line number the user used
+} deriving Eq
+-- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
+instance Show Line where
+    show line = show (lineNumber line) ++ " " ++
+                userNumberHuh (userNumber line) ++ ". " ++ 
+                show (lineContent line) ++ "\t" ++ 
+                "by " ++ justification line ++ refLinesHuh (refLines line)
+
+refLinesHuh :: Maybe (Int, Int) -> String
+refLinesHuh Nothing = []
+refLinesHuh (Just (a, b)) = "(" ++ show a ++ ", " ++ show b ++ ")"
+
+userNumberHuh :: Maybe Int -> String
+userNumberHuh Nothing = "-"
+userNumberHuh (Just n) = "(" ++ show n ++ ")"
+
 formulaToDatalog :: Bool -> Sentence -> String
 formulaToDatalog varBool sentence =
     case sentence of 
@@ -178,24 +201,40 @@ getNextSentence opStack sentStack toSee =
                                 2 -> getNextSentence (OpToken op : opStack) sentStack rem
                                 _ -> error "not doing n-ary predicates yet"
 
+parseSentence :: [Operator] -> String -> Sentence
+parseSentence ops input = fst (getNextSentence [] [] (tokenize ops input))
 
+getLineNumFromLine :: String -> String -> (Int, String)
+getLineNumFromLine seen toSee = 
+    case toSee of
+        '.' : ' ' : '|' : '-' : ' ' : rem -> (read seen, rem)
+        [] -> error "couldn't find line number split!"
+        c : rem -> getLineNumFromLine (seen ++ [c]) rem
 
--- parse' :: [Token] -> [Sentence] -> [Token] -> Sentence
--- -- associativity and precedence are dealt with at the RPToken case
--- -- for no top-level parentheses, edit the [] case
--- parse' opStack sentStack toSee =
---     case toSee of
---         [] -> undefined -- we're done?
---         LPToken : rem -> parse' (LPToken : opStack) sentStack rem
---         RPToken : rem -> case fetch opStack of -- I think we can do it so that we only put binary operators on the opStack
---                             OpToken op -> undefined
---                             _ -> error "should have been an operator here"
---         AtomToken a : rem -> parse' opStack (Atom a : sentStack) rem
---         OpToken op : rem -> case arity op of
---                                 0 -> parse' opStack (OpNode op [] : sentStack) rem
---                                 1 -> undefined -- get the next sentence in toSee, and make that the argument, and push that to the sentence stack
---                                 2 -> parse' (OpToken op : opStack) sentStack rem
+getContentFromLine :: [Operator] -> String -> String -> (Sentence, String)
+getContentFromLine ops seen toSee =
+    case toSee of
+        'b' : 'y' : ' ' : rem -> (parseSentence ops seen, rem)
+        [] -> error "line wasn't justified!"
+        c : rem -> getContentFromLine ops (seen ++ [c]) rem
 
-parse :: [Operator] -> String -> Sentence
-parse ops input = fst (getNextSentence [] [] (tokenize ops input))
+-- meant to be applied after getting the content
+getJustificationFromLine :: String -> String -> (String, Maybe (Int, Int))
+getJustificationFromLine seen toSee =
+    case toSee of
+        ',' : rem -> case rem of
+                        [] -> (seen, Nothing)
+                        s -> case words s of
+                                [i, j] -> (seen, Just (read i, read j))
+                                _ -> error "theres stuff after justification but it's not two ints"
+        [] -> (seen, Nothing) -- axiom case (with no trailing comma)
+        c : rem -> getJustificationFromLine (seen ++ [c]) rem
+
+getLineFromUser :: [Operator] -> String -> Line
+getLineFromUser ops userLine =
+    let (lNum, rem1) = getLineNumFromLine "" userLine in
+        let (content, rem2) = getContentFromLine ops "" rem1 in
+            let (j, rfs) = getJustificationFromLine "" rem2 in
+                Line lNum content j rfs (Just lNum)
+
 

@@ -5,27 +5,6 @@ import Core
 import System.IO
 import Data.Maybe
 
-data Line = Line {
-    lineNumber :: Int,
-    lineContent :: Sentence,
-    justification :: String,
-    refLines :: Maybe (Int, Int),
-    userNumber :: Maybe Int -- the original line number the user used
-} -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
-instance Show Line where
-    show line = show (lineNumber line) ++ " " ++
-                userNumberHuh (userNumber line) ++ ". " ++ 
-                show (lineContent line) ++ "\t" ++ 
-                "by " ++ justification line ++ refLinesHuh (refLines line)
-
-refLinesHuh :: Maybe (Int, Int) -> String
-refLinesHuh Nothing = []
-refLinesHuh (Just (a, b)) = "(" ++ show a ++ ", " ++ show b ++ ")"
-
-userNumberHuh :: Maybe Int -> String
-userNumberHuh Nothing = "-"
-userNumberHuh (Just n) = "(" ++ show n ++ ")"
-
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
 getRefLines rfLines = 
     case rfLines of

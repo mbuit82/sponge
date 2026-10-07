@@ -35,8 +35,8 @@ testDeduction = compileDatalogProof "exfalso_deduction" (OpNode impl [OpNode bot
 
 
 -- TEST: deduction twice
-ddll1 = Line 1 (Atom "A") "Assumption" Nothing (Just 1)
-ddll2 = Line 2 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 2)
+ddll1 = Line 1 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 1)
+ddll2 = Line 2 (Atom "A") "Assumption" Nothing (Just 2)
 ddll3 = Line 3 (OpNode bot []) "Modus Ponens" (Just (1, 2)) (Just 3)
 ddll4 = Line 4 (OpNode impl [OpNode bot [], (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []])]) "Axiom2" Nothing (Just 4)
 ddll5 = Line 5 (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []]) "Modus Ponens" (Just (3, 4)) (Just 5)
@@ -52,29 +52,30 @@ testDeductionTwice = compileDatalogProof "axiom4_deductiontwice" (OpNode impl [O
 
 
 testOps = [bot, box, impl]
-parseTest0 = parse testOps "A" == Atom "A"
-parseTest1 = parse testOps "Bot" == OpNode bot []
-parseTest2 = parse testOps "(A -> A)" == OpNode impl [Atom "A", Atom "A"]
-parseTest3 = parse testOps "(A -> C)" == OpNode impl [Atom "A", Atom "C"]
-parseTest4 = parse testOps "(A -> Bot)" == OpNode impl [Atom "A", OpNode bot []]
-parseTest5 = parse testOps "(A -> (B -> A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
-parseTest6 = parse testOps "BoxA" == OpNode box [Atom "A"]
-parseTest7 = parse testOps "Box(A)" == OpNode box [Atom "A"]
-parseTest8 = parse testOps "(BoxA)" == OpNode box [Atom "A"]
-parseTest9 = parse testOps "Box A" == OpNode box [Atom "A"]
-parseTest10 = parse testOps "Box (A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
-parseTest11 = parse testOps "Box(A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
-parseTest12 = parse testOps "(A -> Box (A -> Bot))" == OpNode impl [Atom "A", OpNode box [OpNode impl [Atom "A", OpNode bot []]]]
-parseTest13 = parse testOps "A -> A" == OpNode impl [Atom "A", Atom "A"]
-parseTest14 = parse testOps "Box A -> B" == OpNode impl [OpNode box [Atom "A"], Atom "B"]
-parseTest15 = parse testOps "~A" == OpNode impl [Atom "A", OpNode bot []]
-parseTest16 = parse testOps "~(A)" == OpNode impl [Atom "A", OpNode bot []]
-parseTest17 = parse testOps "(~A)" == OpNode impl [Atom "A", OpNode bot []]
-parseTest18 = parse testOps "~ A" == OpNode impl [Atom "A", OpNode bot []]
-parseTest19 = parse testOps "(A -> (B -> ~ A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
-parseTest20 = parse testOps "(A -> B -> A)" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
-parseTest21 = parse testOps "A -> B -> A" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
-parseTest22 = parse testOps "A -> B -> ~A" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
+parseTest0 = parseSentence testOps "A" == Atom "A"
+parseTest1 = parseSentence testOps "Bot" == OpNode bot []
+parseTest2 = parseSentence testOps "(A -> A)" == OpNode impl [Atom "A", Atom "A"]
+parseTest3 = parseSentence testOps "(A -> C)" == OpNode impl [Atom "A", Atom "C"]
+parseTest4 = parseSentence testOps "(A -> Bot)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest5 = parseSentence testOps "(A -> (B -> A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest6 = parseSentence testOps "BoxA" == OpNode box [Atom "A"]
+parseTest7 = parseSentence testOps "Box(A)" == OpNode box [Atom "A"]
+parseTest8 = parseSentence testOps "(BoxA)" == OpNode box [Atom "A"]
+parseTest9 = parseSentence testOps "Box A" == OpNode box [Atom "A"]
+parseTest10 = parseSentence testOps "Box (A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
+parseTest11 = parseSentence testOps "Box(A -> B)" == OpNode box [OpNode impl [Atom "A", Atom "B"]]
+parseTest12 = parseSentence testOps "(A -> Box (A -> Bot))" == OpNode impl [Atom "A", OpNode box [OpNode impl [Atom "A", OpNode bot []]]]
+-- currently pass all up to here (expected, tolerable: we can parseSentence the fully parenthesized fragment)
+parseTest13 = parseSentence testOps "A -> A" == OpNode impl [Atom "A", Atom "A"]
+parseTest14 = parseSentence testOps "Box A -> B" == OpNode impl [OpNode box [Atom "A"], Atom "B"]
+parseTest15 = parseSentence testOps "~A" == OpNode impl [Atom "A", OpNode bot []]
+parseTest16 = parseSentence testOps "~(A)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest17 = parseSentence testOps "(~A)" == OpNode impl [Atom "A", OpNode bot []]
+parseTest18 = parseSentence testOps "~ A" == OpNode impl [Atom "A", OpNode bot []]
+parseTest19 = parseSentence testOps "(A -> (B -> ~ A))" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
+parseTest20 = parseSentence testOps "(A -> B -> A)" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest21 = parseSentence testOps "A -> B -> A" == OpNode impl [Atom "A", OpNode impl [Atom "B", Atom "A"]]
+parseTest22 = parseSentence testOps "A -> B -> ~A" == OpNode impl [Atom "A", OpNode impl [Atom "B", OpNode impl [Atom "A", OpNode bot []]]]
 
 parseTests :: IO ()
 parseTests = do
@@ -103,3 +104,22 @@ parseTests = do
     print parseTest22
 
 
+ht1 = getLineFromUser testOps "1. |- ((A -> (A -> A)) -> ((A -> ((A -> A) -> A)) -> (A -> A))) by Axiom3"
+ht2 = getLineFromUser testOps "2. |- (A -> (A -> A))                                           by Axiom2"
+ht3 = getLineFromUser testOps "3. |- ((A -> ((A -> A) -> A)) -> (A -> A))                      by Modus Ponens, 2 1"
+ht4 = getLineFromUser testOps "4. |- (A -> ((A -> A) -> A))                                    by Axiom2"
+ht5 = getLineFromUser testOps "5. |- (A -> A)                                                  by Modus Ponens, 4 3"
+
+testLineParser :: IO ()
+testLineParser = compileDatalogProof "axiom1" (parseSentence testOps "(A -> A)") (getLogic specIntuitionistic) [ht1, ht2, ht3, ht4, ht5]
+
+htd1 = getLineFromUser testOps "1. |- Bot                                   by Assumption"
+htd2 = getLineFromUser testOps "2. |- (Bot -> ((A -> Bot) -> Bot) -> Bot)   by Axiom2"
+htd3 = getLineFromUser testOps "3. |- ((A -> Bot) -> Bot)                   by Modus Ponens, 1 2"
+htd4 = getLineFromUser testOps "4. |- (((A -> Bot) -> Bot) -> A)            by Axiom5"
+htd5 = getLineFromUser testOps "5. |- A                                     by Modus Ponens, 3 4"
+
+-- proofAfterDeduction = useDeduction (OpNode bot []) [htd1, htd2, htd3, htd4, htd5]
+
+testParserWithDeduction :: IO ()
+testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parseSentence testOps "(Bot -> A)") (getLogic specClassical) (useDeduction (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
