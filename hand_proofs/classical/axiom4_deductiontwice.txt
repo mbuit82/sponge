@@ -1,13 +1,13 @@
-Theorem: |- ((A -> Bot) -> (A -> B))
+Theorem: |- (A -> Bot) -> (A -> B)
 
 Using deduction
 Using deduction
 
 Proof
-1. |- (A -> Bot)                    by Assumption
+1. |- A -> Bot                      by Assumption
 2. |- A                             by Assumption
 3. |- Bot                           by Modus Ponens, 2 1
-4. |- (Bot -> ((B -> Bot) -> Bot))  by Axiom2
-5. |- ((B -> Bot) -> Bot)           by Modus Ponens, 3 4
-6. |- (((B -> Bot) -> Bot) -> B)    by Axiom5
+4. |- Bot -> ((B -> Bot) -> Bot)    by Axiom2
+5. |- (B -> Bot) -> Bot             by Modus Ponens, 3 4
+6. |- ((B -> Bot) -> Bot) -> B      by Axiom5
 7. |- B                             by Modus Ponens, 5 6
