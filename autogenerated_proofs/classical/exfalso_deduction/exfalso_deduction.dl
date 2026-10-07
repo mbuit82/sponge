@@ -1,2 +1,21 @@
 #include "../../../datalog_engines/classical.dl"
 
+Goal($Implication($Bot(), $Atom("A"))).
+
+Line(1, $Implication($Implication($Bot(), $Implication($Bot(), $Bot())), $Implication($Implication($Bot(), $Implication($Implication($Bot(), $Bot()), $Bot())), $Implication($Bot(), $Bot()))), "Axiom3", 0, 0).
+Line(2, $Implication($Bot(), $Implication($Bot(), $Bot())), "Axiom2", 0, 0).
+Line(3, $Implication($Implication($Bot(), $Implication($Implication($Bot(), $Bot()), $Bot())), $Implication($Bot(), $Bot())), "Modus Ponens", 2, 1).
+Line(4, $Implication($Bot(), $Implication($Implication($Bot(), $Bot()), $Bot())), "Axiom2", 0, 0).
+Line(5, $Implication($Bot(), $Bot()), "Modus Ponens", 4, 3).
+Line(6, $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot())), "Axiom2", 0, 0).
+Line(7, $Implication($Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot())), $Implication($Bot(), $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot())))), "Axiom2", 0, 0).
+Line(8, $Implication($Bot(), $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot()))), "Modus Ponens", 6, 7).
+Line(9, $Implication($Implication($Bot(), $Bot()), $Implication($Implication($Bot(), $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot()))), $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot())))), "Axiom3", 0, 0).
+Line(10, $Implication($Implication($Bot(), $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot()))), $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot()))), "Modus Ponens", 5, 9).
+Line(11, $Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot())), "Modus Ponens", 8, 10).
+Line(12, $Implication($Implication($Implication($Atom("A"), $Bot()), $Bot()), $Atom("A")), "Axiom5", 0, 0).
+Line(13, $Implication($Implication($Implication($Implication($Atom("A"), $Bot()), $Bot()), $Atom("A")), $Implication($Bot(), $Implication($Implication($Implication($Atom("A"), $Bot()), $Bot()), $Atom("A")))), "Axiom2", 0, 0).
+Line(14, $Implication($Bot(), $Implication($Implication($Implication($Atom("A"), $Bot()), $Bot()), $Atom("A"))), "Modus Ponens", 12, 13).
+Line(15, $Implication($Implication($Bot(), $Implication($Implication($Atom("A"), $Bot()), $Bot())), $Implication($Implication($Bot(), $Implication($Implication($Implication($Atom("A"), $Bot()), $Bot()), $Atom("A"))), $Implication($Bot(), $Atom("A")))), "Axiom3", 0, 0).
+Line(16, $Implication($Implication($Bot(), $Implication($Implication($Implication($Atom("A"), $Bot()), $Bot()), $Atom("A"))), $Implication($Bot(), $Atom("A"))), "Modus Ponens", 11, 15).
+Line(17, $Implication($Bot(), $Atom("A")), "Modus Ponens", 14, 16).
