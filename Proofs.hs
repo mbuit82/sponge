@@ -148,7 +148,7 @@ useDeduction logic hyp oldProof =
 
 getProofGoal :: [Operator] -> String -> String -> Sentence
 getProofGoal ops seen [] = error "proof has no goal!"
-getProofGoal ops seen ('|' : '-' : ' ' : rem) = parseSentence ops rem
+getProofGoal ops seen ('|' : '-' : rem) = parseSentence ops rem
 getProofGoal ops seen (c:tail) = getProofGoal ops (seen ++ [c]) tail
 
 -- function to use after getting the goal
