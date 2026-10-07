@@ -35,8 +35,8 @@ testDeduction = compileDatalogProof "exfalso_deduction" (OpNode impl [OpNode bot
 
 
 -- TEST: deduction twice
-ddll1 = Line 1 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 1)
-ddll2 = Line 2 (Atom "A") "Assumption" Nothing (Just 2)
+ddll2 = Line 1 (Atom "A") "Assumption" Nothing (Just 1)
+ddll1 = Line 2 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 2)
 ddll3 = Line 3 (OpNode bot []) "Modus Ponens" (Just (1, 2)) (Just 3)
 ddll4 = Line 4 (OpNode impl [OpNode bot [], (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []])]) "Axiom2" Nothing (Just 4)
 ddll5 = Line 5 (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []]) "Modus Ponens" (Just (3, 4)) (Just 5)
@@ -114,7 +114,7 @@ testLineParser :: IO ()
 testLineParser = compileDatalogProof "axiom1" (parseSentence testOps "(A -> A)") (getLogic specIntuitionistic) [ht1, ht2, ht3, ht4, ht5]
 
 htd1 = getLineFromUser testOps "1. |- Bot                                   by Assumption"
-htd2 = getLineFromUser testOps "2. |- (Bot -> ((A -> Bot) -> Bot) -> Bot)   by Axiom2"
+htd2 = getLineFromUser testOps "2. |- (Bot -> ((A -> Bot) -> Bot))   by Axiom2"
 htd3 = getLineFromUser testOps "3. |- ((A -> Bot) -> Bot)                   by Modus Ponens, 1 2"
 htd4 = getLineFromUser testOps "4. |- (((A -> Bot) -> Bot) -> A)            by Axiom5"
 htd5 = getLineFromUser testOps "5. |- A                                     by Modus Ponens, 3 4"
@@ -123,3 +123,17 @@ htd5 = getLineFromUser testOps "5. |- A                                     by M
 
 testParserWithDeduction :: IO ()
 testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parseSentence testOps "(Bot -> A)") (getLogic specClassical) (useDeduction (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
+
+asdf = parseSentence testOps "(Bot -> ((A -> Bot) -> Bot) -> Bot)"
+
+htdd1 = getLineFromUser testOps "1. |- A                             by Assumption"
+htdd2 = getLineFromUser testOps "2. |- (A -> Bot)                    by Assumption"
+htdd3 = getLineFromUser testOps "3. |- Bot                           by Modus Ponens, 1 2"
+htdd4 = getLineFromUser testOps "4. |- (Bot -> ((B -> Bot) -> Bot))  by Axiom2"
+htdd5 = getLineFromUser testOps "5. |- ((B -> Bot) -> Bot)           by Modus Ponens, 3 4"
+htdd6 = getLineFromUser testOps "6. |- (((B -> Bot) -> Bot) -> B)    by Axiom5"
+htdd7 = getLineFromUser testOps "7. |- B                             by Modus Ponens, 5 6"
+
+deductionOnceLineParser = useDeduction (parseSentence testOps "A") [htdd1, htdd2, htdd3, htdd4, htdd5, htdd6, htdd7]
+deductionTwiceLineParser = useDeduction (parseSentence testOps "(A -> Bot)") deductionOnceLineParser
+testParserWithTwoDeductions = compileDatalogProof "axiom4_deductiontwice" (parseSentence testOps "((A -> Bot) -> (A -> B))") (getLogic specClassical) deductionTwiceLineParser

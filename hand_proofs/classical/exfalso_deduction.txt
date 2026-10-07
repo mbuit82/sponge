@@ -3,8 +3,8 @@ Theorem: |- (Bot -> A)
 Using deduction
 
 Proof
-1. |- Bot                                   by Assumption
-2. |- (Bot -> ((A -> Bot) -> Bot) -> Bot)   by Axiom2
-3. |- ((A -> Bot) -> Bot)                   by Modus Ponens, 1 2
-4. |- (((A -> Bot) -> Bot) -> A)            by Axiom5
-5. |- A                                     by Modus Ponens, 3 4
+1. |- Bot                           by Assumption
+2. |- (Bot -> ((A -> Bot) -> Bot))  by Axiom2
+3. |- ((A -> Bot) -> Bot)           by Modus Ponens, 1 2
+4. |- (((A -> Bot) -> Bot) -> A)    by Axiom5
+5. |- A                             by Modus Ponens, 3 4

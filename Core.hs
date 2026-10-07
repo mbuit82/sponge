@@ -184,7 +184,7 @@ getNextSentence opStack sentStack toSee =
     case toSee of
         [] -> case sentStack of 
                 [sent] -> (sent, [])
-                sent : remS -> error "have lots of sentences here"
+                sent : remS -> error "check for a missing set of parentheses?"
                 _ -> error "shid"
         LPToken : rem -> getNextSentence (LPToken : opStack) sentStack rem
         RPToken : rem -> case fetch opStack of
