@@ -1,9 +1,10 @@
 module Proofs where
 
 import Core
-import Specs
 
 import Data.Maybe
+import Data.List
+import Data.Char
 
 
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
@@ -49,20 +50,20 @@ axiomCaseDeduction :: Sentence -> Line -> [Line]
 axiomCaseDeduction hyp (Line lNum c justification rfs uNum) = 
     [   
         Line lNum c justification rfs Nothing,
-        Line (lNum + 1) (OpNode impl [c, (OpNode impl [hyp, c])]) "Axiom2" Nothing Nothing,
-        Line (lNum + 2) (OpNode impl [hyp, c]) "Modus Ponens" (Just (lNum, lNum + 1)) uNum
+        Line (lNum + 1) (OpNode cond [c, (OpNode cond [hyp, c])]) "Axiom2" Nothing Nothing,
+        Line (lNum + 2) (OpNode cond [hyp, c]) "Modus Ponens" (Just (lNum, lNum + 1)) uNum
     ]
 
 hypCaseDeduction :: Line -> [Line]
 hypCaseDeduction (Line n c justification rfs uNum) = 
     [
-        Line n (OpNode impl [OpNode impl [c, OpNode impl [c, c]], OpNode impl [OpNode impl [c, OpNode impl [OpNode impl [c, c], c]], OpNode impl [c, c]]]) "Axiom3" Nothing Nothing,
-        Line (n + 1) (OpNode impl [c, OpNode impl [c, c]]) "Axiom2" Nothing Nothing,
-        Line (n + 2) (OpNode impl [OpNode impl [c, OpNode impl [OpNode impl [c, c], c]], OpNode impl [c, c]]) "Modus Ponens" (Just (n + 1, n)) Nothing,
-        Line (n + 3) (OpNode impl [c, OpNode impl [OpNode impl [c, c], c]]) "Axiom2" Nothing Nothing,
-        Line (n + 4) (OpNode impl [c, c]) "Modus Ponens" (Just (n + 3, n + 2)) uNum
+        Line n (OpNode cond [OpNode cond [c, OpNode cond [c, c]], OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]]) "Axiom3" Nothing Nothing,
+        Line (n + 1) (OpNode cond [c, OpNode cond [c, c]]) "Axiom2" Nothing Nothing,
+        Line (n + 2) (OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]) "Modus Ponens" (Just (n + 1, n)) Nothing,
+        Line (n + 3) (OpNode cond [c, OpNode cond [OpNode cond [c, c], c]]) "Axiom2" Nothing Nothing,
+        Line (n + 4) (OpNode cond [c, c]) "Modus Ponens" (Just (n + 3, n + 2)) uNum
     ]
-    -- [Line lNum (OpNode impl [c, c]) "Axiom1" Nothing uNum]
+    -- [Line lNum (OpNode cond [c, c]) "Axiom1" Nothing uNum]
 
 findLineWithUserNum :: [Line] -> Int -> Maybe Line
 findLineWithUserNum lines uNum =
@@ -82,9 +83,9 @@ modusPonensCaseTransformation :: Sentence -> Line -> Line -> Transformation
 modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pqLine are already transformed
     let n = lineNumber currLine + offset in 
         [
-            Line n (OpNode impl [lineContent pLine, OpNode impl [lineContent pqLine, OpNode impl [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
-            Line (n + 1) (OpNode impl [lineContent pqLine, OpNode impl [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
-            Line (n + 2) (OpNode impl [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
+            Line n (OpNode cond [lineContent pLine, OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
+            Line (n + 1) (OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
+            Line (n + 2) (OpNode cond [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
         ]
 
 -- deduction should be the last transformation that happens
@@ -110,3 +111,28 @@ resetUserNumbers lines = map (\(Line n c j r _) -> Line n c j r (Just n)) lines
 useDeduction :: Logic -> Sentence -> [Line] -> [Line]
 useDeduction logic hyp oldProof = 
     resetUserNumbers (reverse (transformata (useDeduction' logic hyp (intoTransformant oldProof))))
+
+
+
+-- stuff below is for getting proofs from user input
+-- function to use after getting the goal
+-- For now, use this one, but am thinking of having a general one where deduction is one of many last-transformations done
+parseUserProofWithDeduction :: Logic -> Sentence -> [String] -> [Line]
+parseUserProofWithDeduction logic deductionRelativeGoal [] = []
+parseUserProofWithDeduction logic deductionRelativeGoal (fl : rem)
+    | isInfixOf "deduction" fl =
+        case deductionRelativeGoal of
+            OpNode cond [lArg, rArg] -> useDeduction logic lArg (parseUserProofWithDeduction logic rArg rem)
+            _ -> error "ope should have implication in goal to use deduction"
+    | (all isSpace fl) || fl == "Proof" = parseUserProofWithDeduction logic deductionRelativeGoal rem -- ignore conditions
+    | otherwise = getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal rem
+
+splitByProofLine :: [String] -> (String, [String])
+splitByProofLine [] = error "file has no lines!"
+splitByProofLine (l:tl) = (l, tl)
+
+parseUserProofFile :: Logic -> String -> (Sentence, [Line])
+parseUserProofFile logic fileContent =
+    let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
+        let goal = getProofGoal (operators logic) [] goalLine in
+            (goal, parseUserProofWithDeduction logic goal pfLines)

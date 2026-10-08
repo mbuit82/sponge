@@ -1,4 +1,4 @@
-.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | Bot {}
+.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence}
 
 .decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
 .decl Justified(n: unsigned)
@@ -20,7 +20,12 @@ Proven(f) :- Goal(f),
 
 Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, P)), "Axiom2", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional(P, R))), "Axiom3", _, _).
-Justified(n) :- Line(n, $Conditional($Conditional(P, $Bot()), $Conditional(P, Q)), "Axiom4", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, Q), P), "And Elim L", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, Q), Q), "And Elim R", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And Intro", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Or(P, Q)), "Or Intro L", _, _).
+Justified(n) :- Line(n, $Conditional(Q, $Or(P, Q)), "Or Intro R", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or Elim", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,
 	Justified(i),

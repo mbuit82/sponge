@@ -2,10 +2,10 @@ module ToDatalog where
 
 import Core
 import Specs
+import Proofs
 
 import Data.List
 import System.IO
-import ToHaskell
 
 
 
