@@ -1,7 +1,7 @@
 # sponge
 A modular proof checker for propositional axiomatic systems supporting abstractions like deduction, (eventually) derived rules, and (eventually) citing other proofs. (A separate ambition is to define translations between logics as well.)
 
-The project has three guiding ideas: 
+### The project has (at least?) three guiding ideas: 
 - The user should input proofs as close to as they would on paper.
 - The user should be able to abstract parts of a system that they are not focused on away. 
 - The specification of the logics should reflect their modular nature. 
@@ -18,7 +18,7 @@ The project needs the following things:
 2. Haskell
 3. Make
 
-For now, clone this repository, run `make all` in the main directory, and then write proofs in the `hand_proofs` directory as text files. See `PROOFS.md` fod details on the required syntax of proof files. To check a proof, run `make check-proof LOGIC_NAME PROOF_NAME` from the main directory, where `LOGIC_NAME` is the name of the logic you are using (the folder your proof is in) and `PROOF_NAME` is the name of the file your proof is in (without `.txt`).  
+For now, clone this repository, run `make all` in the main directory, and then write proofs in the `hand_proofs` directory as text files. See [PROOFS.md](PROOFS.md) fod details on the required syntax of proof files. To check a proof, run `make check-proof LOGIC_NAME PROOF_NAME` from the main directory, where `LOGIC_NAME` is the name of the logic you are using (the folder your proof is in) and `PROOF_NAME` is the name of the file your proof is in (without `.txt`).  
 
 <!-- ### The idea is motivated by a few desires: 
 - I really like doing axiomatic proofs of propositional systems, especially modal logics (just because there's more going on than the duller Hilbert-style systems for intuitionistic and classical propositional logic), so I want a centralized place where I can keep track of all the proofs I've done so I can reuse them (this is especially relevant when logics are contained within each other, like in modal logic). Paper is only contingently centralized. Something on a computer less so. 
