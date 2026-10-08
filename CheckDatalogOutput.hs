@@ -1,3 +1,5 @@
+module CheckDatalogOutput (main) where
+
 import Data.List
 import System.Environment (getArgs)
 

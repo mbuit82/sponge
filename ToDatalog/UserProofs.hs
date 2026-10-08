@@ -1,3 +1,5 @@
+module ToDatalog.UserProofs (main) where
+
 import Core
 import Specs ( getLogic, logicsDict )
 import ToDatalog.Utils
