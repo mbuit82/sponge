@@ -1,7 +1,8 @@
 import Core
 import Specs
 import Proofs
-import Data.List
+import ToHaskell
+import ToDatalog
 
 testEngines :: IO ()
 testEngines = do
