@@ -18,9 +18,9 @@ Proven(f) :- Goal(f),
 .output Justified
 .output Proven
 
-Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, P)), "Axiom2", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(_, P)), "Axiom2", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional(P, R))), "Axiom3", _, _).
-Justified(n) :- Line(n, $Conditional($Conditional(P, $Bot()), $Conditional(P, Q)), "Axiom4", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, $Bot()), $Conditional(P, _)), "Axiom4", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional($Conditional(P, $Bot()), $Bot()), P), "Axiom5", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,

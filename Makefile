@@ -12,11 +12,9 @@ proof-processing: datalog-engines
 	ghc CheckDatalogOutput.hs -o exec/check-datalog-output -outputdir build
 
 check-proof:
-	./exec/build-proof $(LOGIC) $(PROOF)
-	souffle --no-warn -D datalog_proofs/$(LOGIC)/$(PROOF) datalog_proofs/$(LOGIC)/$(PROOF)/$(PROOF).dl
-	./exec/check-datalog-output $(LOGIC) $(PROOF)
-
-
+	@ ./exec/build-proof $(LOGIC) $(PROOF)
+	@ souffle -D datalog_proofs/$(LOGIC)/$(PROOF) datalog_proofs/$(LOGIC)/$(PROOF)/$(PROOF).dl
+	@ ./exec/check-datalog-output $(LOGIC) $(PROOF)
 
 clean:
 	rm -rf build exec

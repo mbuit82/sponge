@@ -15,12 +15,15 @@ import System.Environment (getArgs)
 formulaToDatalog :: Bool -> Sentence -> String
 formulaToDatalog True (Atom name) = name
 formulaToDatalog False (Atom name) = "$Atom(\"" ++ name ++ "\")"
-formulaToDatalog varBool (OpNode op args) = 
+formulaToDatalog schemaBool (OpNode op args) = 
     "$" ++ (operatorName op) ++ "(" ++ argsStr ++ ")"
-        where argsStr = intercalate ", " (map (formulaToDatalog varBool) args)
+        where argsStr = intercalate ", " (map (formulaToDatalog schemaBool) args)
 
-schemaToDatalog :: Sentence -> String
-schemaToDatalog = formulaToDatalog True
+ruleSchemaToDatalog :: Sentence -> String
+ruleSchemaToDatalog = formulaToDatalog True
+
+axiomSchemaToDatalog :: Sentence -> String
+axiomSchemaToDatalog = formulaToDatalog True . dashSingletonVars
 
 sentenceToDatalog :: Sentence -> String
 sentenceToDatalog = formulaToDatalog False
@@ -37,11 +40,11 @@ constructorToDatalog op =
 syntaxToDatalog :: Logic -> String
 syntaxToDatalog logic = concatMap constructorToDatalog (operators logic)
 
-makeDatalogLine :: Sentence -> String -> String -> String -> String -> String
-makeDatalogLine sentence name n i j =
+makeDatalogLine :: (Sentence -> String) -> Sentence -> String -> String -> String -> String -> String
+makeDatalogLine contentFunc sentence name n i j =
     "Line(" ++ 
         n ++ ", " ++
-        schemaToDatalog sentence ++ ", " ++
+        contentFunc sentence ++ ", " ++
         (if name == "_" then name else "\"" ++ name ++ "\"") ++ ", " ++ 
         i ++ ", " ++ 
         j ++ ")"
@@ -49,7 +52,7 @@ makeDatalogLine sentence name n i j =
 axiomToDatalog :: Axiom -> String
 axiomToDatalog axiom = 
     "Justified(n) :- " ++ 
-    makeDatalogLine (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
+    makeDatalogLine axiomSchemaToDatalog (axiomContent axiom) (axiomName axiom) "n" "_" "_" ++ 
     ".\n"
 
 axiomsToDatalog :: Logic -> String
@@ -58,7 +61,7 @@ axiomsToDatalog logic = concatMap axiomToDatalog (axioms logic)
 conclusionToDatalog :: InferenceRule -> String 
 conclusionToDatalog rule = 
     "Justified(n) :- " ++ 
-    makeDatalogLine (conclusion rule) (ruleName rule) "n" "i" jv
+    makeDatalogLine ruleSchemaToDatalog (conclusion rule) (ruleName rule) "n" "i" jv
     where jv = case snd (premises rule) of 
             Nothing -> "_"
             Just _ -> "j"
@@ -67,7 +70,7 @@ premisesToDatalog :: InferenceRule -> [String]
 premisesToDatalog rule =
     concat [ [  v ++ " < n", 
                 "Justified(" ++ v ++ ")", 
-                makeDatalogLine prem "_" v "_" "_"] 
+                makeDatalogLine ruleSchemaToDatalog prem "_" v "_" "_"] 
             | (v, prem) <- zip ["i", "j"] premList]
     where premList = case snd (premises rule) of
                         Nothing -> [fst (premises rule)]
@@ -161,7 +164,3 @@ userToDatalog :: IO ()
 userToDatalog = do 
     [logicName, proofName] <- getArgs
     userToDatalog' logicName proofName
-
-
-
--- so now, the way it would go is that in the main directory, the user would type some command that sends a logic name and a proof name to a datalog file, then we run the datalog file in the main directory, we check the contents of the file, and if there's stuff in the proven one success else not

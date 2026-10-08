@@ -109,6 +109,30 @@ haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
 
 
+-- for avoiding that stupid souffle warning
+getAtoms :: Sentence -> [String]
+getAtoms (Atom a) = [a]
+getAtoms (OpNode _ args) = concatMap getAtoms args
+
+getNumVarOccurences :: String -> Sentence -> Int
+getNumVarOccurences tgtVar (Atom a) =
+    if a == tgtVar then 1 else 0
+getNumVarOccurences tgtVar (OpNode _ args) =
+    sum (map (getNumVarOccurences tgtVar) args)
+
+getSingletonVars :: Sentence -> [String]
+getSingletonVars sentence =
+    let pairList = map (\str -> (str, getNumVarOccurences str sentence)) (getAtoms sentence) in
+        map fst (filter (\(_, numOcc) -> numOcc == 1) pairList)
+
+dashVarsOut :: [String] -> Sentence -> Sentence
+dashVarsOut toDash (Atom a) = if a `elem` toDash then Atom "_" else Atom a
+dashVarsOut toDash (OpNode op args) = OpNode op (map (dashVarsOut toDash) args)
+
+dashSingletonVars :: Sentence -> Sentence
+dashSingletonVars sentence =
+    let toDash = getSingletonVars sentence in
+        dashVarsOut toDash sentence
 
 
 
