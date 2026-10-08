@@ -22,14 +22,14 @@ applyTransformation transformation oldState =
                 [] -> 
                     let applied = reverse (transformation (offset oldState) currLine) in 
                         Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState)
-                nxt : tail -> 
+                nxt : remLines -> 
                     let applied = reverse (transformation (offset oldState) currLine) in
-                        Transformant (applied ++ transformata oldState) (Just nxt) tail ((length applied) - 1 + offset oldState)
+                        Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState)
 
 -- the first arg is supposed to be a proof
 intoTransformant :: [Line] -> Transformant
 intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-intoTransformant (fstLine:tail) = Transformant [] (Just fstLine) tail 0
+intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
 
 applyOffset :: Int -> Line -> Line
 applyOffset offset (Line n c justification rfs uNum) = 
@@ -38,7 +38,7 @@ applyOffset offset (Line n c justification rfs uNum) =
         Just (i, j) -> Line (n + offset) c justification (Just (i + offset, j + offset)) uNum
 
 applyOffsetToLines :: Int -> [Line] -> [Line]
-applyOffsetToLines offset lines = map (applyOffset offset) lines
+applyOffsetToLines offset lns = map (applyOffset offset) lns
 
 
 
@@ -55,7 +55,7 @@ axiomCaseDeduction hyp (Line lNum c justification rfs uNum) =
     ]
 
 hypCaseDeduction :: Line -> [Line]
-hypCaseDeduction (Line n c justification rfs uNum) = 
+hypCaseDeduction (Line n c _ _ uNum) = 
     [
         Line n (OpNode cond [OpNode cond [c, OpNode cond [c, c]], OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]]) "Axiom3" Nothing Nothing,
         Line (n + 1) (OpNode cond [c, OpNode cond [c, c]]) "Axiom2" Nothing Nothing,
@@ -66,12 +66,12 @@ hypCaseDeduction (Line n c justification rfs uNum) =
     -- [Line lNum (OpNode cond [c, c]) "Axiom1" Nothing uNum]
 
 findLineWithUserNum :: [Line] -> Int -> Maybe Line
-findLineWithUserNum lines uNum =
-    case lines of
+findLineWithUserNum lns uNum =
+    case lns of
         [] -> Nothing
-        l : tail -> case userNumber l of
-                        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum tail uNum
-                        _ -> findLineWithUserNum tail uNum
+        l : remLines -> case userNumber l of
+                        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum remLines uNum
+                        _ -> findLineWithUserNum remLines uNum
 
 axiomCaseTransformation :: Sentence -> Transformation
 axiomCaseTransformation hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
@@ -106,7 +106,7 @@ useDeduction' logic hyp state =
                                     else error "unknown justification for deduction"
 
 resetUserNumbers :: [Line] -> [Line]
-resetUserNumbers lines = map (\(Line n c j r _) -> Line n c j r (Just n)) lines
+resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
 
 useDeduction :: Logic -> Sentence -> [Line] -> [Line]
 useDeduction logic hyp oldProof = 
@@ -118,14 +118,15 @@ useDeduction logic hyp oldProof =
 -- function to use after getting the goal
 -- For now, use this one, but am thinking of having a general one where deduction is one of many last-transformations done
 parseUserProofWithDeduction :: Logic -> Sentence -> [String] -> [Line]
-parseUserProofWithDeduction logic deductionRelativeGoal [] = []
-parseUserProofWithDeduction logic deductionRelativeGoal (fl : rem)
+parseUserProofWithDeduction _ _ [] = []
+parseUserProofWithDeduction logic deductionRelativeGoal (fl : remFileLines)
     | isInfixOf "deduction" fl =
         case deductionRelativeGoal of
-            OpNode cond [lArg, rArg] -> useDeduction logic lArg (parseUserProofWithDeduction logic rArg rem)
-            _ -> error "ope should have implication in goal to use deduction"
-    | (all isSpace fl) || fl == "Proof" = parseUserProofWithDeduction logic deductionRelativeGoal rem -- ignore conditions
-    | otherwise = getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal rem
+            OpNode op [lArg, rArg] -> if op == cond then useDeduction logic lArg (parseUserProofWithDeduction logic rArg remFileLines)
+                                        else error "ope should have conditional in goal to use deduction"
+            _ -> error "ope should have conditional in goal to use deduction"
+    | (all isSpace fl) || fl == "Proof" = parseUserProofWithDeduction logic deductionRelativeGoal remFileLines -- ignore conditions
+    | otherwise = getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal remFileLines
 
 splitByProofLine :: [String] -> (String, [String])
 splitByProofLine [] = error "file has no lines!"

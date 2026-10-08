@@ -19,10 +19,10 @@ data Sentence = Atom {atomName :: String}
               | OpNode {topOp :: Operator, args :: [Sentence]} deriving Eq
 instance Show Sentence where 
     show (Atom str) = str
-    show (OpNode (Operator opN opS 0) []) = opS
-    show (OpNode (Operator opN opS 1) [arg]) = opS ++ "(" ++ show arg ++ ")"
-    show (OpNode (Operator opN opS 2) [arg1, arg2]) = "(" ++ show arg1 ++ " " ++ opS ++ " " ++ show arg2 ++ ")"
-    show (OpNode (Operator opN opS _) args) = error "either ternary or something's gone wrong with an operator definition"
+    show (OpNode (Operator _ opS 0) []) = opS
+    show (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ show arg ++ ")"
+    show (OpNode (Operator _ opS 2) [arg1, arg2]) = "(" ++ show arg1 ++ " " ++ opS ++ " " ++ show arg2 ++ ")"
+    show (OpNode _ _) = error "either ternary or something's gone wrong with an operator definition"
         -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- ternary+, but for would be indicative that something's gone wrong
 
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} -- low key not necessary
@@ -67,13 +67,13 @@ userNumberHuh (Just n) = "(" ++ show n ++ ")"
 
 -- RUNTIME CHECKS FOR LATER
 aritiesCheck :: Sentence -> Bool
-aritiesCheck (Atom a) = True
+aritiesCheck (Atom _) = True
 aritiesCheck (OpNode op args)
     | arity op == length args = all aritiesCheck args
     | otherwise = False
 
 isWff :: Logic -> Sentence -> Bool
-isWff logic (Atom _) = True
+isWff _ (Atom _) = True
 isWff logic (OpNode op args)
     | elem op (operators logic) = all (isWff logic) args
     | otherwise = False
@@ -96,7 +96,7 @@ isInstance :: Sentence -> Sentence -> Bool
 -- the first Sentence is a sentence, second is a schema
 -- need to think about naming for sentences/formulae
 -- for now, assume everything is well-formed. 
-isInstance sentence (Atom _) = True
+isInstance _ (Atom _) = True
 isInstance sentence (OpNode schemaOp schemaArgs) =
     case sentence of 
         Atom _ -> False
@@ -124,9 +124,9 @@ exportCurrToken Nothing = [] -- :: [[Char]]
 exportCurrToken (Just a) = [AtomToken a] -- :: [[Char]]
 
 getOpWithSymbol :: [Operator] -> String -> Maybe Operator
-getOpWithSymbol [] name = Nothing
-getOpWithSymbol (op : rem) name =
-    if operatorSymbol op == name then (Just op) else getOpWithSymbol rem name
+getOpWithSymbol [] _ = Nothing
+getOpWithSymbol (op : remOps) name =
+    if operatorSymbol op == name then (Just op) else getOpWithSymbol remOps name
 
 tokenize' :: [Operator] -> String -> Maybe String -> [Token]
 tokenize' ops [] beingBuilt = 
@@ -141,40 +141,40 @@ tokenize' ops (char : remChars) beingBuilt =
             ')' -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops remChars Nothing
             ' ' -> exportCurrToken beingBuilt              ++ tokenize' ops remChars Nothing
             ',' -> exportCurrToken beingBuilt              ++ tokenize' ops remChars Nothing -- for stuff after "by" and in general why not
-            char -> tokenize' ops remChars (Just (fromMaybe [] beingBuilt ++ [char]))
+            other -> tokenize' ops remChars (Just (fromMaybe [] beingBuilt ++ [other]))
 
 tokenize :: [Operator] -> String -> [Token]
 tokenize ops str = tokenize' ops str Nothing
 
 pop :: [a] -> [a]
 pop [] = error "Stack underflow from pop"
-pop (x:xs) = xs
+pop (_:xs) = xs
 
 fetch :: [a] -> a
 fetch [] = error "Stack underflow from fetch"
-fetch (x:xs) = x
+fetch (x:_) = x
 
 getNextSentence :: [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
 -- getNextSentence [OpToken binOp] [rArg, lArg] [] = (OpNode binOp [lArg, rArg], []) -- my attempt at no top level parentheses. The problem is tha we never get there
 getNextSentence [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
-getNextSentence opStack [] [] = error "shid we reached the end and we have no sentences lel"
-getNextSentence opStack [sent] [] = error "this case doesn't make sense really"
-getNextSentence opStack (sent:remS) [] = error "check for a missing set of parentheses?"
+getNextSentence _ [] [] = error "shid we reached the end and we have no sentences lel"
+getNextSentence _ [_] [] = error "this case doesn't make sense really"
+getNextSentence _ (_:_) [] = error "check for a missing set of parentheses?"
 getNextSentence opStack sentStack toSee =
     case toSee of
-        LPToken : rem -> getNextSentence (LPToken : opStack) sentStack rem
-        RPToken : rem -> case fetch opStack of
+        LPToken : toks -> getNextSentence (LPToken : opStack) sentStack toks
+        RPToken : toks -> case fetch opStack of
                             OpToken op -> case sentStack of
-                                            rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) rem -- this should really be pop until you see a LPToken
+                                            rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) toks -- this should really be pop until you see a LPToken
                                             _ -> error "not enough args"
-                            LPToken -> getNextSentence (pop opStack) sentStack rem -- sandwiched something lol (unary or nullary operator that over-parenthesized)
+                            LPToken -> getNextSentence (pop opStack) sentStack toks -- sandwiched something lol (unary or nullary operator that over-parenthesized)
                             _ -> error "should have been an operator on the stack but there wasn't"
-        AtomToken a : rem -> getNextSentence opStack (Atom a : sentStack) rem
-        OpToken op : rem -> case arity op of
-                                0 -> getNextSentence opStack (OpNode op [] : sentStack) rem
-                                1 -> let (nextSent, newRem) = getNextSentence [] [] rem in
+        AtomToken a : toks -> getNextSentence opStack (Atom a : sentStack) toks
+        OpToken op : toks -> case arity op of
+                                0 -> getNextSentence opStack (OpNode op [] : sentStack) toks
+                                1 -> let (nextSent, newRem) = getNextSentence [] [] toks in
                                         getNextSentence opStack (OpNode op [nextSent] : sentStack) newRem
-                                2 -> getNextSentence (OpToken op : opStack) sentStack rem
+                                2 -> getNextSentence (OpToken op : opStack) sentStack toks
                                 _ -> error "not doing n-ary predicates yet"
 
 -- lmao so we just add an extra set of parentheses onto everything lol. 
@@ -188,28 +188,28 @@ parse ops input = getTopLevelSentence (tokenize ops input)
 getLineNumFromLine :: String -> String -> (Int, String)
 getLineNumFromLine seen toSee = 
     case toSee of
-        '.' : ' ' : '|' : '-' : ' ' : rem -> (read seen, rem)
+        '.' : ' ' : '|' : '-' : ' ' : remChars -> (read seen, remChars)
         [] -> error "couldn't find line number split!"
-        c : rem -> getLineNumFromLine (seen ++ [c]) rem
+        c : remChars -> getLineNumFromLine (seen ++ [c]) remChars
 
 getContentFromLine :: [Operator] -> String -> String -> (Sentence, String)
 getContentFromLine ops seen toSee =
     case toSee of
-        'b' : 'y' : ' ' : rem -> (parse ops seen, rem)
+        'b' : 'y' : ' ' : remChars -> (parse ops seen, remChars)
         [] -> error "line wasn't justified!"
-        c : rem -> getContentFromLine ops (seen ++ [c]) rem
+        c : remChars -> getContentFromLine ops (seen ++ [c]) remChars
 
 -- meant to be applied after getting the content
 getJustificationFromLine :: String -> String -> (String, Maybe (Int, Int))
 getJustificationFromLine seen toSee =
     case toSee of
-        ',' : rem -> case rem of
-                        [] -> (seen, Nothing)
-                        s -> case words s of
-                                [i, j] -> (seen, Just (read i, read j))
-                                _ -> error "theres stuff after justification but it's not two ints"
+        ',' : remChars -> case remChars of
+                            [] -> (seen, Nothing)
+                            s -> case words s of
+                                    [i, j] -> (seen, Just (read i, read j))
+                                    _ -> error "theres stuff after justification but it's not two ints"
         [] -> (seen, Nothing) -- axiom case (with no trailing comma)
-        c : rem -> getJustificationFromLine (seen ++ [c]) rem
+        c : remChars -> getJustificationFromLine (seen ++ [c]) remChars
 
 getLineFromUser :: [Operator] -> String -> Line
 getLineFromUser ops userLine =
@@ -219,6 +219,6 @@ getLineFromUser ops userLine =
                 Line lNum content j rfs (Just lNum)
 
 getProofGoal :: [Operator] -> String -> String -> Sentence
-getProofGoal ops seen [] = error "proof has no goal!"
-getProofGoal ops seen ('|' : '-' : rem) = parse ops rem
-getProofGoal ops seen (c:tail) = getProofGoal ops (seen ++ [c]) tail
+getProofGoal _ _ [] = error "proof has no goal!"
+getProofGoal ops _ ('|' : '-' : remChars) = parse ops remChars
+getProofGoal ops seen (c:remChars) = getProofGoal ops (seen ++ [c]) remChars

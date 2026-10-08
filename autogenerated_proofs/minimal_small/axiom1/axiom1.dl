@@ -1,9 +1,9 @@
 #include "../../../datalog_engines/minimal_small.dl"
 
-Goal($Implication($Atom("A"), $Atom("A"))).
+Goal($Conditional($Atom("A"), $Atom("A"))).
 
-Line(1, $Implication($Implication($Atom("A"), $Implication($Atom("A"), $Atom("A"))), $Implication($Implication($Atom("A"), $Implication($Implication($Atom("A"), $Atom("A")), $Atom("A"))), $Implication($Atom("A"), $Atom("A")))), "Axiom3", 0, 0).
-Line(2, $Implication($Atom("A"), $Implication($Atom("A"), $Atom("A"))), "Axiom2", 0, 0).
-Line(3, $Implication($Implication($Atom("A"), $Implication($Implication($Atom("A"), $Atom("A")), $Atom("A"))), $Implication($Atom("A"), $Atom("A"))), "Modus Ponens", 2, 1).
-Line(4, $Implication($Atom("A"), $Implication($Implication($Atom("A"), $Atom("A")), $Atom("A"))), "Axiom2", 0, 0).
-Line(5, $Implication($Atom("A"), $Atom("A")), "Modus Ponens", 4, 3).
+Line(1, $Conditional($Conditional($Atom("A"), $Conditional($Atom("A"), $Atom("A"))), $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Atom("A")), $Atom("A"))), $Conditional($Atom("A"), $Atom("A")))), "Axiom3", 0, 0).
+Line(2, $Conditional($Atom("A"), $Conditional($Atom("A"), $Atom("A"))), "Axiom2", 0, 0).
+Line(3, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Atom("A")), $Atom("A"))), $Conditional($Atom("A"), $Atom("A"))), "Modus Ponens", 2, 1).
+Line(4, $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Atom("A")), $Atom("A"))), "Axiom2", 0, 0).
+Line(5, $Conditional($Atom("A"), $Atom("A")), "Modus Ponens", 4, 3).
