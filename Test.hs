@@ -1,7 +1,8 @@
 import Core
 import Specs
 import Proofs
-import ToDatalog
+import ToDatalog.Engines
+import ToDatalog.UserProofs
 import qualified Data.Map as Map
 
 testEngines :: IO ()
