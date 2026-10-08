@@ -86,31 +86,6 @@ parseTest21 = parse testOps "(A -> B -> A)" == OpNode cond [Atom "A", OpNode con
 parseTest22 = parse testOps "A -> B -> A" == OpNode cond [Atom "A", OpNode cond [Atom "B", Atom "A"]]
 parseTest23 = parse testOps "A -> B -> ~A" == OpNode cond [Atom "A", OpNode cond [Atom "B", OpNode cond [Atom "A", OpNode bot []]]]
 
-parseTests :: IO ()
-parseTests = do
-    print parseTest0
-    print parseTest1
-    print parseTest2
-    print parseTest3
-    print parseTest4
-    print parseTest5
-    print parseTest6
-    print parseTest7
-    print parseTest8
-    print parseTest9
-    print parseTest10
-    print parseTest11
-    print parseTest12
-    print parseTest13
-    print parseTest14
-    print parseTest15
-    print parseTest16
-    print parseTest17
-    print parseTest18
-    print parseTest19
-    print parseTest20
-    print parseTest21
-    print parseTest22
 
 
 ht1 = getLineFromUser testOps "1. |- ((A -> (A -> A)) -> ((A -> ((A -> A) -> A)) -> (A -> A))) by Axiom3"
