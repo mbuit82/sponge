@@ -6,12 +6,14 @@ import ToDatalog
 
 testEngines :: IO ()
 testEngines = do
-    compileDatalogEngine specIntuitionistic
-    compileDatalogEngine specClassical
+    compileDatalogEngine specMinimalSmall
+    compileDatalogEngine specIntuitionisticSmall
+    compileDatalogEngine specClassicalSmall
     compileDatalogEngine specK
 
-ipc = getLogic specIntuitionistic
-cpc = getLogic specClassical
+smallMpc = getLogic specMinimalSmall
+smallIpc = getLogic specIntuitionisticSmall
+smallCpc = getLogic specClassicalSmall
 
 l1 = Line 1 (OpNode impl [OpNode impl [Atom "A", OpNode impl [Atom "A", Atom "A"]], OpNode impl [OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"], Atom "A"]], OpNode impl [Atom "A", Atom "A"]]]) "Axiom3" Nothing (Just 1)
 l2 = Line 2 (OpNode impl [Atom "A", OpNode impl [Atom "A", Atom "A"]]) "Axiom2" Nothing (Just 2)
@@ -20,10 +22,10 @@ l4 = Line 4 (OpNode impl [Atom "A", OpNode impl [OpNode impl [Atom "A", Atom "A"
 l5 = Line 5 (OpNode impl [Atom "A", Atom "A"]) "Modus Ponens" (Just (4, 3)) (Just 5)
 
 testPureProof :: IO ()
-testPureProof = compileDatalogProof "axiom1" (OpNode impl [Atom "A", Atom "A"]) ipc [l1, l2, l3, l4, l5]
+testPureProof = compileDatalogProof "axiom1" (OpNode impl [Atom "A", Atom "A"]) smallMpc [l1, l2, l3, l4, l5]
 
 testOffset :: IO ()
-testOffset = compileDatalogProof "axiom1offset" (OpNode impl [Atom "A", Atom "A"]) ipc (applyOffsetToLines 10 [l1, l2, l3, l4, l5])
+testOffset = compileDatalogProof "axiom1offset" (OpNode impl [Atom "A", Atom "A"]) smallMpc (applyOffsetToLines 10 [l1, l2, l3, l4, l5])
 
 dl1 = Line 1 (OpNode bot []) "Assumption" Nothing (Just 1)
 dl2 = Line 2 (OpNode impl [OpNode bot [], (OpNode impl [OpNode impl [Atom "A", OpNode bot []], OpNode bot []])]) "Axiom2" Nothing (Just 2)
@@ -32,27 +34,27 @@ dl4 = Line 4 (OpNode impl [OpNode impl [OpNode impl [Atom "A", OpNode bot []], O
 dl5 = Line 5 (Atom "A") "Modus Ponens" (Just (3, 4)) (Just 5)
 
 proofBeforeDeduction = [dl1, dl2, dl3, dl4, dl5]
-proofAfterDeduction = useDeduction cpc (OpNode bot []) proofBeforeDeduction
+proofAfterDeduction = useDeduction smallCpc (OpNode bot []) proofBeforeDeduction
 
 testDeduction :: IO ()
-testDeduction = compileDatalogProof "exfalso_deduction" (OpNode impl [OpNode bot [], Atom "A"]) cpc proofAfterDeduction
+testDeduction = compileDatalogProof "exfalso_deduction" (OpNode impl [OpNode bot [], Atom "A"]) smallCpc proofAfterDeduction
 
 
 -- TEST: deduction twice
-ddll2 = Line 1 (Atom "A") "Assumption" Nothing (Just 1)
-ddll1 = Line 2 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 2)
+ddll1 = Line 1 (Atom "A") "Assumption" Nothing (Just 1)
+ddll2 = Line 2 (OpNode impl [Atom "A", OpNode bot []]) "Assumption" Nothing (Just 2)
 ddll3 = Line 3 (OpNode bot []) "Modus Ponens" (Just (1, 2)) (Just 3)
 ddll4 = Line 4 (OpNode impl [OpNode bot [], (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []])]) "Axiom2" Nothing (Just 4)
 ddll5 = Line 5 (OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []]) "Modus Ponens" (Just (3, 4)) (Just 5)
 ddll6 = Line 6 (OpNode impl [(OpNode impl [OpNode impl [Atom "B", OpNode bot []], OpNode bot []]), Atom "B"]) "Axiom5" Nothing (Just 6)
 ddll7 = Line 7 (Atom "B") "Modus Ponens" (Just (5, 6)) (Just 7)
 
-firstDeduction = (useDeduction cpc (Atom "A") [ddll1, ddll2, ddll3, ddll4, ddll5, ddll6, ddll7])
+firstDeduction = (useDeduction smallCpc (Atom "A") [ddll1, ddll2, ddll3, ddll4, ddll5, ddll6, ddll7])
 
-proofAfterDeductionTwice = useDeduction cpc (OpNode impl [Atom "A", OpNode bot []]) firstDeduction
+proofAfterDeductionTwice = useDeduction smallCpc (OpNode impl [Atom "A", OpNode bot []]) firstDeduction
 
 testDeductionTwice :: IO ()
-testDeductionTwice = compileDatalogProof "axiom4_deductiontwice" (OpNode impl [OpNode impl [Atom "A", OpNode bot []], OpNode impl [Atom "A", Atom "B"]]) cpc proofAfterDeductionTwice
+testDeductionTwice = compileDatalogProof "axiom4_deductiontwice" (OpNode impl [OpNode impl [Atom "A", OpNode bot []], OpNode impl [Atom "A", Atom "B"]]) smallCpc proofAfterDeductionTwice
 
 
 testOps = [bot, box, impl]
@@ -116,7 +118,7 @@ ht4 = getLineFromUser testOps "4. |- (A -> ((A -> A) -> A))                     
 ht5 = getLineFromUser testOps "5. |- (A -> A)                                                  by Modus Ponens, 4 3"
 
 testLineParser :: IO ()
-testLineParser = compileDatalogProof "axiom1" (parseSentence testOps "(A -> A)") ipc [ht1, ht2, ht3, ht4, ht5]
+testLineParser = compileDatalogProof "axiom1" (parseSentence testOps "(A -> A)") smallIpc [ht1, ht2, ht3, ht4, ht5]
 
 htd1 = getLineFromUser testOps "1. |- Bot                                   by Assumption"
 htd2 = getLineFromUser testOps "2. |- (Bot -> ((A -> Bot) -> Bot))   by Axiom2"
@@ -124,10 +126,10 @@ htd3 = getLineFromUser testOps "3. |- ((A -> Bot) -> Bot)                   by M
 htd4 = getLineFromUser testOps "4. |- (((A -> Bot) -> Bot) -> A)            by Axiom5"
 htd5 = getLineFromUser testOps "5. |- A                                     by Modus Ponens, 3 4"
 
--- proofAfterDeduction = useDeduction cpc (OpNode bot []) [htd1, htd2, htd3, htd4, htd5]
+-- proofAfterDeduction = useDeduction smallCpc (OpNode bot []) [htd1, htd2, htd3, htd4, htd5]
 
 testParserWithDeduction :: IO ()
-testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parseSentence testOps "(Bot -> A)") cpc (useDeduction cpc (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
+testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parseSentence testOps "(Bot -> A)") smallCpc (useDeduction smallCpc (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
 
 asdf = parseSentence testOps "(Bot -> ((A -> Bot) -> Bot) -> Bot)"
 
@@ -139,6 +141,6 @@ htdd5 = getLineFromUser testOps "5. |- ((B -> Bot) -> Bot)           by Modus Po
 htdd6 = getLineFromUser testOps "6. |- (((B -> Bot) -> Bot) -> B)    by Axiom5"
 htdd7 = getLineFromUser testOps "7. |- B                             by Modus Ponens, 5 6"
 
-deductionOnceLineParser = useDeduction cpc (parseSentence testOps "A") [htdd1, htdd2, htdd3, htdd4, htdd5, htdd6, htdd7]
-deductionTwiceLineParser = useDeduction cpc (parseSentence testOps "(A -> Bot)") deductionOnceLineParser
-testParserWithTwoDeductions = compileDatalogProof "axiom4_deductiontwice" (parseSentence testOps "((A -> Bot) -> (A -> B))") cpc deductionTwiceLineParser
+deductionOnceLineParser = useDeduction smallCpc (parseSentence testOps "A") [htdd1, htdd2, htdd3, htdd4, htdd5, htdd6, htdd7]
+deductionTwiceLineParser = useDeduction smallCpc (parseSentence testOps "(A -> Bot)") deductionOnceLineParser
+testParserWithTwoDeductions = compileDatalogProof "axiom4_deductiontwice" (parseSentence testOps "((A -> Bot) -> (A -> B))") smallCpc deductionTwiceLineParser

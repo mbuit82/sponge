@@ -1,4 +1,4 @@
-#include "../../../datalog_engines/classical.dl"
+#include "../../../datalog_engines/classical_small.dl"
 
 Goal($Implication($Bot(), $Atom("A"))).
 

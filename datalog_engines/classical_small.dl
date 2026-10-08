@@ -1,4 +1,4 @@
-.type Sentence = Atom {name: symbol} | Bot {} | Implication {s1: Sentence, s2: Sentence}
+.type Sentence = Atom {name: symbol} | Implication {s1: Sentence, s2: Sentence} | Bot {}
 
 .decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
 .decl Justified(n: unsigned)
@@ -21,6 +21,7 @@ Proven(f) :- Goal(f),
 Justified(n) :- Line(n, $Implication(P, $Implication(Q, P)), "Axiom2", _, _).
 Justified(n) :- Line(n, $Implication($Implication(P, Q), $Implication($Implication(P, $Implication(Q, R)), $Implication(P, R))), "Axiom3", _, _).
 Justified(n) :- Line(n, $Implication($Implication(P, $Bot()), $Implication(P, Q)), "Axiom4", _, _).
+Justified(n) :- Line(n, $Implication($Implication($Implication(P, $Bot()), $Bot()), P), "Axiom5", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,
 	Justified(i),

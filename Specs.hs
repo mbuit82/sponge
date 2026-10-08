@@ -25,28 +25,37 @@ getLogic spec =
                         axioms = axioms baseLogic ++ newAxioms spec, 
                         inferenceRules = inferenceRules baseLogic ++ newInferenceRules spec })
 
-bot :: Operator
-bot = Operator "Bot" "Bot" 0
 
 impl :: Operator
 impl = Operator "Implication" "->" 2
 
-specIntuitionistic :: Spec
-specIntuitionistic = Spec {
-    specName = "intuitionistic",
+specMinimalSmall :: Spec
+specMinimalSmall = Spec {
+    specName = "minimal_small",
     baseSystem = Nothing,
-    newOperators = [bot, impl],
+    newOperators = [impl],
     newAxioms = [
                     Axiom "Axiom2" (OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "P"]]),
-                    Axiom "Axiom3" (OpNode impl [OpNode impl [Atom "P", Atom "Q"], OpNode impl [OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "R"]], OpNode impl [Atom "P", Atom "R"]]]),
-                    Axiom "Axiom4" (OpNode impl [OpNode impl [Atom "P", OpNode bot []], OpNode impl [Atom "P", Atom "Q"]])],
+                    Axiom "Axiom3" (OpNode impl [OpNode impl [Atom "P", Atom "Q"], OpNode impl [OpNode impl [Atom "P", OpNode impl [Atom "Q", Atom "R"]], OpNode impl [Atom "P", Atom "R"]]])],
     newInferenceRules = [InferenceRule "Modus Ponens" (Atom "P", Just (OpNode impl [Atom "P", Atom "Q"])) (Atom "Q")]
 }
 
-specClassical :: Spec
-specClassical = Spec {
-    specName = "classical",
-    baseSystem = Just specIntuitionistic,
+bot :: Operator
+bot = Operator "Bot" "Bot" 0
+
+specIntuitionisticSmall :: Spec
+specIntuitionisticSmall = Spec {
+    specName = "intuitionistic_small",
+    baseSystem = Just specMinimalSmall,
+    newOperators = [bot],
+    newAxioms = [Axiom "Axiom4" (OpNode impl [OpNode impl [Atom "P", OpNode bot []], OpNode impl [Atom "P", Atom "Q"]])],
+    newInferenceRules = []
+}
+
+specClassicalSmall :: Spec
+specClassicalSmall = Spec {
+    specName = "classical_small",
+    baseSystem = Just specIntuitionisticSmall,
     newOperators = [],
     newAxioms = [Axiom "Axiom5" (OpNode impl [OpNode impl [OpNode impl [Atom "P", OpNode bot []], OpNode bot []], Atom "P"])],
     newInferenceRules = []
@@ -58,7 +67,7 @@ box = Operator "Box" "Box" 1
 specK :: Spec
 specK = Spec {
     specName = "K",
-    baseSystem = Just specClassical,
+    baseSystem = Just specClassicalSmall,
     newOperators = [box],
     newAxioms = [Axiom "K Axiom" (OpNode impl [OpNode box [OpNode impl [Atom "P", Atom "Q"]], OpNode impl [OpNode box [Atom "P"], OpNode box [Atom "Q"]]])],
     newInferenceRules = [InferenceRule "N" (Atom "P", Nothing) (OpNode box [Atom "P"])]
