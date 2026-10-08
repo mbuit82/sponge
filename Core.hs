@@ -25,12 +25,13 @@ instance Show Sentence where
     show (OpNode _ _) = error "either ternary or something's gone wrong with an operator definition"
         -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- ternary+, but for would be indicative that something's gone wrong
 
-data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} -- low key not necessary
+data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving Show
+-- low key not necessary
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
     premises :: (Sentence, Maybe Sentence), -- strictly enforce having two
-    conclusion :: Sentence}
+    conclusion :: Sentence} deriving Show
 
 -- well, by design, the operators in the axioms and inference rules need to be in the operators. 
 -- how can I enforce that with the type system? not sure I can
@@ -39,7 +40,7 @@ data Logic = Logic
     operators :: [Operator],
     axioms :: [Axiom],
     inferenceRules :: [InferenceRule]
-  }
+  } deriving Show
 
 -- for proofs
 data Line = Line {

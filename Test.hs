@@ -2,20 +2,21 @@ import Core
 import Specs
 import Proofs
 import ToDatalog
+import qualified Data.Map as Map
 
 testEngines :: IO ()
 testEngines = do
-    compileDatalogEngine specMinimalSmall
-    compileDatalogEngine specIntuitionisticSmall
-    compileDatalogEngine specClassicalSmall
-    compileDatalogEngine specMinimal
-    compileDatalogEngine specIntuitionistic
-    compileDatalogEngine specClassical
-    compileDatalogEngine specK
+    compileDatalogEngine "minimal_small"
+    compileDatalogEngine "intuitionistic_small"
+    compileDatalogEngine "classical_small"
+    compileDatalogEngine "minimal"
+    compileDatalogEngine "intuitionistic"
+    compileDatalogEngine "classical"
+    compileDatalogEngine "K"
 
-smallMpc = getLogic specMinimalSmall
-smallIpc = getLogic specIntuitionisticSmall
-smallCpc = getLogic specClassicalSmall
+smallMpc = getLogic "minimal_small"
+smallIpc = getLogic "intuitionistic_small"
+smallCpc = getLogic "classical_small"
 
 l1 = Line 1 (OpNode cond [OpNode cond [Atom "A", OpNode cond [Atom "A", Atom "A"]], OpNode cond [OpNode cond [Atom "A", OpNode cond [OpNode cond [Atom "A", Atom "A"], Atom "A"]], OpNode cond [Atom "A", Atom "A"]]]) "Axiom3" Nothing (Just 1)
 l2 = Line 2 (OpNode cond [Atom "A", OpNode cond [Atom "A", Atom "A"]]) "Axiom2" Nothing (Just 2)

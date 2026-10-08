@@ -2,6 +2,8 @@ module Specs where
 
 import Core
 
+import qualified Data.Map as Map
+
 data Spec = Spec
   { specName :: String,
     baseSystem :: Maybe Spec,
@@ -10,28 +12,38 @@ data Spec = Spec
     newInferenceRules :: [InferenceRule]
   }
 
-getLogic :: Spec -> Logic
-getLogic spec = 
+getLogicFromSpec :: Spec -> Logic
+getLogicFromSpec spec = 
     case (baseSystem spec) of
         Nothing ->  (Logic { 
                         logicName = specName spec, 
                         operators = newOperators spec, 
                         axioms = newAxioms spec, 
                         inferenceRules = newInferenceRules spec })
-        Just base -> let baseLogic = getLogic base in
+        Just base -> let baseLogic = getLogicFromSpec base in
                     (Logic { 
                         logicName = specName spec, 
                         operators = operators baseLogic ++ newOperators spec, 
                         axioms = axioms baseLogic ++ newAxioms spec, 
                         inferenceRules = inferenceRules baseLogic ++ newInferenceRules spec })
 
+makeLogicsDict :: [Spec] -> Map.Map String Logic
+makeLogicsDict specs = Map.fromList (map (\s -> (specName s, getLogicFromSpec s)) specs)
+
+logicsDict :: Map.Map String Logic
+logicsDict = makeLogicsDict specsList -- specsList is at the bottom. Add any specs to it if you want to use them!
+
+getLogic :: String -> Logic
+getLogic logicName = logicsDict Map.! logicName
 
 
+
+-- specs
 specMinimalSmall :: Spec
 specMinimalSmall = Spec {
     specName = "minimal_small",
     baseSystem = Nothing,
-    newOperators = [cond],
+    newOperators = [cond], -- from core, since it plays role in deduction lemma thing
     newAxioms = [   Axiom "Axiom2" (parse [cond] "P -> (Q -> P)"),
                     Axiom "Axiom3" (parse [cond] "(P -> Q) -> ((P -> (Q -> R)) -> (P -> R))")],
     newInferenceRules = [InferenceRule "Modus Ponens" (parse [] "P", Just (parse [cond] "P -> Q")) (parse [] "Q")]
@@ -71,12 +83,12 @@ specMinimal = Spec {
     newOperators = [cond, andOp, orOp],
     newAxioms = [   Axiom "Axiom2" (parse [cond] "P -> (Q -> P)"),
                     Axiom "Axiom3" (parse [cond] "(P -> Q) -> ((P -> (Q -> R)) -> (P -> R))"),
-                    Axiom "And Elim L" (parse [cond, andOp] "(P & Q) -> P"),
-                    Axiom "And Elim R" (parse [cond, andOp] "(P & Q) -> Q"),
-                    Axiom "And Intro" (parse [cond, andOp] "P -> (Q -> (P & Q))"),
-                    Axiom "Or Intro L" (parse [cond, orOp] "P -> (P v Q)"),
-                    Axiom "Or Intro R" (parse [cond, orOp] "Q -> (P v Q)"),
-                    Axiom "Or Elim" (parse [cond, orOp] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")],
+                    Axiom "And-EL" (parse [cond, andOp] "(P & Q) -> P"),
+                    Axiom "And-ER" (parse [cond, andOp] "(P & Q) -> Q"),
+                    Axiom "And-I" (parse [cond, andOp] "P -> (Q -> (P & Q))"),
+                    Axiom "Or-IL" (parse [cond, orOp] "P -> (P v Q)"),
+                    Axiom "Or-IR" (parse [cond, orOp] "Q -> (P v Q)"),
+                    Axiom "Or-E" (parse [cond, orOp] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")],
     newInferenceRules = [InferenceRule "Modus Ponens" (parse [] "P", Just (parse [cond] "P -> Q")) (parse [] "Q")]
 }
 
@@ -109,3 +121,9 @@ specK = Spec {
     newAxioms = [Axiom "K Axiom" (parse [cond, box] "Box (P -> Q) -> (Box P -> Box Q)")],
     newInferenceRules = [InferenceRule "N" (parse [] "P", Nothing) (parse [box] "Box P")]
 }
+
+specsList :: [Spec]
+specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall, 
+                specMinimal, specIntuitionistic, specClassical,
+                specK
+            ]

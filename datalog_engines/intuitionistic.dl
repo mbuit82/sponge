@@ -20,12 +20,12 @@ Proven(f) :- Goal(f),
 
 Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, P)), "Axiom2", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional(P, R))), "Axiom3", _, _).
-Justified(n) :- Line(n, $Conditional($And(P, Q), P), "And Elim L", _, _).
-Justified(n) :- Line(n, $Conditional($And(P, Q), Q), "And Elim R", _, _).
-Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And Intro", _, _).
-Justified(n) :- Line(n, $Conditional(P, $Or(P, Q)), "Or Intro L", _, _).
-Justified(n) :- Line(n, $Conditional(Q, $Or(P, Q)), "Or Intro R", _, _).
-Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or Elim", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, Q), P), "And-EL", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, Q), Q), "And-ER", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And-I", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Or(P, Q)), "Or-IL", _, _).
+Justified(n) :- Line(n, $Conditional(Q, $Or(P, Q)), "Or-IR", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or-E", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, $Bot()), $Conditional(P, Q)), "Explosion", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,

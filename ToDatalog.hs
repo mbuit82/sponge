@@ -1,11 +1,13 @@
 module ToDatalog where
 
 import Core
-import Specs
+import Specs ( getLogic, logicsDict )
 import Proofs
 
 import Data.List
 import System.IO
+import qualified Data.Map as Map
+import System.Environment (getArgs)
 
 
 
@@ -96,15 +98,15 @@ sharedDatalog = unlines [
     ".output Unjustified\n.output Justified\n.output Proven\n"
     ]
 
-compileDatalogEngine :: Spec -> IO ()
-compileDatalogEngine spec =
+compileDatalogEngine :: String -> IO ()
+compileDatalogEngine logicName =
     -- I want to check that all axioms and inference rules are well-formed. 
     -- use the all function and the isWff function.
     -- Also here check that all inference rules have max 2 premises
     -- I think this ideally happens not here, but like in a check function. 
     -- for now I can run that check function here
     -- well like I want it to happen _before_ I apply all the transformations on proofs. Like it should be the _first_ thing that happens. 
-    withFile ("../datalog_engines/" ++ specName spec ++ ".dl") WriteMode $ \h -> do
+    withFile ("datalog_engines/" ++ logicName ++ ".dl") WriteMode $ \h -> do
         hSetEncoding h utf8
         hPutStr h ".type Sentence = Atom {name: symbol}"
         hPutStr h (syntaxToDatalog logic)
@@ -112,7 +114,10 @@ compileDatalogEngine spec =
         hPutStr h (axiomsToDatalog logic)
         hPutStr h (inferenceRulesToDatalog logic)
     where 
-        logic = getLogic spec
+        logic = getLogic logicName
+
+compileDatalogEngines :: IO ()
+compileDatalogEngines = mapM_ (compileDatalogEngine) (Map.keys logicsDict)
 
 
 
@@ -140,14 +145,23 @@ proofToDatalog proofGoal proofLines =
     
 compileDatalogProof :: String -> Sentence -> Logic -> [Line] -> IO ()
 compileDatalogProof proofName proofGoal proofLogic proofLines =
-    withFile ("../datalog_proofs/" ++ logicName proofLogic ++ "/" ++ proofName ++ "/" ++ proofName ++ ".dl") WriteMode $ \h -> do
+    withFile ("datalog_proofs/" ++ logicName proofLogic ++ "/" ++ proofName ++ "/" ++ proofName ++ ".dl") WriteMode $ \h -> do
         hSetEncoding h utf8
         hPutStr h ("#include \"../../../datalog_engines/" ++ (logicName proofLogic) ++ ".dl\"\n\n")
         hPutStr h (proofToDatalog proofGoal proofLines)
 
 -- complete function to compile user input to Datalog
-userToDatalog :: Logic -> String -> IO ()
-userToDatalog logic proofName = do
-    fileContent <- readFile ("../hand_proofs/" ++ (logicName logic) ++ "/" ++ proofName ++ ".txt")
-    let (goal, proofLines) = parseUserProofFile logic fileContent in
-        compileDatalogProof proofName goal logic proofLines
+userToDatalog' :: String -> String -> IO ()
+userToDatalog' logicName proofName = do
+    fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
+    let (goal, proofLines) = parseUserProofFile logicName fileContent in
+        compileDatalogProof proofName goal (getLogic logicName) proofLines
+
+userToDatalog :: IO ()
+userToDatalog = do 
+    [logicName, proofName] <- getArgs
+    userToDatalog' logicName proofName
+
+
+
+-- so now, the way it would go is that in the main directory, the user would type some command that sends a logic name and a proof name to a datalog file, then we run the datalog file in the main directory, we check the contents of the file, and if there's stuff in the proven one success else not

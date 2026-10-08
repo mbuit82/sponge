@@ -1,6 +1,7 @@
 module Proofs where
 
 import Core
+import Specs
 
 import Data.Maybe
 import Data.List
@@ -132,8 +133,9 @@ splitByProofLine :: [String] -> (String, [String])
 splitByProofLine [] = error "file has no lines!"
 splitByProofLine (l:tl) = (l, tl)
 
-parseUserProofFile :: Logic -> String -> (Sentence, [Line])
-parseUserProofFile logic fileContent =
-    let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
-        let goal = getProofGoal (operators logic) [] goalLine in
-            (goal, parseUserProofWithDeduction logic goal pfLines)
+parseUserProofFile :: String -> String -> (Sentence, [Line])
+parseUserProofFile logicName fileContent =
+    let logic = getLogic logicName in
+        let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
+            let goal = getProofGoal (operators logic) [] goalLine in
+                (goal, parseUserProofWithDeduction logic goal pfLines)
