@@ -55,6 +55,7 @@ pycache/
 .Rhistory
 
 boneyard/
+hand_specs/
 sponge_nb.txt
 *Justified.csv
 *Proven.csv

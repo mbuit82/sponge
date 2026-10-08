@@ -1,7 +1,0 @@
-Base
-intuitionistic
-
-Axioms
-Axiom5: |- (((P -> Bot) -> Bot) -> P)
-
-NOTE: think will ultimatley scrap these. see 10/6 in sponge_nb.txt

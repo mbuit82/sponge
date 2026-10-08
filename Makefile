@@ -1,5 +1,3 @@
-GHC = ghc
-
 all: datalog-engines proof-processing
 
 datalog-engines: ToDatalog.hs Proofs.hs Specs.hs Core.hs
