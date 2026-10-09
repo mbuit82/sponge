@@ -113,7 +113,7 @@ specIntuitionistic = Spec {
     baseSystem = Just specMinimal,
     newOperators = [bot],
     newDefinedOperators = [neg],
-    newAxioms = [Axiom "Explosion" (parse [cond, bot] [] "(P -> Bot) -> (P -> Q)")],
+    newAxioms = [Axiom "Explosion" (parse [cond, bot] [] "Bot -> P")],
     newInferenceRules = []
 }
 

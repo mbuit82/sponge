@@ -1,0 +1,11 @@
+Theorem: |- (A -> Bot) -> (A -> B)
+
+Using deduction
+Using deduction
+
+Proof
+1. |- A         by Assumption
+2. |- A -> Bot  by Assumption
+3. |- Bot       by Modus Ponens, 1 2
+4. |- Bot -> B  by Explosion
+5. |- B         by Modus Ponens, 3 4

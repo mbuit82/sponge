@@ -245,7 +245,7 @@ getLineNumFromLine :: String -> String -> (Int, String)
 getLineNumFromLine seen toSee = 
     case toSee of
         '.' : ' ' : '|' : '-' : ' ' : remChars -> (read seen, remChars)
-        [] -> error "couldn't find line number split!"
+        [] -> error "couldn't find line number split! Maybe you forgot to include \"|-\" in a line?"
         c : remChars -> getLineNumFromLine (seen ++ [c]) remChars
 
 -- here is where automatic use of defined operators happens
