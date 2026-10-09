@@ -27,7 +27,7 @@ Justified(n) :- Line(n, $Conditional(P, $Or(P, _)), "Or-IL", _, _).
 Justified(n) :- Line(n, $Conditional(Q, $Or(_, Q)), "Or-IR", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or-E", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, $Bot()), $Conditional(P, _)), "Explosion", _, _).
-Justified(n) :- Line(n, $Or(P, $Conditional(P, $Bot())), "Excluded Middle", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional($Conditional(P, $Bot()), $Bot()), P), "Excluded Middle", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,
 	Justified(i),

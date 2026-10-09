@@ -12,6 +12,13 @@ data Operator = Operator {
 -- instance Eq Operator where -- TODO: think about. I think it ultimately doesn't matter lol but still, think about. 
 --     op1 == op2 = operatorName op1 == operatorName op2 -- datalog will throw an error if there is more than one constructor with the same name for the Sentence predicate so all good there
 
+data DefinedOperator = DefinedOperator {
+    defOpName :: String,
+    defOpSymbol :: String, 
+    defOpArity :: Int,
+    definition :: [Sentence] -> Sentence
+} 
+
 cond :: Operator
 cond = Operator "Conditional" "->" 2
 
@@ -35,12 +42,15 @@ data InferenceRule = InferenceRule {
 
 -- well, by design, the operators in the axioms and inference rules need to be in the operators. 
 -- how can I enforce that with the type system? not sure I can
+-- you basically enforce it by design...? actually no that depends on the user lol
+-- I think you'd have to create a syntax object and then a logic object. Kinda gross, i trust users on this
 data Logic = Logic
   { logicName :: String,
     operators :: [Operator],
+    definedOperators :: [DefinedOperator],
     axioms :: [Axiom],
     inferenceRules :: [InferenceRule]
-  } deriving Show
+  } 
 
 -- for proofs
 data Line = Line {
@@ -137,39 +147,50 @@ dashSingletonVars sentence =
 
 
 -- user input to Haskell
-data Token = LPToken | RPToken | OpToken Operator | AtomToken String
+data Token = LPToken | RPToken | OpToken Operator | DefOpToken DefinedOperator | AtomToken String
 instance Show Token where
     show LPToken = "("
     show RPToken = ")"
-    show (OpToken operator) = operatorSymbol operator
-    show (AtomToken str) = str
+    show (OpToken operator) = "OpToken " ++ operatorSymbol operator
+    show (DefOpToken defOp) = "DefOpToken " ++ defOpSymbol defOp
+    show (AtomToken str) = "AtomToken " ++ str
 
 exportCurrToken :: Maybe String -> [Token]
 exportCurrToken Nothing = [] -- :: [[Char]]
 exportCurrToken (Just a) = [AtomToken a] -- :: [[Char]]
 
+getWithStr :: (a -> String) -> [a] -> String -> Maybe a
+getWithStr _ [] _ = Nothing
+getWithStr strFunc (x:xs) str =
+    if strFunc x == str then (Just x) else getWithStr strFunc xs str
+
 getOpWithSymbol :: [Operator] -> String -> Maybe Operator
-getOpWithSymbol [] _ = Nothing
-getOpWithSymbol (op : remOps) name =
-    if operatorSymbol op == name then (Just op) else getOpWithSymbol remOps name
+getOpWithSymbol = getWithStr operatorSymbol
 
-tokenize' :: [Operator] -> String -> Maybe String -> [Token]
-tokenize' ops [] beingBuilt = 
-    if fromMaybe [] beingBuilt `elem` (map operatorSymbol ops)
-        then [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))]
-        else exportCurrToken beingBuilt
-tokenize' ops (char : remChars) beingBuilt =
-    if fromMaybe [] beingBuilt `elem` (map operatorSymbol ops)
-        then  [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))] ++ tokenize' ops (char : remChars) Nothing -- now we can do no spaces after operators!
-        else case char of -- we know that the currently being built is _not_ an operator, so we can treat it as not one (or something that's not one yet)
-            '(' -> exportCurrToken beingBuilt ++ [LPToken] ++ tokenize' ops remChars Nothing
-            ')' -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops remChars Nothing
-            ' ' -> exportCurrToken beingBuilt              ++ tokenize' ops remChars Nothing
-            ',' -> exportCurrToken beingBuilt              ++ tokenize' ops remChars Nothing -- for stuff after "by" and in general why not
-            other -> tokenize' ops remChars (Just (fromMaybe [] beingBuilt ++ [other]))
+getDefOpWithSymbol :: [DefinedOperator] -> String -> Maybe DefinedOperator
+getDefOpWithSymbol = getWithStr defOpSymbol
 
-tokenize :: [Operator] -> String -> [Token]
-tokenize ops str = tokenize' ops str Nothing
+tokenize' :: [Operator] -> [DefinedOperator] -> String -> Maybe String -> [Token]
+tokenize' ops defOps [] beingBuilt
+    | fromMaybe [] beingBuilt `elem` (map operatorSymbol ops) =
+        [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))]
+    | fromMaybe [] beingBuilt `elem` (map defOpSymbol defOps) = 
+        [DefOpToken (fromJust (getDefOpWithSymbol defOps (fromJust beingBuilt)))]
+    | otherwise = exportCurrToken beingBuilt
+tokenize' ops defOps (char : remChars) beingBuilt
+    | fromMaybe [] beingBuilt `elem` (map operatorSymbol ops) = 
+        [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))] ++ tokenize' ops defOps (char : remChars) Nothing
+    | fromMaybe [] beingBuilt `elem` (map defOpSymbol defOps) =
+        [DefOpToken (fromJust (getDefOpWithSymbol defOps (fromJust beingBuilt)))] ++ tokenize' ops defOps (char : remChars) Nothing
+    | otherwise = case char of -- we know that the currently being built is _not_ an operator nor defined operator, so we can treat it as not one (or something that's not one yet)
+        '(' -> exportCurrToken beingBuilt ++ [LPToken] ++ tokenize' ops defOps remChars Nothing
+        ')' -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops defOps remChars Nothing
+        ' ' -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars Nothing
+        ',' -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars Nothing -- for stuff after "by" and in general why not
+        other -> tokenize' ops defOps remChars (Just (fromMaybe [] beingBuilt ++ [other]))
+
+tokenize :: [Operator] -> [DefinedOperator] -> String -> [Token]
+tokenize ops defOps str = tokenize' ops defOps str Nothing
 
 pop :: [a] -> [a]
 pop [] = error "Stack underflow from pop"
@@ -182,15 +203,19 @@ fetch (x:_) = x
 getNextSentence :: [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
 -- getNextSentence [OpToken binOp] [rArg, lArg] [] = (OpNode binOp [lArg, rArg], []) -- my attempt at no top level parentheses. The problem is tha we never get there
 getNextSentence [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
-getNextSentence _ [] [] = error "shid we reached the end and we have no sentences lel"
-getNextSentence _ [_] [] = error "this case doesn't make sense really"
-getNextSentence _ (_:_) [] = error "check for a missing set of parentheses?"
+getNextSentence opStack [] [] = error ("shid we reached the end and we have no sentences lel. current opStack (rest are empty): " ++ show opStack)
+getNextSentence opStack [sent] [] = error ("this case doesn't make sense really. opStack and sentStack: " ++ show opStack ++ ", " ++ show sent)
+getNextSentence opStack sentStack [] = error ("error in parsing. check for a missing set of parentheses? opStack and sentStack: " ++ show opStack ++ ", " ++ show sentStack)
 getNextSentence opStack sentStack toSee =
     case toSee of
         LPToken : toks -> getNextSentence (LPToken : opStack) sentStack toks
         RPToken : toks -> case fetch opStack of
+                            -- we only put binary operaotrs/defops on the opstack. unary and nullary are just immediately put on the sentStack
                             OpToken op -> case sentStack of
                                             rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) toks -- this should really be pop until you see a LPToken
+                                            _ -> error "not enough args"
+                            DefOpToken defOp -> case sentStack of
+                                            rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (((definition defOp) [lArg, rArg]) : remSents ) toks -- this should really be pop until you see a LPToken
                                             _ -> error "not enough args"
                             LPToken -> getNextSentence (pop opStack) sentStack toks -- sandwiched something lol (unary or nullary operator that over-parenthesized)
                             _ -> error "should have been an operator on the stack but there wasn't"
@@ -200,15 +225,21 @@ getNextSentence opStack sentStack toSee =
                                 1 -> let (nextSent, newRem) = getNextSentence [] [] toks in
                                         getNextSentence opStack (OpNode op [nextSent] : sentStack) newRem
                                 2 -> getNextSentence (OpToken op : opStack) sentStack toks
-                                _ -> error "not doing n-ary predicates yet"
+                                _ -> error "not doing n-ary predicates yet (got n-ary operator)"
+        DefOpToken defOp : toks -> case defOpArity defOp of
+                                0 -> getNextSentence opStack (((definition defOp) []) : sentStack) toks
+                                1 -> let (nextSent, newRem) = getNextSentence [] [] toks in
+                                        getNextSentence opStack (((definition defOp) [nextSent]) : sentStack) newRem
+                                2 -> getNextSentence (DefOpToken defOp : opStack) sentStack toks
+                                _ -> error "not doing n-ary predicates yet (got n-ary defined operator)"
 
 -- lmao so we just add an extra set of parentheses onto everything lol. 
 getTopLevelSentence :: [Token] -> Sentence
 -- getTopLevelSentence (LPToken : rem) = fst (getNextSentence [] [] (LPToken:rem)) -- we have a first paren, so guessing we have a last. If we don't or if unbalanced we'll throw an error somewhre prolly
 getTopLevelSentence toks = fst (getNextSentence [] [] (LPToken : toks ++ [RPToken]))
 
-parse :: [Operator] -> String -> Sentence
-parse ops input = getTopLevelSentence (tokenize ops input)
+parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
+parse ops defOps input = getTopLevelSentence (tokenize ops defOps input)
 
 getLineNumFromLine :: String -> String -> (Int, String)
 getLineNumFromLine seen toSee = 
@@ -217,12 +248,13 @@ getLineNumFromLine seen toSee =
         [] -> error "couldn't find line number split!"
         c : remChars -> getLineNumFromLine (seen ++ [c]) remChars
 
-getContentFromLine :: [Operator] -> String -> String -> (Sentence, String)
-getContentFromLine ops seen toSee =
+-- here is where automatic use of defined operators happens
+getContentFromLine :: Logic -> String -> String -> (Sentence, String)
+getContentFromLine logic seen toSee =
     case toSee of
-        'b' : 'y' : ' ' : remChars -> (parse ops seen, remChars)
+        'b' : 'y' : ' ' : remChars -> (parse (operators logic) (definedOperators logic) seen, remChars)
         [] -> error "line wasn't justified!"
-        c : remChars -> getContentFromLine ops (seen ++ [c]) remChars
+        c : remChars -> getContentFromLine logic (seen ++ [c]) remChars
 
 -- meant to be applied after getting the content
 getJustificationFromLine :: String -> String -> (String, Maybe (Int, Int))
@@ -236,14 +268,14 @@ getJustificationFromLine seen toSee =
         [] -> (seen, Nothing) -- axiom case (with no trailing comma)
         c : remChars -> getJustificationFromLine (seen ++ [c]) remChars
 
-getLineFromUser :: [Operator] -> String -> Line
-getLineFromUser ops userLine =
+getLineFromUser :: Logic -> String -> Line
+getLineFromUser logic userLine =
     let (lNum, rem1) = getLineNumFromLine "" userLine in
-        let (content, rem2) = getContentFromLine ops "" rem1 in
+        let (content, rem2) = getContentFromLine logic "" rem1 in
             let (j, rfs) = getJustificationFromLine "" rem2 in
                 Line lNum content j rfs (Just lNum)
 
-getProofGoal :: [Operator] -> String -> String -> Sentence
+getProofGoal :: Logic -> String -> String -> Sentence
 getProofGoal _ _ [] = error "proof has no goal!"
-getProofGoal ops _ ('|' : '-' : remChars) = parse ops remChars
-getProofGoal ops seen (c:remChars) = getProofGoal ops (seen ++ [c]) remChars
+getProofGoal logic _ ('|' : '-' : remChars) = parse (operators logic) (definedOperators logic) remChars
+getProofGoal logic seen (c:remChars) = getProofGoal logic (seen ++ [c]) remChars

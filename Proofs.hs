@@ -127,7 +127,7 @@ parseUserProofWithDeduction logic deductionRelativeGoal (fl : remFileLines)
                                         else error "ope should have conditional in goal to use deduction"
             _ -> error "ope should have conditional in goal to use deduction"
     | (all isSpace fl) || fl == "Proof" = parseUserProofWithDeduction logic deductionRelativeGoal remFileLines -- ignore conditions
-    | otherwise = getLineFromUser (operators logic) fl : parseUserProofWithDeduction logic deductionRelativeGoal remFileLines
+    | otherwise = getLineFromUser logic fl : parseUserProofWithDeduction logic deductionRelativeGoal remFileLines
 
 splitByProofLine :: [String] -> (String, [String])
 splitByProofLine [] = error "file has no lines!"
@@ -137,5 +137,5 @@ parseUserProofFile :: String -> String -> (Sentence, [Line])
 parseUserProofFile logicName fileContent =
     let logic = getLogic logicName in
         let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
-            let goal = getProofGoal (operators logic) [] goalLine in
+            let goal = getProofGoal logic [] goalLine in
                 (goal, parseUserProofWithDeduction logic goal pfLines)
