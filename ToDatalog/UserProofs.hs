@@ -1,4 +1,4 @@
-module ToDatalog.UserProofs (main) where
+module ToDatalog.UserProofs where
 
 import Core
 import Specs ( getLogic, logicsDict )

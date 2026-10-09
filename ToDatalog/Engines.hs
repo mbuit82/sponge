@@ -1,4 +1,4 @@
-module ToDatalog.Engines (main) where
+module ToDatalog.Engines where
 
 import Core
 import Specs ( getLogic, logicsDict )
