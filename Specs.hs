@@ -62,7 +62,7 @@ specIntuitionisticSmall = Spec {
     specName = "intuitionistic_small",
     baseSystem = Just specMinimalSmall,
     newOperators = [bot],
-    newDefinedOperators = [neg],
+    newDefinedOperators = [],
     newAxioms = [Axiom "Axiom4" (parse [cond, bot] [] "(P -> Bot) -> (P -> Q)")],
     newInferenceRules = []
 }
@@ -73,7 +73,7 @@ specClassicalSmall = Spec {
     baseSystem = Just specIntuitionisticSmall,
     newOperators = [],
     newDefinedOperators = [], -- in theory you could add all the definitions here... ugh i don't wanna
-    newAxioms = [Axiom "Axiom5" (parse [cond, bot] [neg] "((P -> Bot) -> Bot) -> P")],
+    newAxioms = [Axiom "Axiom5" (parse [cond, bot] [] "((P -> Bot) -> Bot) -> P")],
     newInferenceRules = []
 }
 
@@ -101,6 +101,12 @@ specMinimal = Spec {
     newInferenceRules = [InferenceRule "Modus Ponens" (parse [] [] "P", Just (parse [cond] [] "P -> Q")) (parse [] [] "Q")]
 }
 
+negDef :: [Sentence] -> Sentence
+negDef = \[a] -> (OpNode cond [a, OpNode bot []])
+
+neg :: DefinedOperator
+neg = DefinedOperator "Not" "~" 1 negDef
+
 specIntuitionistic :: Spec
 specIntuitionistic = Spec {
     specName = "intuitionistic",
@@ -124,6 +130,12 @@ specClassical = Spec {
 box :: Operator
 box = Operator "Box" "L" 1
 
+diamondDef :: [Sentence] -> Sentence
+diamondDef = \singleA -> negDef [OpNode box [negDef singleA]]
+
+diamond :: DefinedOperator
+diamond = DefinedOperator "Diamond" "M" 1 diamondDef
+
 specK :: Spec
 specK = Spec {
     specName = "K",
@@ -143,6 +155,12 @@ linOr = Operator "LinearDisjunction" "+" 2
 
 linNeg :: Operator
 linNeg = Operator "LinearNegation" "~" 1
+
+lolliDef :: [Sentence] -> Sentence
+lolliDef = \[a, b] -> (OpNode linOr [OpNode linNeg [a], b])
+
+lolli :: DefinedOperator
+lolli = DefinedOperator "Lollipop" "-o" 2 lolliDef
 
 specLinearIntensionalKernelHesselink :: Spec
 specLinearIntensionalKernelHesselink = Spec {
@@ -188,68 +206,3 @@ specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall,
                 specK,
                 specLinearIntensionalKernelHesselink, specLinearHesselink
             ]
-
-
-
-
-
-
-
-
-
--- DEFINED OPERATORS PLAYGROUND
--- neg :: Operator
--- neg = Operator "Not" "~" 1
-
--- propagateFunc :: (Sentence -> Sentence) -> Sentence -> Sentence
--- propagateFunc func (OpNode op args) = (OpNode op (map func args))
--- propagateFunc func (Atom a) = Atom a
-
--- removeNot :: Sentence -> Sentence
--- removeNot (OpNode op [a])
---     | op == neg = (OpNode cond [removeNot a, OpNode bot []])
---     | otherwise = (OpNode op [removeNot a])
--- removeNot sent = propagateFunc removeNot sent -- not sure if this works? 
-
--- lolli :: Operator
--- lolli = Operator "Lollipop" "-o" 2
-
--- removeLollipop :: Sentence -> Sentence
--- removeLollipop (OpNode op [a, b])
---     | op == lolli = (OpNode linOr [OpNode linNeg [removeLollipop a], removeLollipop b])
---     | otherwise = (OpNode op (map removeLollipop [a, b]))
--- removeLollipop sent = propagateFunc removeLollipop sent
-
--- diamond :: Operator
--- diamond = Operator "Diamond" "M" 1
-
--- removeDiamond :: Sentence -> Sentence
--- removeDiamond (OpNode op [a])
---     | op == diamond = (OpNode neg [OpNode box [OpNode neg [a]]])
---     | otherwise = (OpNode op [removeDiamond a])
--- removeDiamond sent = propagateFunc removeDiamond sent
-
-
-
--- approach 2: just never make the defined operators into operators
--- what this encapsulates is that defined operators aren't really objects. They're more instructions. They're completely at the meta-level, so they should stay there. 
-lolliDef :: [Sentence] -> Sentence
-lolliDef = \[a, b] -> (OpNode linOr [OpNode linNeg [a], b]) -- partial, I think?
-
-negDef :: [Sentence] -> Sentence
-negDef = \[a] -> (OpNode cond [a, OpNode bot []])
-
-diamondDef :: [Sentence] -> Sentence
-diamondDef = \singleA -> negDef [OpNode box [negDef singleA]]
-
-neg :: DefinedOperator
-neg = DefinedOperator "Not" "~" 1 negDef
-
-lolli :: DefinedOperator
-lolli = DefinedOperator "Lollipop" "-o" 2 lolliDef
-
-diamond :: DefinedOperator
-diamond = DefinedOperator "Diamond" "M" 1 diamondDef
-
--- the current to-do is to change the tokenizing and parsing functions, and then change the tests. 
--- tokenize should now take a list of defined operators, and parse should too. 
