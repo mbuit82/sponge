@@ -2,7 +2,7 @@
 
 At the bottom this is (souffle) Datalog. 
 
-The user writes proofs in .txt files (the requirements of which are detailed in [PROOFS.md](PROOFS.md)). These are then parsed into a Haskell representation. This Haskell representation is where all the abstractions are unraveled such that the user proof with abstracted justifications (citing other proofs, using derived rules, deduction, etc) are translated into the corresponding proof without abstractions and with _only_ the logic's axioms and inference rules. Then, those lines are translated into Datalog. 
+The user writes proofs in .txt files (the requirements of which are detailed in [`PROOFS.md`](PROOFS.md)). These are then parsed into a Haskell representation. This Haskell representation is where all the abstractions are unraveled such that the user proof with abstracted justifications (citing other proofs, using derived rules, deduction, etc) are translated into the corresponding proof without abstractions and with _only_ the logic's axioms and inference rules. Then, those lines are translated into Datalog. 
 
 The Datalog defines a proof as proven if all of its lines are justified and among its justified lines is the statement of what was sought to be proved. A line is justified if it is an instance of the axioms, or if it follows from previous lines by an inference rule in the logic. Otherwise, it is not justified. 
 
