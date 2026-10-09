@@ -50,7 +50,7 @@ specMinimalSmall = Spec {
 }
 
 bot :: Operator
-bot = Operator "Bot" "Bot" 0
+bot = Operator { operatorName = "Bot", operatorSymbol = "Bot", arity = 0}
 
 specIntuitionisticSmall :: Spec
 specIntuitionisticSmall = Spec {
@@ -71,10 +71,10 @@ specClassicalSmall = Spec {
 }
 
 andOp :: Operator
-andOp = Operator "And" "&" 2
+andOp = Operator {operatorName = "And", operatorSymbol = "&", arity = 2}
 
 orOp :: Operator
-orOp = Operator "Or" "v" 2
+orOp = Operator "Or" "v" 2 -- can also just make operators like this (order follows order in above e.g. in andOp)
 
 specMinimal :: Spec
 specMinimal = Spec {
