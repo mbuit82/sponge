@@ -44,8 +44,9 @@ specMinimalSmall = Spec {
     specName = "minimal_small",
     baseSystem = Nothing,
     newOperators = [cond], -- from core, since it plays role in deduction lemma thing
-    newAxioms = [   Axiom "Axiom2" (parse [cond] "P -> (Q -> P)"),
-                    Axiom "Axiom3" (parse [cond] "(P -> Q) -> ((P -> (Q -> R)) -> (P -> R))")],
+    newAxioms = [   
+        Axiom "Axiom2" (parse [cond] "P -> (Q -> P)"),
+        Axiom "Axiom3" (parse [cond] "(P -> Q) -> ((P -> (Q -> R)) -> (P -> R))")],
     newInferenceRules = [InferenceRule "Modus Ponens" (parse [] "P", Just (parse [cond] "P -> Q")) (parse [] "Q")]
 }
 
@@ -81,14 +82,15 @@ specMinimal = Spec {
     specName = "minimal",
     baseSystem = Nothing,
     newOperators = [cond, andOp, orOp],
-    newAxioms = [   Axiom "Axiom2" (parse [cond] "P -> (Q -> P)"),
-                    Axiom "Axiom3" (parse [cond] "(P -> Q) -> ((P -> (Q -> R)) -> (P -> R))"),
-                    Axiom "And-EL" (parse [cond, andOp] "(P & Q) -> P"),
-                    Axiom "And-ER" (parse [cond, andOp] "(P & Q) -> Q"),
-                    Axiom "And-I" (parse [cond, andOp] "P -> (Q -> (P & Q))"),
-                    Axiom "Or-IL" (parse [cond, orOp] "P -> (P v Q)"),
-                    Axiom "Or-IR" (parse [cond, orOp] "Q -> (P v Q)"),
-                    Axiom "Or-E" (parse [cond, orOp] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")],
+    newAxioms = [   
+        Axiom "Axiom2" (parse [cond] "P -> (Q -> P)"),
+        Axiom "Axiom3" (parse [cond] "(P -> Q) -> ((P -> (Q -> R)) -> (P -> R))"),
+        Axiom "And-EL" (parse [cond, andOp] "(P & Q) -> P"),
+        Axiom "And-ER" (parse [cond, andOp] "(P & Q) -> Q"),
+        Axiom "And-I" (parse [cond, andOp] "P -> (Q -> (P & Q))"),
+        Axiom "Or-IL" (parse [cond, orOp] "P -> (P v Q)"),
+        Axiom "Or-IR" (parse [cond, orOp] "Q -> (P v Q)"),
+        Axiom "Or-E" (parse [cond, orOp] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")],
     newInferenceRules = [InferenceRule "Modus Ponens" (parse [] "P", Just (parse [cond] "P -> Q")) (parse [] "Q")]
 }
 
@@ -122,8 +124,55 @@ specK = Spec {
     newInferenceRules = [InferenceRule "N" (parse [] "P", Nothing) (parse [box] "Box P")]
 }
 
+-- the following axiomatization of linear logic comes from Hesselink 1990
+linNull :: Operator
+linNull = Operator "Null" "0" 0
+
+linOr :: Operator
+linOr = Operator "LinearDisjunction" "+" 2
+
+linNeg :: Operator
+linNeg = Operator "LinearNegation" "~" 1
+
+specLinearIntensionalKernelHesselink :: Spec
+specLinearIntensionalKernelHesselink = Spec {
+    specName = "linear_intensional_kernel_Hesselink",
+    baseSystem = Nothing,
+    newOperators = [linNull, linOr, linNeg],
+    newAxioms = [   
+        Axiom "(2)" (parse [linNull, linOr, linNeg] "~A + A"),
+        Axiom "(3)" (parse [linNull, linOr, linNeg] "~(A + B) + (B + A)"),
+        Axiom "(4)" (parse [linNeg, linOr] "~((A + B) + C) + (A + (B + C))")],
+    newInferenceRules = [
+        InferenceRule "(0)Forward" (parse [] "A", Nothing) (parse [linNull, linOr] "0 + A"),
+        InferenceRule "(0)Backward" (parse [linNull, linOr] "0 + A", Nothing) (parse [] "A"),
+        InferenceRule "cut-rule" (parse [linOr] "A + B", Just (parse [linNeg, linOr] "~B + C")) (parse [linOr] "A + C")]
+}
+
+quest :: Operator
+quest = Operator "Quest" "?" 1
+
+linOps = [linNull, linOr, linNeg, quest] -- not as familiar with these so to be safe and avoid bugs am just gonna use this list lol
+
+specLinearHesselink :: Spec
+specLinearHesselink = Spec {
+    specName = "linear_Hesselink",
+    baseSystem = Just specLinearIntensionalKernelHesselink,
+    newOperators = [quest],
+    newAxioms = [
+        Axiom "(26)" (parse linOps "~0 + ?A"),
+        Axiom "(27)" (parse linOps "~(?A + ?A) + ?A"),
+        Axiom "(28)" (parse linOps "~?0"),
+        Axiom "(29)" (parse linOps "~?(?A + ?B) + (?A + ?B)")],
+    newInferenceRules = [
+        InferenceRule "(25)Forward" (parse linOps "~A + ?B", Nothing) (parse linOps "~?A + ?B"),
+        InferenceRule "(25)Backward" (parse linOps "~?A + ?B", Nothing) (parse linOps "~A + ?B")
+    ]
+}
+
 specsList :: [Spec]
 specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall, 
                 specMinimal, specIntuitionistic, specClassical,
-                specK
+                specK,
+                specLinearIntensionalKernelHesselink, specLinearHesselink
             ]

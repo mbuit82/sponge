@@ -1,0 +1,38 @@
+.type Sentence = Atom {name: symbol} | Null {} | LinearDisjunction {s1: Sentence, s2: Sentence} | LinearNegation {s1: Sentence}
+
+.decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
+.decl Justified(n: unsigned)
+.decl Unjustified(n: unsigned)
+.decl UnjustifiedCount(c: number)
+.decl Goal(goal: Sentence)
+.decl Proven(f: Sentence)
+
+Unjustified(n) :- Line(n, _, _, _, _), !Justified(n).
+UnjustifiedCount(c) :- c = count : { Unjustified(_) }.
+Proven(f) :- Goal(f),
+	Line(n, f, _, _, _),
+	Justified(n),
+	UnjustifiedCount(0).
+
+.output Unjustified
+.output Justified
+.output Proven
+
+Justified(n) :- Line(n, $LinearDisjunction($LinearNegation(A), A), "(2)", _, _).
+Justified(n) :- Line(n, $LinearDisjunction($LinearNegation($LinearDisjunction(A, B)), $LinearDisjunction(B, A)), "(3)", _, _).
+Justified(n) :- Line(n, $LinearDisjunction($LinearNegation($LinearDisjunction($LinearDisjunction(A, B), C)), $LinearDisjunction(A, $LinearDisjunction(B, C))), "(4)", _, _).
+Justified(n) :- Line(n, $LinearDisjunction($Null(), A), "(0)Forward", i, _),
+	i < n,
+	Justified(i),
+	Line(i, A, _, _, _).
+Justified(n) :- Line(n, A, "(0)Backward", i, _),
+	i < n,
+	Justified(i),
+	Line(i, $LinearDisjunction($Null(), A), _, _, _).
+Justified(n) :- Line(n, $LinearDisjunction(A, C), "cut-rule", i, j),
+	i < n,
+	Justified(i),
+	Line(i, $LinearDisjunction(A, B), _, _, _),
+	j < n,
+	Justified(j),
+	Line(j, $LinearDisjunction($LinearNegation(B), C), _, _, _).
