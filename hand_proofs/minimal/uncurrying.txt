@@ -5,10 +5,8 @@ Using deduction
 
 Proof
 1. |- A -> (B -> C) by Assumption
-2. |- A & B by Assumption
-3. |- (A & B) -> A by And-EL
-4. |- (A & B) -> B by And-ER
-5. |- A by Modus Ponens, 2 3
-6. |- B by Modus Ponens, 2 4
-7. |- B -> C by Modus Ponens, 5 1
-8. |- C by Modus Ponens, 6 7
+2. |- A & B         by Assumption
+3. |- A             by And Elim L, 2
+4. |- B             by And Elim R, 2
+5. |- B -> C        by Modus Ponens, 3 1
+6. |- C             by Modus Ponens, 4 5
