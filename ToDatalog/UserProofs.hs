@@ -8,6 +8,7 @@ import Proofs
 import System.IO
 import qualified Data.Map as Map
 import System.Environment (getArgs)
+import System.Directory (createDirectoryIfMissing)
 
 -- this helper is only used in lineToDatalog, so I'm moving it here (instead of Core)
 getRefLines :: Maybe (Int, Int) -> (Int, Int)
@@ -44,6 +45,7 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
 userToDatalog' :: String -> String -> IO ()
 userToDatalog' logicName proofName = do
     fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
+    createDirectoryIfMissing False ("datalog_proofs/" ++ logicName ++ "/" ++ proofName)
     let (goal, proofLines) = parseUserProofFile logicName fileContent in
         compileDatalogProof proofName goal (getLogic logicName) proofLines
 

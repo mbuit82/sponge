@@ -98,7 +98,7 @@ specIntuitionistic = Spec {
     baseSystem = Just specMinimal,
     newOperators = [bot],
     newAxioms = [Axiom "Explosion" (parse [cond, bot] "(P -> Bot) -> (P -> Q)")],
-    newInferenceRules = [InferenceRule "Modus Ponens" (parse [] "P", Just (parse [cond] "P -> Q")) (parse [] "Q")]
+    newInferenceRules = []
 }
 
 specClassical :: Spec
@@ -107,7 +107,7 @@ specClassical = Spec {
     baseSystem = Just specIntuitionistic,
     newOperators = [],
     newAxioms = [Axiom "Excluded Middle" (parse [cond, bot, orOp] "P v (P -> Bot)")],
-    newInferenceRules = [InferenceRule "Modus Ponens" (parse [] "P", Just (parse [cond] "P -> Q")) (parse [] "Q")]
+    newInferenceRules = []
 }
 
 box :: Operator

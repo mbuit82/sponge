@@ -35,17 +35,3 @@ Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	j < n,
 	Justified(j),
 	Line(j, $Conditional(P, Q), _, _, _).
-Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
-	i < n,
-	Justified(i),
-	Line(i, P, _, _, _),
-	j < n,
-	Justified(j),
-	Line(j, $Conditional(P, Q), _, _, _).
-Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
-	i < n,
-	Justified(i),
-	Line(i, P, _, _, _),
-	j < n,
-	Justified(j),
-	Line(j, $Conditional(P, Q), _, _, _).

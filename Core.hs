@@ -8,7 +8,7 @@ data Operator = Operator {
     arity :: Int
 } deriving (Eq, Show) -- you've seriously fucked up if the three don't match, but I think only operatorName really needs to
 -- instance Show Operator where
---     show op = operatorName op
+--     show op = (operatorSymbol op) ++ " (" ++ (operatorName op) ++ "), arity " ++ show (arity op)
 -- instance Eq Operator where -- TODO: think about. I think it ultimately doesn't matter lol but still, think about. 
 --     op1 == op2 = operatorName op1 == operatorName op2 -- datalog will throw an error if there is more than one constructor with the same name for the Sentence predicate so all good there
 

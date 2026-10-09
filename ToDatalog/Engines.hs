@@ -8,6 +8,7 @@ import Data.List
 import System.IO
 import qualified Data.Map as Map
 import System.Environment (getArgs)
+import System.Directory (createDirectoryIfMissing)
 
 ruleSchemaToDatalog :: Sentence -> String
 ruleSchemaToDatalog = formulaToDatalog True
@@ -103,5 +104,13 @@ compileDatalogEngine logicName =
     where 
         logic = getLogic logicName
 
+makeLogicDirectories :: String -> IO ()
+makeLogicDirectories logicName = do
+    createDirectoryIfMissing False ("datalog_proofs/" ++ logicName)
+    createDirectoryIfMissing False ("hand_proofs/" ++ logicName)
+
 main :: IO ()
-main = mapM_ compileDatalogEngine (Map.keys logicsDict)
+main = let logics = (Map.keys logicsDict) in
+        do 
+            mapM_ compileDatalogEngine logics
+            mapM_ makeLogicDirectories logics
