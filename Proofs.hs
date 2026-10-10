@@ -19,25 +19,15 @@ applyTransformation transformation oldState =
             case transformanda oldState of
                 [] -> 
                     let applied = reverse (transformation oldState) in 
-                        Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState)
+                        Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState) (transformantLogic oldState)
                 nxt : remLines -> 
                     let applied = reverse (transformation oldState) in
-                        Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState)
+                        Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState) (transformantLogic oldState)
 
 -- the first arg is supposed to be a proof
-intoTransformant :: [Line] -> Transformant
-intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
-
-
-applyOffsetInternal :: Int -> Line -> Line
-applyOffsetInternal offset (Line n c justification rfs uNum) = 
-    Line (n + offset) c justification (map (+ offset) rfs) uNum
-
-applyOffsetInternalToLines :: Int -> [Line] -> [Line]
-applyOffsetInternalToLines offset lns = map (applyOffsetInternal offset) lns
-
--- asdf = \x -> fromJust (findLineWithUserNum (transformata transformant) x)
+intoTransformant :: Logic -> [Line] -> Transformant
+intoTransformant _ [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
+intoTransformant logic (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0 logic 
 
 
 
@@ -47,51 +37,56 @@ axiomCaseTransformation :: Sentence -> Transformation
 axiomCaseTransformation hyp transformant = 
     [   
         Line n (lineContent currLine) (justification currLine) [] Nothing,
-        Line (n + 1) (OpNode cond [lineContent currLine, (OpNode cond [hyp, lineContent currLine])]) "Axiom2" [] Nothing,
-        Line (n + 2) (OpNode cond [hyp, lineContent currLine]) "Modus Ponens" [n, n + 1] (userNumber currLine)
+        Line (n + 1) (applySubst "C -> (H -> C)" [("H", hyp), ("C", c)]) "Axiom2" [] Nothing,
+        Line (n + 2) (applySubst "H -> C" [("H", hyp), ("C", c)]) "Modus Ponens" [n, n + 1] (userNumber currLine)
     ]
     where 
+        applySubst = getApplySubstFromTransformant transformant
+        c = lineContent currLine
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
 
 hypCaseTransformation :: Transformation
 hypCaseTransformation transformant = 
     [
-        Line n (OpNode cond [OpNode cond [c, OpNode cond [c, c]], OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]]) "Axiom3" [] Nothing,
-        Line (n + 1) (OpNode cond [c, OpNode cond [c, c]]) "Axiom2" [] Nothing,
-        Line (n + 2) (OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]) "Modus Ponens" [n + 1, n] Nothing,
-        Line (n + 3) (OpNode cond [c, OpNode cond [OpNode cond [c, c], c]]) "Axiom2" [] Nothing,
-        Line (n + 4) (OpNode cond [c, c]) "Modus Ponens" [n + 3, n + 2] (userNumber currLine)
+        Line n (applySubst "((H -> (H -> H)) -> ((H -> ((H -> H) -> H)) -> (H -> H)))" [("H", c)]) "Axiom3" [] Nothing,
+        Line (n + 1) (applySubst "H -> (H -> H)" [("H", c)]) "Axiom2" [] Nothing,
+        Line (n + 2) (applySubst "(H -> ((H -> H) -> H)) -> (H -> H)" [("H", c)]) "Modus Ponens" [n + 1, n] Nothing,
+        Line (n + 3) (applySubst "H -> ((H -> H) -> H)" [("H", c)]) "Axiom2" [] Nothing,
+        Line (n + 4) (applySubst "H -> H" [("H", c)]) "Modus Ponens" [n + 3, n + 2] (userNumber currLine)
     ]
     where 
+        applySubst = getApplySubstFromTransformant transformant
         currLine = fromJust (curr transformant)
         c = lineContent currLine
         n = lineNumber (currLine) + (offset transformant)
 
 modusPonensCaseTransformation :: Sentence -> Transformation
 modusPonensCaseTransformation hyp transformant = -- pLine and pqLine are already transformed
-    let currLine = fromJust (curr transformant) in 
-        let n = lineNumber (currLine) + (offset transformant) in 
-            [
-                Line n (OpNode cond [lineContent pLine, OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]]) "Axiom3" [] Nothing,
-                Line (n + 1) (OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]) "Modus Ponens" [lineNumber pLine, n] Nothing,
-                Line (n + 2) (OpNode cond [hyp, lineContent currLine]) "Modus Ponens" [lineNumber pqLine, n + 1] (userNumber currLine)
-            ]
+    [
+        Line n (applySubst "HP -> (HPQ -> (H -> Q))" [("HP", hp), ("HPQ", hpq), ("H", hyp), ("Q", c)]) "Axiom3" [] Nothing,
+        Line (n + 1) (applySubst "HPQ -> (H -> Q)" [("HPQ", hpq), ("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pLine, n] Nothing,
+        Line (n + 2) (applySubst "H -> Q" [("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pqLine, n + 1] (userNumber currLine)
+    ]
     where 
+        applySubst = getApplySubstFromTransformant transformant
+        currLine = fromJust (curr transformant)
+        n = lineNumber (currLine) + (offset transformant)
         [pLine, pqLine] = getCurrentRefLines transformant
+        (hp, hpq, c) = (lineContent pLine, lineContent pqLine, lineContent currLine)
 
 -- deduction should be the last transformation that happens
-useDeduction' :: Logic -> Sentence -> Transformant -> Transformant
-useDeduction' logic hyp state =
+useDeduction' :: Sentence -> Transformant -> Transformant
+useDeduction' hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-            "Modus Ponens" -> useDeduction' logic hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
+            "Modus Ponens" -> useDeduction' hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
             "Assumption" -> if lineContent line == hyp 
-                                then useDeduction' logic hyp (applyTransformation hypCaseTransformation state) 
-                                else useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
-            j -> if j `elem` (map axiomName (axioms logic))
-                        then useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                                then useDeduction' hyp (applyTransformation hypCaseTransformation state) 
+                                else useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
+            j -> if j `elem` (map axiomName (axioms (transformantLogic state)))
+                        then useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
                         else error "unknown justification for deduction"
 
 resetUserNumbers :: [Line] -> [Line]
@@ -99,7 +94,7 @@ resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
 
 useDeduction :: Logic -> Sentence -> [Line] -> [Line]
 useDeduction logic hyp oldProof = 
-    resetUserNumbers (reverse (transformata (useDeduction' logic hyp (intoTransformant oldProof))))
+    resetUserNumbers (reverse (transformata (useDeduction' hyp (intoTransformant logic oldProof))))
 
 applyDerivedRules' :: Logic -> Transformant -> Transformant
 applyDerivedRules' logic state =
@@ -111,7 +106,7 @@ applyDerivedRules' logic state =
     
 applyDerivedRules :: Logic -> [Line] -> [Line]
 applyDerivedRules logic oldProof = 
-    resetUserNumbers (reverse (transformata (applyDerivedRules' logic (intoTransformant oldProof))))
+    resetUserNumbers (reverse (transformata (applyDerivedRules' logic (intoTransformant logic oldProof))))
 
 
 

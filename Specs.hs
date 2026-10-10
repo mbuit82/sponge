@@ -227,32 +227,33 @@ specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall,
 
 andElimLTransformation :: Transformation
 andElimLTransformation transformant =
-    [Line n (OpNode cond [lineContent pandqLine, lineContent currLine]) "And-EL" [] Nothing,
+    [Line n (applySubst "PandQ -> P" [("PandQ", lineContent pandqLine), ("P", lineContent currLine)]) "And-EL" [] Nothing,
      Line (n + 1) (lineContent currLine) "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
     where 
+        applySubst = getApplySubstFromTransformant transformant
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
         [pandqLine] = getCurrentRefLines transformant
-        -- pandqLine = fromJust (findLineWithUserNum (transformata transformant) ((refLines (fromJust (curr transformant))) !! 0))
 
 andElimRTransformation :: Transformation
 andElimRTransformation transformant =
-    [Line n (OpNode cond [lineContent pandqLine, lineContent currLine]) "And-ER" [] Nothing,
+    [Line n (applySubst "PandQ -> Q" [("PandQ", lineContent pandqLine), ("Q", lineContent currLine)]) "And-ER" [] Nothing,
      Line (n + 1) (lineContent currLine) "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
     where 
+        applySubst = getApplySubstFromTransformant transformant
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
         [pandqLine] = getCurrentRefLines transformant
-        -- pandqLine = fromJust (findLineWithUserNum (transformata transformant) ((refLines (fromJust (curr transformant))) !! 0))
 
 adjunctionTransformation :: Transformation
 adjunctionTransformation transformant =
     [
-        Line n (OpNode cond [lineContent pLine, OpNode cond [lineContent qLine, OpNode andOp [lineContent pLine, lineContent qLine]]]) "And-I" [] Nothing,
-        Line (n + 1) (OpNode cond [lineContent qLine, OpNode andOp [lineContent pLine, lineContent qLine]]) "Modus Ponens" [lineNumber pLine, n] Nothing,
-        Line (n + 2) (OpNode andOp [lineContent pLine, lineContent qLine]) "Modus Ponens" [lineNumber qLine, n +1] (userNumber currLine)
+        Line n (applySubst "P -> (Q -> (P & Q))" [("P", lineContent pLine), ("Q", lineContent qLine)]) "And-I" [] Nothing,
+        Line (n + 1) (applySubst "Q -> (P & Q)" [("P", lineContent pLine), ("Q", lineContent qLine)]) "Modus Ponens" [lineNumber pLine, n] Nothing,
+        Line (n + 2) (applySubst "P & Q" [("P", lineContent pLine), ("Q", lineContent qLine)]) "Modus Ponens" [lineNumber qLine, n +1] (userNumber currLine)
     ]
     where 
+        applySubst = getApplySubstFromTransformant transformant
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
         [pLine, qLine] = getCurrentRefLines transformant
@@ -271,12 +272,17 @@ adjunctionTransformation transformant =
 orElimTransformation :: Transformation
 orElimTransformation transformant =
     [
-        Line n (OpNode cond [lineContent prLine, OpNode cond [lineContent qrLine, OpNode cond [lineContent porqLine, lineContent currLine]]]) "Or-E" [] Nothing,
-        Line (n + 1) (OpNode cond [lineContent qrLine, OpNode cond [lineContent porqLine, lineContent currLine]]) "Modus Ponens" [lineNumber prLine, n] Nothing,
-        Line (n + 2) (OpNode cond [lineContent porqLine, lineContent currLine]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
-        Line (n + 3) (lineContent currLine) "Modus Ponens" [lineNumber porqLine, n + 2] (userNumber currLine)
+        Line n (applySubst "PR -> (QR -> (PorQ -> R))" [("PR", pr), ("QR", qr), ("PorQ", porq), ("R", r)]) "Or-E" [] Nothing,
+        Line (n + 1) (applySubst "QR -> (PorQ -> R)" [("QR", qr), ("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber prLine, n] Nothing,
+        Line (n + 2) (applySubst "PorQ -> R" [("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
+        Line (n + 3) r "Modus Ponens" [lineNumber porqLine, n + 2] (userNumber currLine)
     ]
     where 
+        applySubst = getApplySubstFromTransformant transformant
+        pr = lineContent prLine
+        qr = lineContent qrLine
+        porq = lineContent porqLine
+        r = lineContent currLine
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
         [prLine, qrLine, porqLine] = getCurrentRefLines transformant

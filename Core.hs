@@ -236,8 +236,16 @@ getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToke
 parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
 parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
 
-parseWithSubst :: Logic -> String -> Map.Map String Sentence -> Sentence
-parseWithSubst logic input varMap = getTopLevelSentence (\s -> varMap Map.! s) (tokenize (operators logic) (definedOperators logic) input)
+parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> [(String, Sentence)] -> Sentence
+parseWithSubst ops defOps input varTuples = 
+    let varMap = Map.fromList varTuples in
+        getTopLevelSentence (\s -> varMap Map.! s) (tokenize ops defOps input)
+
+-- used in substitutions in derived rules
+getApplySubstFromTransformant :: Transformant -> String -> [(String, Sentence)] -> Sentence
+getApplySubstFromTransformant transformant =
+    let logic = transformantLogic transformant in
+        parseWithSubst (operators logic) (definedOperators logic)
 
 getLineNumFromLine :: String -> String -> (Int, String)
 getLineNumFromLine seen toSee = 
@@ -281,7 +289,11 @@ getProofGoal logic seen (c:remChars) = getProofGoal logic (seen ++ [c]) remChars
 
 
 -- need to move now that derived rules are transformations and are in logics :/
-data Transformant = Transformant { transformata :: [Line], curr :: Maybe Line, transformanda :: [Line], offset :: Int}
+data Transformant = Transformant {  transformata :: [Line], 
+                                    curr :: Maybe Line, 
+                                    transformanda :: [Line], 
+                                    offset :: Int,
+                                    transformantLogic :: Logic}
 
 type Transformation = Transformant -> [Line]
 
