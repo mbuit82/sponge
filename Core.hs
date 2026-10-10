@@ -6,11 +6,7 @@ data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
     operatorSymbol :: String, -- what the user will write. relevant at tokenizer level. 
     arity :: Int
-} deriving (Eq, Show) -- you've seriously fucked up if the three don't match, but I think only operatorName really needs to
--- instance Show Operator where
---     show op = (operatorSymbol op) ++ " (" ++ (operatorName op) ++ "), arity " ++ show (arity op)
--- instance Eq Operator where -- TODO: think about. I think it ultimately doesn't matter lol but still, think about. 
---     op1 == op2 = operatorName op1 == operatorName op2 -- datalog will throw an error if there is more than one constructor with the same name for the Sentence predicate so all good there
+} deriving (Eq, Show)
 
 data DefinedOperator = DefinedOperator {
     defOpName :: String,
@@ -29,8 +25,8 @@ instance Show Sentence where
     show (OpNode (Operator _ opS 0) []) = opS
     show (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ show arg ++ ")"
     show (OpNode (Operator _ opS 2) [arg1, arg2]) = "(" ++ show arg1 ++ " " ++ opS ++ " " ++ show arg2 ++ ")"
-    show (OpNode _ _) = error "either ternary or something's gone wrong with an operator definition"
-        -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- ternary+, but for would be indicative that something's gone wrong
+    show (OpNode _ _) = error "either n-ary or something's gone wrong with an operator definition"
+        -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- n-ary, but for would be indicative that something's gone wrong
 
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving Show
 -- low key not necessary
@@ -57,19 +53,20 @@ data Line = Line {
     lineNumber :: Int,
     lineContent :: Sentence,
     justification :: String,
-    refLines :: Maybe (Int, Int),
-    userNumber :: Maybe Int -- the original line number the user used
+    refLines :: [Int],
+    -- refLines :: Maybe (Int, Int),
+    userNumber :: Maybe Int -- the original line number the user used (NOTE: actually this is not that lol it's like an old pointer type thing lol)
 } deriving Eq
 -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
 instance Show Line where
     show line = show (lineNumber line) ++ " " ++
                 userNumberHuh (userNumber line) ++ ". " ++ 
                 show (lineContent line) ++ "\t" ++ 
-                "by " ++ justification line ++ refLinesHuh (refLines line)
+                "by " ++ justification line ++ show (refLines line)
 
-refLinesHuh :: Maybe (Int, Int) -> String
-refLinesHuh Nothing = []
-refLinesHuh (Just (a, b)) = "(" ++ show a ++ ", " ++ show b ++ ")"
+-- refLinesHuh :: Maybe (Int, Int) -> String
+-- refLinesHuh Nothing = []
+-- refLinesHuh (Just (a, b)) = "(" ++ show a ++ ", " ++ show b ++ ")"
 
 userNumberHuh :: Maybe Int -> String
 userNumberHuh Nothing = "-"
@@ -257,15 +254,15 @@ getContentFromLine logic seen toSee =
         c : remChars -> getContentFromLine logic (seen ++ [c]) remChars
 
 -- meant to be applied after getting the content
-getJustificationFromLine :: String -> String -> (String, Maybe (Int, Int))
+getJustificationFromLine :: String -> String -> (String, [Int])
 getJustificationFromLine seen toSee =
     case toSee of
         ',' : remChars -> case remChars of
-                            [] -> (seen, Nothing)
-                            s -> case words s of
-                                    [i, j] -> (seen, Just (read i, read j))
-                                    _ -> error "theres stuff after justification but it's not two ints"
-        [] -> (seen, Nothing) -- axiom case (with no trailing comma)
+                            [] -> (seen, [])
+                            s -> (seen, map read (words s))
+                                    -- [i, j] -> (seen, Just (read i, read j))
+                                    -- _ -> error "theres stuff after justification but it's not just ints"
+        [] -> (seen, []) -- axiom case (with no trailing comma)
         c : remChars -> getJustificationFromLine (seen ++ [c]) remChars
 
 getLineFromUser :: Logic -> String -> Line

@@ -11,7 +11,7 @@ import Data.Char
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
 data Transformant = Transformant { transformata :: [Line], curr :: Maybe Line, transformanda :: [Line], offset :: Int}
 
-type Transformation = Int -> Line -> [Line]
+type Transformation = Transformant -> [Line]
 
 -- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
 applyTransformation :: Transformation -> Transformant -> Transformant
@@ -21,10 +21,10 @@ applyTransformation transformation oldState =
         Just currLine -> 
             case transformanda oldState of
                 [] -> 
-                    let applied = reverse (transformation (offset oldState) currLine) in 
+                    let applied = reverse (transformation oldState) in 
                         Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState)
                 nxt : remLines -> 
-                    let applied = reverse (transformation (offset oldState) currLine) in
+                    let applied = reverse (transformation oldState) in
                         Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState)
 
 -- the first arg is supposed to be a proof
@@ -34,9 +34,10 @@ intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
 
 applyOffset :: Int -> Line -> Line
 applyOffset offset (Line n c justification rfs uNum) = 
-    case rfs of
-        Nothing -> Line (n + offset) c justification rfs uNum
-        Just (i, j) -> Line (n + offset) c justification (Just (i + offset, j + offset)) uNum
+    Line (n + offset) c justification (map (+ offset) rfs) uNum
+    -- case rfs of
+    --     Nothing -> Line (n + offset) c justification rfs uNum
+    --     Just (i, j) -> Line (n + offset) c justification (Just (i + offset, j + offset)) uNum
 
 applyOffsetToLines :: Int -> [Line] -> [Line]
 applyOffsetToLines offset lns = map (applyOffset offset) lns
@@ -51,18 +52,18 @@ axiomCaseDeduction :: Sentence -> Line -> [Line]
 axiomCaseDeduction hyp (Line lNum c justification rfs uNum) = 
     [   
         Line lNum c justification rfs Nothing,
-        Line (lNum + 1) (OpNode cond [c, (OpNode cond [hyp, c])]) "Axiom2" Nothing Nothing,
-        Line (lNum + 2) (OpNode cond [hyp, c]) "Modus Ponens" (Just (lNum, lNum + 1)) uNum
+        Line (lNum + 1) (OpNode cond [c, (OpNode cond [hyp, c])]) "Axiom2" [] Nothing,
+        Line (lNum + 2) (OpNode cond [hyp, c]) "Modus Ponens" [lNum, lNum + 1] uNum
     ]
 
 hypCaseDeduction :: Line -> [Line]
 hypCaseDeduction (Line n c _ _ uNum) = 
     [
-        Line n (OpNode cond [OpNode cond [c, OpNode cond [c, c]], OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]]) "Axiom3" Nothing Nothing,
-        Line (n + 1) (OpNode cond [c, OpNode cond [c, c]]) "Axiom2" Nothing Nothing,
-        Line (n + 2) (OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]) "Modus Ponens" (Just (n + 1, n)) Nothing,
-        Line (n + 3) (OpNode cond [c, OpNode cond [OpNode cond [c, c], c]]) "Axiom2" Nothing Nothing,
-        Line (n + 4) (OpNode cond [c, c]) "Modus Ponens" (Just (n + 3, n + 2)) uNum
+        Line n (OpNode cond [OpNode cond [c, OpNode cond [c, c]], OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]]) "Axiom3" [] Nothing,
+        Line (n + 1) (OpNode cond [c, OpNode cond [c, c]]) "Axiom2" [] Nothing,
+        Line (n + 2) (OpNode cond [OpNode cond [c, OpNode cond [OpNode cond [c, c], c]], OpNode cond [c, c]]) "Modus Ponens" [n + 1, n] Nothing,
+        Line (n + 3) (OpNode cond [c, OpNode cond [OpNode cond [c, c], c]]) "Axiom2" [] Nothing,
+        Line (n + 4) (OpNode cond [c, c]) "Modus Ponens" [n + 3, n + 2] uNum
     ]
     -- [Line lNum (OpNode cond [c, c]) "Axiom1" Nothing uNum]
 
@@ -75,19 +76,23 @@ findLineWithUserNum lns uNum =
                         _ -> findLineWithUserNum remLines uNum
 
 axiomCaseTransformation :: Sentence -> Transformation
-axiomCaseTransformation hyp offset line = applyOffsetToLines offset (axiomCaseDeduction hyp line)
+axiomCaseTransformation hyp transformant = applyOffsetToLines (offset transformant) (axiomCaseDeduction hyp (fromJust (curr transformant)))
 
 hypCaseTransformation :: Transformation
-hypCaseTransformation offset line = applyOffsetToLines offset (hypCaseDeduction line)
+hypCaseTransformation transformant = applyOffsetToLines (offset transformant) (hypCaseDeduction (fromJust (curr transformant)))
 
-modusPonensCaseTransformation :: Sentence -> Line -> Line -> Transformation
-modusPonensCaseTransformation hyp pLine pqLine offset currLine = -- pLine and pqLine are already transformed
-    let n = lineNumber currLine + offset in 
-        [
-            Line n (OpNode cond [lineContent pLine, OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
-            Line (n + 1) (OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
-            Line (n + 2) (OpNode cond [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
-        ]
+modusPonensCaseTransformation :: Sentence -> Transformation
+modusPonensCaseTransformation hyp transformant = -- pLine and pqLine are already transformed
+    let currLine = fromJust (curr transformant) in 
+        let n = lineNumber (currLine) + (offset transformant) in 
+            [
+                Line n (OpNode cond [lineContent pLine, OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]]) "Axiom3" [] Nothing,
+                Line (n + 1) (OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]) "Modus Ponens" [lineNumber pLine, n] Nothing,
+                Line (n + 2) (OpNode cond [hyp, lineContent currLine]) "Modus Ponens" [lineNumber pqLine, n + 1] (userNumber currLine)
+            ]
+    where 
+        pLine = fromJust (findLineWithUserNum (transformata transformant) ((refLines (fromJust (curr transformant))) !! 0))
+        pqLine = fromJust (findLineWithUserNum (transformata transformant) ((refLines (fromJust (curr transformant))) !! 1))
 
 -- deduction should be the last transformation that happens
 useDeduction' :: Logic -> Sentence -> Transformant -> Transformant
@@ -95,14 +100,11 @@ useDeduction' logic hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-                        "Modus Ponens" -> useDeduction' logic hyp (applyTransformation (modusPonensCaseTransformation hyp pLine pqLine) state)
-                                            where 
-                                                pLine = fromJust (findLineWithUserNum (transformata state) (fst (fromJust (refLines line))))
-                                                pqLine = fromJust (findLineWithUserNum (transformata state) (snd (fromJust (refLines line))))
+                        "Modus Ponens" -> useDeduction' logic hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
                         "Assumption" -> if lineContent line == hyp 
                                             then useDeduction' logic hyp (applyTransformation hypCaseTransformation state) 
                                             else useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
-                        just -> if just `elem` (map axiomName (axioms logic))
+                        j -> if j `elem` (map axiomName (axioms logic))
                                     then useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
                                     else error "unknown justification for deduction"
 
@@ -139,3 +141,13 @@ parseUserProofFile logicName fileContent =
         let (goalLine, pfLines) = splitByProofLine (lines fileContent) in
             let goal = getProofGoal logic [] goalLine in
                 (goal, parseUserProofWithDeduction logic goal pfLines)
+
+
+-- andElimLTransformation :: Line -> Transformation
+-- andElimLTransformation offset currLine = -- pLine and pqLine are already transformed
+--     let n = lineNumber currLine + offset in 
+--         [
+--             Line n (OpNode cond [lineContent pLine, OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]]) "Axiom3" Nothing Nothing,
+--             Line (n + 1) (OpNode cond [lineContent pqLine, OpNode cond [hyp, lineContent currLine]]) "Modus Ponens" (Just (lineNumber pLine, n)) Nothing,
+--             Line (n + 2) (OpNode cond [hyp, lineContent currLine]) "Modus Ponens" (Just (lineNumber pqLine, n + 1)) (userNumber currLine)
+--         ]

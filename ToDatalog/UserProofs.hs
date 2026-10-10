@@ -7,25 +7,20 @@ import Proofs
 
 import System.IO
 import qualified Data.Map as Map
+import Data.List
 import System.Environment (getArgs)
 import System.Directory (createDirectoryIfMissing)
-
--- this helper is only used in lineToDatalog, so I'm moving it here (instead of Core)
-getRefLines :: Maybe (Int, Int) -> (Int, Int)
-getRefLines Nothing = (0,0)
-getRefLines (Just (i,j)) = (i,j)
 
 sentenceToDatalog :: Sentence -> String
 sentenceToDatalog = formulaToDatalog False
 
 lineToDatalog :: Line -> String
-lineToDatalog line = 
-    let (i, j) = getRefLines (refLines line) in
+lineToDatalog line =
+    let rfs = if refLines line == [] then [0, 0] else refLines line in
         "Line(" ++ show (lineNumber line) ++ ", " ++
         sentenceToDatalog (lineContent line) ++ ", " ++ 
-        "\"" ++ justification line ++ "\", " ++
-        show i ++ ", " ++ 
-        show j ++ ").\n"
+        "\"" ++ justification line ++ "\", " ++ 
+        (intercalate ", " . map show) rfs ++ ").\n"
 
 proofToDatalog :: Sentence -> [Line] -> String
 proofToDatalog proofGoal proofLines =
