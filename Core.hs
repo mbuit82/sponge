@@ -39,7 +39,7 @@ data InferenceRule = InferenceRule {
 -- well, by design, the operators in the axioms and inference rules need to be in the operators. 
 -- how can I enforce that with the type system? not sure I can
 -- you basically enforce it by design...? actually no that depends on the user lol
--- I think you'd have to create a syntax object and then a logic object. Kinda gross, i trust users on this
+-- I think you'd have to create a syntax object and then a logic object. Kinda gross. I trust users on this
 data Logic = Logic
   { logicName :: String,
     operators :: [Operator],
@@ -54,7 +54,6 @@ data Line = Line {
     lineContent :: Sentence,
     justification :: String,
     refLines :: [Int],
-    -- refLines :: Maybe (Int, Int),
     userNumber :: Maybe Int -- the original line number the user used (NOTE: actually this is not that lol it's like an old pointer type thing lol)
 } deriving Eq
 -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
@@ -64,13 +63,10 @@ instance Show Line where
                 show (lineContent line) ++ "\t" ++ 
                 "by " ++ justification line ++ show (refLines line)
 
--- refLinesHuh :: Maybe (Int, Int) -> String
--- refLinesHuh Nothing = []
--- refLinesHuh (Just (a, b)) = "(" ++ show a ++ ", " ++ show b ++ ")"
-
 userNumberHuh :: Maybe Int -> String
 userNumberHuh Nothing = "-"
 userNumberHuh (Just n) = "(" ++ show n ++ ")"
+
 
 
 -- RUNTIME CHECKS FOR LATER
@@ -152,9 +148,9 @@ instance Show Token where
     show (DefOpToken defOp) = "DefOpToken " ++ defOpSymbol defOp
     show (AtomToken str) = "AtomToken " ++ str
 
-exportCurrToken :: Maybe String -> [Token]
-exportCurrToken Nothing = [] -- :: [[Char]]
-exportCurrToken (Just a) = [AtomToken a] -- :: [[Char]]
+exportCurrToken :: String -> [Token]
+exportCurrToken [] = []
+exportCurrToken a = [AtomToken a]
 
 getWithStr :: (a -> String) -> [a] -> String -> Maybe a
 getWithStr _ [] _ = Nothing
@@ -167,27 +163,22 @@ getOpWithSymbol = getWithStr operatorSymbol
 getDefOpWithSymbol :: [DefinedOperator] -> String -> Maybe DefinedOperator
 getDefOpWithSymbol = getWithStr defOpSymbol
 
-tokenize' :: [Operator] -> [DefinedOperator] -> String -> Maybe String -> [Token]
-tokenize' ops defOps [] beingBuilt
-    | fromMaybe [] beingBuilt `elem` (map operatorSymbol ops) =
-        [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))]
-    | fromMaybe [] beingBuilt `elem` (map defOpSymbol defOps) = 
-        [DefOpToken (fromJust (getDefOpWithSymbol defOps (fromJust beingBuilt)))]
-    | otherwise = exportCurrToken beingBuilt
-tokenize' ops defOps (char : remChars) beingBuilt
-    | fromMaybe [] beingBuilt `elem` (map operatorSymbol ops) = 
-        [OpToken (fromJust (getOpWithSymbol ops (fromJust beingBuilt)))] ++ tokenize' ops defOps (char : remChars) Nothing
-    | fromMaybe [] beingBuilt `elem` (map defOpSymbol defOps) =
-        [DefOpToken (fromJust (getDefOpWithSymbol defOps (fromJust beingBuilt)))] ++ tokenize' ops defOps (char : remChars) Nothing
-    | otherwise = case char of -- we know that the currently being built is _not_ an operator nor defined operator, so we can treat it as not one (or something that's not one yet)
-        '(' -> exportCurrToken beingBuilt ++ [LPToken] ++ tokenize' ops defOps remChars Nothing
-        ')' -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops defOps remChars Nothing
-        ' ' -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars Nothing
-        ',' -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars Nothing -- for stuff after "by" and in general why not
-        other -> tokenize' ops defOps remChars (Just (fromMaybe [] beingBuilt ++ [other]))
+tokenize' :: [Operator] -> [DefinedOperator] -> String -> String -> [Token]
+tokenize' ops defOps toSee beingBuilt
+    | beingBuilt `elem` (map operatorSymbol ops) = 
+        [OpToken (fromJust (getOpWithSymbol ops beingBuilt))] ++ tokenize' ops defOps toSee []
+    | beingBuilt `elem` (map defOpSymbol defOps) =
+        [DefOpToken (fromJust (getDefOpWithSymbol defOps beingBuilt))] ++ tokenize' ops defOps toSee []
+    | otherwise = case toSee of
+        [] -> exportCurrToken beingBuilt
+        '(' : remChars -> exportCurrToken beingBuilt ++ [LPToken] ++ tokenize' ops defOps remChars []
+        ')' : remChars -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops defOps remChars []
+        ' ' : remChars -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars []
+        ',' : remChars -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars [] -- for stuff after "by" and in general why not
+        x : remChars -> tokenize' ops defOps remChars (beingBuilt ++ [x])
 
 tokenize :: [Operator] -> [DefinedOperator] -> String -> [Token]
-tokenize ops defOps str = tokenize' ops defOps str Nothing
+tokenize ops defOps str = tokenize' ops defOps str []
 
 pop :: [a] -> [a]
 pop [] = error "Stack underflow from pop"
