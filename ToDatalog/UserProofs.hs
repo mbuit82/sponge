@@ -41,7 +41,7 @@ userToDatalog' :: String -> String -> IO ()
 userToDatalog' logicName proofName = do
     fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
     createDirectoryIfMissing False ("datalog_proofs/" ++ logicName ++ "/" ++ proofName)
-    let (goal, proofLines) = parseUserProofFile logicName fileContent in
+    let (goal, proofLines) = parseUserProofFile (getLogic logicName) fileContent in
         compileDatalogProof proofName goal (getLogic logicName) proofLines
 
 main :: IO ()

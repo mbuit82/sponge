@@ -9,4 +9,4 @@ Proof
 2. |- A             by Assumption
 3. |- B             by Assumption
 4. |- A & B         by Adjunction, 2 3
-5. |- C             by Modus Ponens, 6 1
+5. |- C             by Modus Ponens, 4 1

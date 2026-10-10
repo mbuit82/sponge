@@ -28,8 +28,8 @@ l5 = Line 5 (OpNode cond [Atom "A", Atom "A"]) "Modus Ponens" [4, 3] (Just 5)
 testPureProof :: IO ()
 testPureProof = compileDatalogProof "axiom1" (OpNode cond [Atom "A", Atom "A"]) smallMpc [l1, l2, l3, l4, l5]
 
-testOffset :: IO ()
-testOffset = compileDatalogProof "axiom1offset" (OpNode cond [Atom "A", Atom "A"]) smallMpc (applyOffsetToLines 10 [l1, l2, l3, l4, l5])
+-- testOffset :: IO ()
+-- testOffset = compileDatalogProof "axiom1offset" (OpNode cond [Atom "A", Atom "A"]) smallMpc (applyOffsetToLines 10 [l1, l2, l3, l4, l5])
 
 dl1 = Line 1 (OpNode bot []) "Assumption" [] (Just 1)
 dl2 = Line 2 (OpNode cond [OpNode bot [], (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []])]) "Axiom2" [] (Just 2)
@@ -127,3 +127,18 @@ htdd7 = getLineFromUser smallCpc "7. |- B                             by Modus P
 deductionOnceLineParser = useDeduction smallCpc (parse testOps testDefOps "A") [htdd1, htdd2, htdd3, htdd4, htdd5, htdd6, htdd7]
 deductionTwiceLineParser = useDeduction smallCpc (parse testOps testDefOps "(A -> Bot)") deductionOnceLineParser
 testParserWithTwoDeductions = compileDatalogProof "axiom4_deductiontwice" (parse testOps testDefOps "((A -> Bot) -> (A -> B))") smallCpc deductionTwiceLineParser
+
+
+
+
+
+curr1 = "1. |- (A & B) -> C  by Assumption"
+curr2 = "2. |- A             by Assumption"
+curr3 = "3. |- B             by Assumption"
+curr4 = "4. |- A & B         by Adjunction, 2 3"
+curr5 = "5. |- C             by Modus Ponens, 4 1"
+pfStrs = [curr1, curr2, curr3, curr4, curr5]
+
+pfLines = parseUserProof (getLogic "minimal") pfStrs
+
+pfLinesAfterDerived = applyDerivedRules (getLogic "minimal") pfLines

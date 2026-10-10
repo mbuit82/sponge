@@ -1,6 +1,7 @@
 module Core where
 
 import Data.Maybe
+import qualified Data.Map as Map
 
 data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
@@ -45,8 +46,9 @@ data Logic = Logic
     operators :: [Operator],
     definedOperators :: [DefinedOperator],
     axioms :: [Axiom],
-    inferenceRules :: [InferenceRule]
-  } 
+    inferenceRules :: [InferenceRule],
+    derivedRules :: Map.Map String Transformation
+  }
 
 -- for proofs
 data Line = Line {
@@ -148,9 +150,9 @@ instance Show Token where
     show (DefOpToken defOp) = "DefOpToken " ++ defOpSymbol defOp
     show (AtomToken str) = "AtomToken " ++ str
 
-exportCurrToken :: String -> [Token]
-exportCurrToken [] = []
-exportCurrToken a = [AtomToken a]
+toAtomToken :: String -> [Token]
+toAtomToken [] = []
+toAtomToken a = [AtomToken a]
 
 getWithStr :: (a -> String) -> [a] -> String -> Maybe a
 getWithStr _ [] _ = Nothing
@@ -170,11 +172,10 @@ tokenize' ops defOps toSee beingBuilt
     | beingBuilt `elem` (map defOpSymbol defOps) =
         [DefOpToken (fromJust (getDefOpWithSymbol defOps beingBuilt))] ++ tokenize' ops defOps toSee []
     | otherwise = case toSee of
-        [] -> exportCurrToken beingBuilt
-        '(' : remChars -> exportCurrToken beingBuilt ++ [LPToken] ++ tokenize' ops defOps remChars []
-        ')' : remChars -> exportCurrToken beingBuilt ++ [RPToken] ++ tokenize' ops defOps remChars []
-        ' ' : remChars -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars []
-        ',' : remChars -> exportCurrToken beingBuilt              ++ tokenize' ops defOps remChars [] -- for stuff after "by" and in general why not
+        [] -> toAtomToken beingBuilt
+        '(' : remChars -> toAtomToken beingBuilt ++ [LPToken] ++ tokenize' ops defOps remChars [] -- should never happen? 
+        ')' : remChars -> toAtomToken beingBuilt ++ [RPToken] ++ tokenize' ops defOps remChars []
+        ' ' : remChars -> toAtomToken beingBuilt              ++ tokenize' ops defOps remChars []
         x : remChars -> tokenize' ops defOps remChars (beingBuilt ++ [x])
 
 tokenize :: [Operator] -> [DefinedOperator] -> String -> [Token]
@@ -188,52 +189,61 @@ fetch :: [a] -> a
 fetch [] = error "Stack underflow from fetch"
 fetch (x:_) = x
 
-getNextSentence :: [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
--- getNextSentence [OpToken binOp] [rArg, lArg] [] = (OpNode binOp [lArg, rArg], []) -- my attempt at no top level parentheses. The problem is tha we never get there
-getNextSentence [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
-getNextSentence opStack [] [] = error ("shid we reached the end and we have no sentences lel. current opStack (rest are empty): " ++ show opStack)
-getNextSentence opStack [sent] [] = error ("this case doesn't make sense really. opStack and sentStack: " ++ show opStack ++ ", " ++ show sent)
-getNextSentence opStack sentStack [] = error ("error in parsing. check for a missing set of parentheses? opStack and sentStack: " ++ show opStack ++ ", " ++ show sentStack)
-getNextSentence opStack sentStack toSee =
+-- varMap :: Map.Map String Sentence
+
+-- withVar :: String -> Sentence
+
+asdf = Atom
+
+getNextSentence' :: (String -> Sentence) -> [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
+getNextSentence' _ [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
+getNextSentence' _ opStack [] [] = error ("shid we reached the end and we have no sentences lel. current opStack (rest are empty): " ++ show opStack)
+getNextSentence' _ opStack [sent] [] = error ("this case doesn't make sense really. opStack and sentStack: " ++ show opStack ++ ", " ++ show sent)
+getNextSentence' _ opStack sentStack [] = error ("error in parsing. check for a missing set of parentheses? opStack and sentStack: " ++ show opStack ++ ", " ++ show sentStack)
+getNextSentence' atomFunc opStack sentStack toSee =
     case toSee of
-        LPToken : toks -> getNextSentence (LPToken : opStack) sentStack toks
+        LPToken : toks -> getNextSentence' atomFunc (LPToken : opStack) sentStack toks
         RPToken : toks -> case fetch opStack of
                             -- we only put binary operaotrs/defops on the opstack. unary and nullary are just immediately put on the sentStack
                             OpToken op -> case sentStack of
-                                            rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) toks -- this should really be pop until you see a LPToken
+                                            rArg : lArg : remSents -> getNextSentence' atomFunc (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) toks -- this should really be pop until you see a LPToken
                                             _ -> error "not enough args"
                             DefOpToken defOp -> case sentStack of
-                                            rArg : lArg : remSents -> getNextSentence (pop (pop opStack)) (((definition defOp) [lArg, rArg]) : remSents ) toks -- this should really be pop until you see a LPToken
+                                            rArg : lArg : remSents -> getNextSentence' atomFunc (pop (pop opStack)) (((definition defOp) [lArg, rArg]) : remSents ) toks -- this should really be pop until you see a LPToken
                                             _ -> error "not enough args"
-                            LPToken -> getNextSentence (pop opStack) sentStack toks -- sandwiched something lol (unary or nullary operator that over-parenthesized)
+                            LPToken -> getNextSentence' atomFunc (pop opStack) sentStack toks -- sandwiched something lol (unary or nullary operator that over-parenthesized)
                             _ -> error "should have been an operator on the stack but there wasn't"
-        AtomToken a : toks -> getNextSentence opStack (Atom a : sentStack) toks
+        AtomToken a : toks -> getNextSentence' atomFunc opStack (atomFunc a : sentStack) toks
         OpToken op : toks -> case arity op of
-                                0 -> getNextSentence opStack (OpNode op [] : sentStack) toks
-                                1 -> let (nextSent, newRem) = getNextSentence [] [] toks in
-                                        getNextSentence opStack (OpNode op [nextSent] : sentStack) newRem
-                                2 -> getNextSentence (OpToken op : opStack) sentStack toks
+                                0 -> getNextSentence' atomFunc opStack (OpNode op [] : sentStack) toks
+                                1 -> let (nextSent, newRem) = getNextSentence' atomFunc [] [] toks in
+                                        getNextSentence' atomFunc opStack (OpNode op [nextSent] : sentStack) newRem
+                                2 -> getNextSentence' atomFunc (OpToken op : opStack) sentStack toks
                                 _ -> error "not doing n-ary predicates yet (got n-ary operator)"
         DefOpToken defOp : toks -> case defOpArity defOp of
-                                0 -> getNextSentence opStack (((definition defOp) []) : sentStack) toks
-                                1 -> let (nextSent, newRem) = getNextSentence [] [] toks in
-                                        getNextSentence opStack (((definition defOp) [nextSent]) : sentStack) newRem
-                                2 -> getNextSentence (DefOpToken defOp : opStack) sentStack toks
+                                0 -> getNextSentence' atomFunc opStack (((definition defOp) []) : sentStack) toks
+                                1 -> let (nextSent, newRem) = getNextSentence' atomFunc [] [] toks in
+                                        getNextSentence' atomFunc opStack (((definition defOp) [nextSent]) : sentStack) newRem
+                                2 -> getNextSentence' atomFunc (DefOpToken defOp : opStack) sentStack toks
                                 _ -> error "not doing n-ary predicates yet (got n-ary defined operator)"
 
--- lmao so we just add an extra set of parentheses onto everything lol. 
-getTopLevelSentence :: [Token] -> Sentence
--- getTopLevelSentence (LPToken : rem) = fst (getNextSentence [] [] (LPToken:rem)) -- we have a first paren, so guessing we have a last. If we don't or if unbalanced we'll throw an error somewhre prolly
-getTopLevelSentence toks = fst (getNextSentence [] [] (LPToken : toks ++ [RPToken]))
+-- lmao so we just add an extra set of parentheses onto everything lol
+-- to avoid O(n) iteration through toks, could move this to base case of tokenize' function
+-- or think of smarter way to do top level parens lol
+getTopLevelSentence :: (String -> Sentence) -> [Token] -> Sentence
+getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToken : toks ++ [RPToken]))
 
 parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
-parse ops defOps input = getTopLevelSentence (tokenize ops defOps input)
+parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
+
+parseWithSubst :: Logic -> String -> Map.Map String Sentence -> Sentence
+parseWithSubst logic input varMap = getTopLevelSentence (\s -> varMap Map.! s) (tokenize (operators logic) (definedOperators logic) input)
 
 getLineNumFromLine :: String -> String -> (Int, String)
 getLineNumFromLine seen toSee = 
     case toSee of
         '.' : ' ' : '|' : '-' : ' ' : remChars -> (read seen, remChars)
-        [] -> error "couldn't find line number split! Maybe you forgot to include \"|-\" in a line?"
+        [] -> error "couldn't find line number split. Maybe you forgot to include \"|-\" in a line?"
         c : remChars -> getLineNumFromLine (seen ++ [c]) remChars
 
 -- here is where automatic use of defined operators happens
@@ -267,3 +277,37 @@ getProofGoal :: Logic -> String -> String -> Sentence
 getProofGoal _ _ [] = error "proof has no goal!"
 getProofGoal logic _ ('|' : '-' : remChars) = parse (operators logic) (definedOperators logic) remChars
 getProofGoal logic seen (c:remChars) = getProofGoal logic (seen ++ [c]) remChars
+
+
+
+-- need to move now that derived rules are transformations and are in logics :/
+data Transformant = Transformant { transformata :: [Line], curr :: Maybe Line, transformanda :: [Line], offset :: Int}
+
+type Transformation = Transformant -> [Line]
+
+findLineWithUserNum' :: [Line] -> Int -> Maybe Line
+findLineWithUserNum' [] _ = Nothing
+findLineWithUserNum' (l : remLines) uNum =
+    case userNumber l of
+        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum' remLines uNum
+        _ -> findLineWithUserNum' remLines uNum
+    
+findLineWithUserNum :: Transformant -> Int -> Maybe Line
+findLineWithUserNum transformant uNum = findLineWithUserNum' (transformata transformant) uNum
+
+getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
+getCurrentRefLines transformant =
+    let currLine = fromJust (curr transformant) in 
+        map (fromJust . findLineWithUserNum transformant) (refLines currLine)
+
+-- (map (fromJust . findLineWithUserNum transformant)) . (refLines . fromJust .)
+
+getUpdatedCurrentRefs :: Transformant -> [Int]
+getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
+
+identityTransformation :: Transformation
+identityTransformation transformant = 
+    case curr transformant of
+        Nothing -> []
+        Just (Line lNum c j rfs uNum) -> 
+            [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
