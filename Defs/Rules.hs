@@ -51,7 +51,7 @@ adjunctionTransformation transformant =
 adjunctionDerivedRule :: DerivedRule
 adjunctionDerivedRule = ("Adjunction", adjunctionTransformation)
 
--- -- for Or Intro L and Or Intro R, we need to be able to add sentences to the additional material
+-- -- for Or Intro L and Or Intro R, we need to be able to add arbitrary sentences to the additional material
 -- orIntroLTransformation :: Transformation
 -- orIntroLTransformation transformant =
 --     [
