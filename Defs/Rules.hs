@@ -65,22 +65,41 @@ adjunctionDerivedRule = ("Adjunction", adjunctionTransformation)
 orElimTransformation :: Transformation
 orElimTransformation transformant =
     [
-        Line n (applySubst "PR -> (QR -> (PorQ -> R))" [("PR", pr), ("QR", qr), ("PorQ", porq), ("R", r)]) "Or-E" [] Nothing,
-        Line (n + 1) (applySubst "QR -> (PorQ -> R)" [("QR", qr), ("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber prLine, n] Nothing,
-        Line (n + 2) (applySubst "PorQ -> R" [("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
-        Line (n + 3) r "Modus Ponens" [lineNumber porqLine, n + 2] (userNumber currLine)
+        Line n (applySubst "PR -> (QR -> PorQR)" [("PR", pr), ("QR", qr), ("PorQR", porqr)]) "Or-E" [] Nothing,
+        Line (n + 1) (applySubst "QR -> PorQR" [("QR", qr), ("PorQR", porqr)]) "Modus Ponens" [lineNumber prLine, n] Nothing,
+        Line (n + 2) porqr "Modus Ponens" [lineNumber qrLine, n + 1] (userNumber currLine)
     ]
     where 
         applySubst = getApplySubstFromTransformant transformant
-        [prLine, qrLine, porqLine] = getCurrentRefLines transformant
+        [prLine, qrLine] = getCurrentRefLines transformant
         currLine = fromJust (curr transformant)
         pr = lineContent prLine
         qr = lineContent qrLine
-        porq = lineContent porqLine
-        r = lineContent currLine
+        porqr = lineContent currLine
         n = lineNumber currLine + offset transformant
 orElimDerivedRule :: DerivedRule
 orElimDerivedRule = ("Or Elim", orElimTransformation)
+
+-- think I'll keep the one with two. Used it once in a modal logic proof lol so reason to have the one with only 2. 
+-- orElimTransformation :: Transformation
+-- orElimTransformation transformant =
+--     [
+--         Line n (applySubst "PR -> (QR -> (PorQ -> R))" [("PR", pr), ("QR", qr), ("PorQ", porq), ("R", r)]) "Or-E" [] Nothing,
+--         Line (n + 1) (applySubst "QR -> (PorQ -> R)" [("QR", qr), ("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber prLine, n] Nothing,
+--         Line (n + 2) (applySubst "PorQ -> R" [("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
+--         Line (n + 3) r "Modus Ponens" [lineNumber porqLine, n + 2] (userNumber currLine)
+--     ]
+--     where 
+--         applySubst = getApplySubstFromTransformant transformant
+--         [prLine, qrLine, porqLine] = getCurrentRefLines transformant
+--         currLine = fromJust (curr transformant)
+--         pr = lineContent prLine
+--         qr = lineContent qrLine
+--         porq = lineContent porqLine
+--         r = lineContent currLine
+--         n = lineNumber currLine + offset transformant
+-- orElimDerivedRule :: DerivedRule
+-- orElimDerivedRule = ("Or Elim", orElimTransformation)
 
 hypSyllTransformation :: Transformation
 hypSyllTransformation transformant =
