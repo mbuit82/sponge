@@ -45,7 +45,9 @@ logicsDict = makeLogicsDict specsList -- specsList is at the bottom. Add any spe
 getLogic :: String -> Logic
 getLogic logicName = logicsDict Map.! logicName
 
-
+extendWithAxioms :: Spec -> [Axiom] -> String -> Spec
+extendWithAxioms baseSpec newAxs newName =
+    Spec newName (Just baseSpec) [] [] newAxs [] Map.empty
 
 -- specs
 specMinimalSmall :: Spec
@@ -107,15 +109,7 @@ specIntuitionistic = Spec {
 }
 
 specClassical :: Spec
-specClassical = Spec {
-    specName = "classical",
-    baseSystem = Just specIntuitionistic,
-    newOperators = [],
-    newDefinedOperators = [],
-    newAxioms = [lem],
-    newInferenceRules = [], -- you should add disjunctive syllogism
-    newDerivedRules = Map.empty
-}
+specClassical = extendWithAxioms specIntuitionistic [lem] "classical"
 
 specK :: Spec
 specK = Spec {
@@ -127,6 +121,48 @@ specK = Spec {
     newInferenceRules = [necessitation],
     newDerivedRules = Map.empty
 }
+
+specD :: Spec
+specD = extendWithAxioms specK [dAxiom] "D"
+
+specKT :: Spec
+specKT = extendWithAxioms specK [tAxiom] "KT"
+
+specKB :: Spec
+specKB = extendWithAxioms specK [brouwerscheAxiom] "KB"
+
+specS4 :: Spec
+specS4 = extendWithAxioms specKT [fourAxiom] "S4"
+
+specS5 :: Spec
+specS5 = extendWithAxioms specS4 [brouwerscheAxiom] "S5"
+
+specSE :: Spec
+specSE = extendWithAxioms specKB [elsewhereAxiom] "SE"
+
+specS42 :: Spec
+specS42 = extendWithAxioms specS4 [convergenceAxiom] "S4.2"
+
+specS44 :: Spec
+specS44 = extendWithAxioms specS4 [gettierAxiom] "S4.4"
+
+specS43 :: Spec
+specS43 = extendWithAxioms specS4 [d1Axiom] "S4.3"
+
+specK43 :: Spec
+specK43 = extendWithAxioms specK [fourAxiom, d2Axiom] "K4.3"
+
+specKW :: Spec
+specKW = extendWithAxioms specK [glAxiom] "KW"
+
+specKH :: Spec
+specKH = extendWithAxioms specK [hAxiom] "KH"
+
+specKD4 :: Spec
+specKD4 = extendWithAxioms specD [fourAxiom] "KD4"
+
+specKD45 :: Spec
+specKD45 = extendWithAxioms specKD4 [fiveAxiom] "KD45"
 
 specLinearIntensionalKernelHesselink :: Spec
 specLinearIntensionalKernelHesselink = Spec {
@@ -168,6 +204,13 @@ specLinearHesselink = Spec {
 specsList :: [Spec]
 specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall, 
                 specMinimal, specIntuitionistic, specClassical,
-                specK,
+                specK, 
+                specD, specKT, specKB, 
+                specS4, specS5,
+                specSE, 
+                specS42, specS44,
+                specS43, specK43,
+                specKW, specKH,
+                specKD4, specKD45,
                 specLinearIntensionalKernelHesselink, specLinearHesselink
             ]

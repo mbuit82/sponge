@@ -56,6 +56,6 @@ glAxiom = Axiom "GL Axiom" (parse [cond, box] [] "L((LP -> P) -> LP)")
 hAxiom :: Axiom -- used in KH logic, slightly weaker than KW
 hAxiom = Axiom "H Axiom" (parse [cond, box] [bicond] "L((LP <> P) -> LP)")
 d1Axiom :: Axiom
-d1Axiom = Axiom "D1 Axiom" (parse [cond, box] []"L(LP -> Q) v L(LQ -> P)")
+d1Axiom = Axiom "D1 Axiom" (parse [cond, box, orOp] [] "L(LP -> Q) v L(LQ -> P)")
 d2Axiom :: Axiom
-d2Axiom = Axiom "D2 Axiom" (parse [cond, box] []"L((P & LP) -> Q) v L((Q & LQ) -> P)")
+d2Axiom = Axiom "D2 Axiom" (parse [cond, box, orOp, andOp] [] "L((P & LP) -> Q) v L((Q & LQ) -> P)")

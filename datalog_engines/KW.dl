@@ -1,0 +1,43 @@
+.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence} | Bot {} | Box {s1: Sentence}
+
+.decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
+.decl Justified(n: unsigned)
+.decl Unjustified(n: unsigned)
+.decl UnjustifiedCount(c: number)
+.decl Goal(goal: Sentence)
+.decl Proven(f: Sentence)
+
+Unjustified(n) :- Line(n, _, _, _, _), !Justified(n).
+UnjustifiedCount(c) :- c = count : { Unjustified(_) }.
+Proven(f) :- Goal(f),
+	Line(n, f, _, _, _),
+	Justified(n),
+	UnjustifiedCount(0).
+
+.output Unjustified
+.output Justified
+.output Proven
+
+Justified(n) :- Line(n, $Conditional(P, $Conditional(_, P)), "Axiom2", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional(P, R))), "Axiom3", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, _), P), "And-EL", _, _).
+Justified(n) :- Line(n, $Conditional($And(_, Q), Q), "And-ER", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And-I", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Or(P, _)), "Or-IL", _, _).
+Justified(n) :- Line(n, $Conditional(Q, $Or(_, Q)), "Or-IR", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or-E", _, _).
+Justified(n) :- Line(n, $Conditional($Bot(), _), "Explosion", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional($Conditional(P, $Bot()), $Bot()), P), "Excluded Middle", _, _).
+Justified(n) :- Line(n, $Conditional($Box($Conditional(P, Q)), $Conditional($Box(P), $Box(Q))), "K Axiom", _, _).
+Justified(n) :- Line(n, $Box($Conditional($Conditional($Box(P), P), $Box(P))), "GL Axiom", _, _).
+Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
+	i < n,
+	Justified(i),
+	Line(i, P, _, _, _),
+	j < n,
+	Justified(j),
+	Line(j, $Conditional(P, Q), _, _, _).
+Justified(n) :- Line(n, $Box(P), "Necessitation", i, _),
+	i < n,
+	Justified(i),
+	Line(i, P, _, _, _).
