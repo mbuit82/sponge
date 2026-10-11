@@ -1,10 +1,9 @@
 module ToDatalog.Utils where
 
 import Core
-import Specs ( getLogic, logicsDict )
+import Defs.Specs ( getLogic, logicsDict )
 
 import Data.List
-import qualified Data.Map as Map
 import System.Environment (getArgs)
 
 

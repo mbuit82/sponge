@@ -1,5 +1,6 @@
 import Core
-import Specs
+import Defs.Operators
+import Defs.Specs
 import Proofs
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof)

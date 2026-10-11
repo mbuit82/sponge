@@ -2,7 +2,7 @@
 module ShowLogic (main) where
 
 import Core
-import Specs
+import Defs.Specs
 
 import Data.List
 import System.Environment (getArgs)

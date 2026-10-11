@@ -1,12 +1,12 @@
 all: datalog-engines proof-processing
 
-datalog-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs Proofs.hs Specs.hs Core.hs
+datalog-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs Defs/Specs.hs Core.hs
 	@ mkdir -p exec
 	@ ghc ToDatalog/Engines.hs -main-is ToDatalog.Engines.main -o exec/build-engines -outputdir build
 	@ ghc ShowLogic.hs -main-is ShowLogic.main -o exec/show-logic -outputdir build
 	@ ./exec/build-engines
 
-proof-processing: ToDatalog/UserProofs.hs ToDatalog/Utils.hs Proofs.hs Specs.hs Core.hs
+proof-processing: ToDatalog/UserProofs.hs ToDatalog/Utils.hs Proofs.hs Core.hs
 	@ ghc ToDatalog/UserProofs.hs -main-is ToDatalog.UserProofs.main -o exec/build-proof -outputdir build
 	@ ghc CheckDatalogOutput.hs -main-is CheckDatalogOutput.main -o exec/check-datalog-output -outputdir build
 

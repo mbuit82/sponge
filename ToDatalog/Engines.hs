@@ -1,7 +1,7 @@
 module ToDatalog.Engines where
 
 import Core
-import Specs ( getLogic, logicsDict )
+import Defs.Specs ( getLogic, logicsDict )
 import ToDatalog.Utils
 
 import Data.List

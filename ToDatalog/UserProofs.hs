@@ -1,12 +1,11 @@
 module ToDatalog.UserProofs where
 
 import Core
-import Specs ( getLogic, logicsDict )
+import Defs.Specs ( getLogic, logicsDict )
 import ToDatalog.Utils
 import Proofs
 
 import System.IO
-import qualified Data.Map as Map
 import Data.List
 import System.Environment (getArgs)
 import System.Directory (createDirectoryIfMissing)

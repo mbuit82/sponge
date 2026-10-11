@@ -29,13 +29,15 @@ instance Show Sentence where
     show (OpNode _ _) = error "either n-ary or something's gone wrong with an operator definition"
         -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- n-ary, but for would be indicative that something's gone wrong
 
-data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving Show
+data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Show, Eq)
 -- low key not necessary
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
-    premises :: (Sentence, Maybe Sentence), -- strictly enforce having two
-    conclusion :: Sentence} deriving Show
+    premises :: (Sentence, Maybe Sentence), -- can have max two (bc of how Datalog is set up)
+    conclusion :: Sentence} deriving (Show, Eq)
+
+type DerivedRule = (String, Transformation)
 
 -- well, by design, the operators in the axioms and inference rules need to be in the operators. 
 -- how can I enforce that with the type system? not sure I can
@@ -72,6 +74,7 @@ userNumberHuh (Just n) = "(" ++ show n ++ ")"
 
 
 -- RUNTIME CHECKS FOR LATER
+-- thought these would be good to do. I think they're basically enforced though. Would be good to do tho? 
 aritiesCheck :: Sentence -> Bool
 aritiesCheck (Atom _) = True
 aritiesCheck (OpNode op args)
@@ -189,12 +192,6 @@ fetch :: [a] -> a
 fetch [] = error "Stack underflow from fetch"
 fetch (x:_) = x
 
--- varMap :: Map.Map String Sentence
-
--- withVar :: String -> Sentence
-
-asdf = Atom
-
 getNextSentence' :: (String -> Sentence) -> [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
 getNextSentence' _ [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
 getNextSentence' _ opStack [] [] = error ("shid we reached the end and we have no sentences lel. current opStack (rest are empty): " ++ show opStack)
@@ -236,13 +233,15 @@ getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToke
 parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
 parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
 
-parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> [(String, Sentence)] -> Sentence
+type Substitution = [(String, Sentence)]
+
+parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> Substitution -> Sentence
 parseWithSubst ops defOps input varTuples = 
     let varMap = Map.fromList varTuples in
         getTopLevelSentence (\s -> varMap Map.! s) (tokenize ops defOps input)
 
 -- used in substitutions in derived rules
-getApplySubstFromTransformant :: Transformant -> String -> [(String, Sentence)] -> Sentence
+getApplySubstFromTransformant :: Transformant -> String -> Substitution -> Sentence
 getApplySubstFromTransformant transformant =
     let logic = transformantLogic transformant in
         parseWithSubst (operators logic) (definedOperators logic)
@@ -311,8 +310,6 @@ getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
 getCurrentRefLines transformant =
     let currLine = fromJust (curr transformant) in 
         map (fromJust . findLineWithUserNum transformant) (refLines currLine)
-
--- (map (fromJust . findLineWithUserNum transformant)) . (refLines . fromJust .)
 
 getUpdatedCurrentRefs :: Transformant -> [Int]
 getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
