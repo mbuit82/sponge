@@ -1,0 +1,9 @@
+Theorem: |- (P -> Q) -> ((Q -> R) -> (P -> R))
+
+Using deduction
+Using deduction
+
+Proof
+1. |- P -> Q by Assumption
+2. |- Q -> R by Assumption
+3. |- P -> R by Hypothetical Syllogism, 1 2
