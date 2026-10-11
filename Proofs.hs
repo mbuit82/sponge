@@ -163,3 +163,9 @@ parseUserProofFile logic fileContent =
         (preamble, pfLines) = splitByProofLine [] pfLines'
         deductionFunc = getDeductionsFunc logic goal preamble in
             (goal, (deductionFunc . applyDerivedRules logic . parseUserProof logic) pfLines)
+
+isSubLogic :: Logic -> Logic -> Bool
+isSubLogic logic1 logic2 =
+    and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
+    and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
+
