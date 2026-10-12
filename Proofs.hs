@@ -96,17 +96,17 @@ useDeduction :: Logic -> Sentence -> [Line] -> [Line]
 useDeduction logic hyp oldProof = 
     resetUserNumbers (reverse (transformata (useDeduction' hyp (intoTransformant logic oldProof))))
 
-applyDerivedRules' :: Logic -> Transformant -> Transformant
-applyDerivedRules' logic state =
+applyDerivedRules' :: Map.Map String Transformation -> Transformant -> Transformant
+applyDerivedRules' derRulesDict state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
-        Just line -> case (derivedRules logic) Map.!? (justification line) of
-            Nothing -> applyDerivedRules' logic (applyTransformation identityTransformation state)
-            Just transformation -> applyDerivedRules' logic (applyTransformation transformation state)
+        Just line -> case derRulesDict Map.!? (justification line) of
+            Nothing -> applyDerivedRules' derRulesDict (applyTransformation identityTransformation state)
+            Just transformation -> applyDerivedRules' derRulesDict (applyTransformation transformation state)
     
-applyDerivedRules :: Logic -> [Line] -> [Line]
-applyDerivedRules logic oldProof = 
-    resetUserNumbers (reverse (transformata (applyDerivedRules' logic (intoTransformant logic oldProof))))
+applyDerivedRules :: Map.Map String Transformation -> Logic -> [Line] -> [Line]
+applyDerivedRules derRulesDict logic oldProof = 
+    resetUserNumbers (reverse (transformata (applyDerivedRules' derRulesDict (intoTransformant logic oldProof))))
 
 
 
@@ -156,13 +156,14 @@ splitByProofLine seen toSee =
             then (seen, xs) 
             else splitByProofLine (seen ++ [x]) xs
 
-parseUserProofFile :: Logic -> String -> (Sentence, [Line])
-parseUserProofFile logic fileContent =
+-- the main version of this is in Defs.UserProofs
+parseUserProofFile' :: Logic -> String -> (Sentence, ([Line] -> [Line]), [Line])
+parseUserProofFile' logic fileContent =
     let (goalLine, pfLines') = splitByGoalLine (lines fileContent)
         goal = getProofGoal logic [] goalLine
         (preamble, pfLines) = splitByProofLine [] pfLines'
         deductionFunc = getDeductionsFunc logic goal preamble in
-            (goal, (deductionFunc . applyDerivedRules logic . parseUserProof logic) pfLines)
+            (goal, deductionFunc, parseUserProof logic pfLines)
 
 isSubLogic :: Logic -> Logic -> Bool
 isSubLogic logic1 logic2 =

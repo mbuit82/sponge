@@ -1,4 +1,4 @@
-module Defs.Specs where
+module Defs.Specs (getLogic, logicNames) where
 
 import Defs.Operators
 import Defs.Axioms
@@ -25,25 +25,27 @@ getLogicFromSpec spec =
                         operators = newOperators spec, 
                         definedOperators = newDefinedOperators spec,
                         axioms = newAxioms spec, 
-                        inferenceRules = newInferenceRules spec,
-                        derivedRules = newDerivedRules spec })
+                        inferenceRules = newInferenceRules spec })
         Just base -> let baseLogic = getLogicFromSpec base in
                     (Logic { 
                         logicName = specName spec, 
                         operators = operators baseLogic ++ newOperators spec, 
                         definedOperators = definedOperators baseLogic ++ newDefinedOperators spec,
                         axioms = axioms baseLogic ++ newAxioms spec, 
-                        inferenceRules = inferenceRules baseLogic ++ newInferenceRules spec,
-                        derivedRules = Map.union (derivedRules baseLogic) (newDerivedRules spec) })
+                        inferenceRules = inferenceRules baseLogic ++ newInferenceRules spec })
 
 makeLogicsDict :: [Spec] -> Map.Map String Logic
 makeLogicsDict specs = Map.fromList (map (\s -> (specName s, getLogicFromSpec s)) specs)
 
+-- this function is not to be exported. use the below anywhere this could be needed instead. 
 logicsDict :: Map.Map String Logic
 logicsDict = makeLogicsDict specsList -- specsList is at the bottom. Add any specs to it if you want to use them!
 
 getLogic :: String -> Logic
 getLogic logicName = logicsDict Map.! logicName
+
+logicNames :: [String]
+logicNames = (Map.keys logicsDict)
 
 extendWithAxioms :: Spec -> [Axiom] -> String -> Spec
 extendWithAxioms baseSpec newAxs newName =

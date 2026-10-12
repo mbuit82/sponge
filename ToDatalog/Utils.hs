@@ -1,7 +1,6 @@
 module ToDatalog.Utils where
 
 import Core
-import Defs.Specs ( getLogic, logicsDict )
 
 import Data.List
 import System.Environment (getArgs)

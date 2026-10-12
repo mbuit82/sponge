@@ -7,7 +7,7 @@ data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
     operatorSymbol :: String, -- what the user will write. relevant at tokenizer level. 
     arity :: Int
-} deriving (Eq, Show)
+} deriving (Eq, Show, Read)
 
 data DefinedOperator = DefinedOperator {
     defOpName :: String,
@@ -20,22 +20,15 @@ cond :: Operator
 cond = Operator "Conditional" "->" 2
 
 data Sentence = Atom {atomName :: String}
-              | OpNode {topOp :: Operator, args :: [Sentence]} deriving Eq
-instance Show Sentence where 
-    show (Atom str) = str
-    show (OpNode (Operator _ opS 0) []) = opS
-    show (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ show arg ++ ")"
-    show (OpNode (Operator _ opS 2) [arg1, arg2]) = "(" ++ show arg1 ++ " " ++ opS ++ " " ++ show arg2 ++ ")"
-    show (OpNode _ _) = error "either n-ary or something's gone wrong with an operator definition"
-        -- (show opN) ++ "(" ++ intercalate ", " (map show args) ++ ")" -- n-ary, but for would be indicative that something's gone wrong
+              | OpNode {topOp :: Operator, args :: [Sentence]} deriving (Eq, Show, Read)
 
-data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Show, Eq)
+data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Eq, Show, Read)
 -- low key not necessary
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
     premises :: (Sentence, Maybe Sentence), -- can have max two (bc of how Datalog is set up)
-    conclusion :: Sentence} deriving (Show, Eq)
+    conclusion :: Sentence} deriving (Eq, Show, Read)
 
 type DerivedRule = (String, Transformation)
 
@@ -48,8 +41,8 @@ data Logic = Logic
     operators :: [Operator],
     definedOperators :: [DefinedOperator],
     axioms :: [Axiom],
-    inferenceRules :: [InferenceRule],
-    derivedRules :: Map.Map String Transformation
+    inferenceRules :: [InferenceRule]
+    -- derivedRules :: Map.Map String Transformation
   }
 
 -- for proofs
@@ -59,13 +52,14 @@ data Line = Line {
     justification :: String,
     refLines :: [Int],
     userNumber :: Maybe Int -- the original line number the user used (NOTE: actually this is not that lol it's like an old pointer type thing lol)
-} deriving Eq
--- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
-instance Show Line where
-    show line = show (lineNumber line) ++ " " ++
-                userNumberHuh (userNumber line) ++ ". " ++ 
-                show (lineContent line) ++ "\t" ++ 
-                "by " ++ justification line ++ show (refLines line)
+} deriving (Eq, Show, Read) -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
+-- keeping this here in case it's ever relevant
+-- prettyPrintLine :: Line -> String
+-- prettyPrintLine (Line lNum c j rfs uNum) = 
+--     show lNum ++ " " ++
+--     userNumberHuh uNum ++ ". " ++ 
+--     prettyPrintSentence c ++ "\t" ++ 
+--     "by " ++ j ++ show rfs
 
 userNumberHuh :: Maybe Int -> String
 userNumberHuh Nothing = "-"
@@ -320,3 +314,12 @@ identityTransformation transformant =
         Nothing -> []
         Just (Line lNum c j rfs uNum) -> 
             [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
+
+-- this is meant for theorems that we have proved. To avoid two O(n) passes (do one instead), could also do substitutions as we go
+applyOffsetToInsertedTheorem :: Int -> Int -> [Line] -> [Line]
+applyOffsetToInsertedTheorem offset replacingUNum [] = []
+applyOffsetToInsertedTheorem offset replacingUNum [Line lNum c j rfs _] = 
+    [Line (lNum + offset) c j (map (+ offset) rfs) (Just replacingUNum)]
+applyOffsetToInsertedTheorem offset replacingUNum (Line lNum c j rfs _ : ls) =
+    Line (lNum + offset) c j (map (+ offset) rfs) Nothing : applyOffsetToInsertedTheorem offset replacingUNum ls
+

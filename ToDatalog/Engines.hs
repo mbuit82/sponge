@@ -1,12 +1,11 @@
 module ToDatalog.Engines where
 
 import Core
-import Defs.Specs ( getLogic, logicsDict )
+import Defs.Specs ( getLogic, logicNames )
 import ToDatalog.Utils
 
 import Data.List
 import System.IO
-import qualified Data.Map as Map
 import System.Environment (getArgs)
 import System.Directory (createDirectoryIfMissing)
 
@@ -110,7 +109,6 @@ makeLogicDirectories logicName = do
     createDirectoryIfMissing False ("hand_proofs/" ++ logicName)
 
 main :: IO ()
-main = let logics = (Map.keys logicsDict) in
-        do 
-            mapM_ compileDatalogEngine logics
-            mapM_ makeLogicDirectories logics
+main = do 
+        mapM_ compileDatalogEngine logicNames
+        mapM_ makeLogicDirectories logicNames

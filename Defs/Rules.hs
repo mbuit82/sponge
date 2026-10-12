@@ -3,12 +3,23 @@ module Defs.Rules where
 import Core
 import Defs.Operators
 import Data.Maybe
+import qualified Data.Map as Map
 
 modusPonens :: InferenceRule
 modusPonens = InferenceRule "Modus Ponens" (parse [] [] "P", Just (parse [cond] [] "P -> Q")) (parse [] [] "Q")
 
 necessitation :: InferenceRule
 necessitation = InferenceRule "Necessitation" (parse [] [] "P", Nothing) (parse [box] [] "L P")
+
+
+
+-- DERIVED RULES
+-- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
+derivedRules :: Map.Map String Transformation
+derivedRules = Map.fromList [ andElimLDerivedRule, andElimRDerivedRule, adjunctionDerivedRule,
+    orElimDerivedRule, 
+    hypSyllDerivedRule, modusTollens
+    ]
 
 andElimLTransformation :: Transformation
 andElimLTransformation transformant =
