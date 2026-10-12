@@ -4,6 +4,6 @@ Using deduction
 
 Proof
 1. |- A & B by Assumption
-2. |- A by And Elim L, 1
-3. |- B by And Elim R, 1
-4. |- B & A by Adjunction, 3 2
+2. |- A by And Elim L: 1
+3. |- B by And Elim R: 1
+4. |- B & A by Adjunction: 3 2

@@ -259,7 +259,7 @@ getContentFromLine logic seen toSee =
 getJustificationFromLine :: String -> String -> (String, [Int])
 getJustificationFromLine seen toSee =
     case toSee of
-        ',' : remChars -> case remChars of
+        ':' : remChars -> case remChars of
                             [] -> (seen, [])
                             s -> (seen, map read (words s))
                                     -- [i, j] -> (seen, Just (read i, read j))

@@ -113,7 +113,7 @@ useDeduction' hyp state =
                                 else useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
             j -> if j `elem` (map axiomName (axioms (transformantLogic state)))
                         then useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
-                        else error "unknown justification for deduction"
+                        else error ("unknown justification for deduction" ++ j)
 
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
@@ -156,12 +156,40 @@ applyOffsetToInsertedTheorem offset replacingUNum varMap ioLines = do
 -- it would be really nice to have a functionality that searches proven theorems that match what you type
 -- since I'm thinking the easiest way to specify this function is to specify what logic the cited theorem is coming from
 -- FUCK THIS IS IT UGH
-getCitedTheoremInfo :: String -> (String, String, Map.Map String Sentence)
-getCitedTheoremInfo = undefined
+-- " citing {PROOFNAME} (PROOFLOGIC) [new/P, old/Q, ...]"
+
+splitOn' :: Char -> String -> [String]
+splitOn' c s = case break (== c) s of
+    (a, []) -> [a]
+    (a, _ : rest) -> a : splitOn' c rest
+
+-- technically inefficient w the isInfixOf since every substPair is checked, but gives more flexibility
+getSplitFunc :: Logic -> String -> (String, Sentence)
+getSplitFunc logic substPair = 
+    let parseFunc = parse (operators logic) (definedOperators logic) in
+        if isInfixOf "/" substPair 
+            then ((\[newSent, atomStr] -> (atomStr, parseFunc newSent)) . splitOn' '/') substPair 
+            else ((\[atomStr, newSent] -> (atomStr, parseFunc newSent)) . splitOn' '\\') substPair
+
+getVarMap :: Logic -> String -> Map.Map String Sentence
+getVarMap logic = Map.fromList . map (getSplitFunc logic) . splitOn' ','
+
+stripBrackets :: String -> String
+stripBrackets ('[':rest)
+    | not (null rest) && last rest == ']' = init rest
+stripBrackets subsStr = error ("somthing wrong w the user-inputted substitution: " ++ subsStr)
+
+getCitedTheoremInfo :: Logic -> String -> (String, String, Map.Map String Sentence)
+getCitedTheoremInfo logic jus =
+    let jus' = stripPrefix "citing" (dropWhile isSpace jus) in
+        let ((proofName'), rest) = break (=='(') (dropWhile isSpace (fromJust jus')) in
+            let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
+                let subsStrWithBrackets = dropWhile isSpace (dropWhile (==')') rest') in
+                    (logicName, dropWhileEnd isSpace proofName', getVarMap logic (stripBrackets subsStrWithBrackets))
 
 citedTheoremIOTransformation :: Transformant -> IO [Line]
 citedTheoremIOTransformation state = do
-    let (logicName, proofName, varMap) = getCitedTheoremInfo (justification (fromJust (curr state))) in
+    let (logicName, proofName, varMap) = getCitedTheoremInfo (transformantLogic state) (justification (fromJust (curr state))) in
         applyOffsetToInsertedTheorem (offset state) (userNumber (fromJust (curr state))) varMap (snd <$> (getHaskellProof logicName proofName))
 
 applyCitedTheorems' :: IO (Transformant) -> IO (Transformant)

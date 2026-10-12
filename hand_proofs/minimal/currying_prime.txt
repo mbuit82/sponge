@@ -1,0 +1,14 @@
+Theorem: |- ((B & A) -> C) -> (A -> (B -> C))
+
+Using deduction
+Using deduction
+Using deduction
+
+Proof
+1. |- (B & A) -> C by Assumption
+2. |- A by Assumption
+3. |- B by Assumption
+4. |- ((B & A) -> C) -> (B -> (A -> C))  by citing currying (from minimal) [A/B, B/A, C/C]
+5. |- B -> (A -> C) by Modus Ponens: 1 4
+6. |- A -> C by Modus Ponens: 3 5
+7. |- C by Modus Ponens: 2 6

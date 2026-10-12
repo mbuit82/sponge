@@ -78,19 +78,20 @@ parseTest10 = parse testOps testDefOps "L (A -> B)" == OpNode box [OpNode cond [
 parseTest11 = parse testOps testDefOps "L(A -> B)" == OpNode box [OpNode cond [Atom "A", Atom "B"]]
 parseTest12 = parse testOps testDefOps "(A -> L (A -> Bot))" == OpNode cond [Atom "A", OpNode box [OpNode cond [Atom "A", OpNode bot []]]]
 parseTest13 = parse testOps testDefOps "A -> A" == OpNode cond [Atom "A", Atom "A"]
-parseTest14 = parse testOps testDefOps "(A -> A) -> (A -> A)" == OpNode cond [OpNode cond [Atom "A", Atom "A"], OpNode cond [Atom "A", Atom "A"]]
-parseTest15 = parse testOps testDefOps "L A -> B" == OpNode cond [OpNode box [Atom "A"], Atom "B"]
-parseTest16 = parse testOps testDefOps "~A" == OpNode cond [Atom "A", OpNode bot []]
-parseTest17 = parse testOps testDefOps "~(A)" == OpNode cond [Atom "A", OpNode bot []]
-parseTest18 = parse testOps testDefOps "(~A)" == OpNode cond [Atom "A", OpNode bot []]
-parseTest19 = parse testOps testDefOps "~ A" == OpNode cond [Atom "A", OpNode bot []]
-parseTest20 = parse testOps testDefOps "MA" == OpNode cond [OpNode box [OpNode cond [Atom "A", OpNode bot []]], OpNode bot []]
-parseTest21 = parse testOps testDefOps "A -o B"== OpNode linOr [OpNode linNeg [Atom "A"], Atom "B"]
-parseTest22 = parse testOps testDefOps "(A -> (B -> ~ A))" == OpNode cond [Atom "A", OpNode cond [Atom "B", OpNode cond [Atom "A", OpNode bot []]]]
+parseTest14 = parse testOps testDefOps "A->A" == OpNode cond [Atom "A", Atom "A"] -- fails right now. That's ok I think. 
+parseTest15 = parse testOps testDefOps "(A -> A) -> (A -> A)" == OpNode cond [OpNode cond [Atom "A", Atom "A"], OpNode cond [Atom "A", Atom "A"]]
+parseTest16 = parse testOps testDefOps "L A -> B" == OpNode cond [OpNode box [Atom "A"], Atom "B"]
+parseTest17 = parse testOps testDefOps "~A" == OpNode cond [Atom "A", OpNode bot []]
+parseTest18 = parse testOps testDefOps "~(A)" == OpNode cond [Atom "A", OpNode bot []]
+parseTest19 = parse testOps testDefOps "(~A)" == OpNode cond [Atom "A", OpNode bot []]
+parseTest20 = parse testOps testDefOps "~ A" == OpNode cond [Atom "A", OpNode bot []]
+parseTest21 = parse testOps testDefOps "MA" == OpNode cond [OpNode box [OpNode cond [Atom "A", OpNode bot []]], OpNode bot []]
+parseTest22 = parse testOps testDefOps "A -o B"== OpNode linOr [OpNode linNeg [Atom "A"], Atom "B"]
+parseTest23 = parse testOps testDefOps "(A -> (B -> ~ A))" == OpNode cond [Atom "A", OpNode cond [Atom "B", OpNode cond [Atom "A", OpNode bot []]]]
 -- currently pass all up to here (expected, tolerable: we can parse the fully parenthesized fragment, no top levels parens, and we have defined operators
-parseTest23 = parse testOps testDefOps "(A -> B -> A)" == OpNode cond [Atom "A", OpNode cond [Atom "B", Atom "A"]]
-parseTest24 = parse testOps testDefOps "A -> B -> A" == OpNode cond [Atom "A", OpNode cond [Atom "B", Atom "A"]]
-parseTest25 = parse testOps testDefOps "A -> B -> ~A" == OpNode cond [Atom "A", OpNode cond [Atom "B", OpNode cond [Atom "A", OpNode bot []]]]
+parseTest24 = parse testOps testDefOps "(A -> B -> A)" == OpNode cond [Atom "A", OpNode cond [Atom "B", Atom "A"]]
+parseTest25 = parse testOps testDefOps "A -> B -> A" == OpNode cond [Atom "A", OpNode cond [Atom "B", Atom "A"]]
+parseTest26 = parse testOps testDefOps "A -> B -> ~A" == OpNode cond [Atom "A", OpNode cond [Atom "B", OpNode cond [Atom "A", OpNode bot []]]]
 -- NOTE: missing tests for precedence. those above are for associativity
 
 
@@ -142,4 +143,4 @@ pfStrs = [curr1, curr2, curr3, curr4, curr5]
 
 pfLines = parseUserProof (getLogic "minimal") pfStrs
 
-pfLinesAfterDerived = applyDerivedRules (getLogic "minimal") pfLines
+-- pfLinesAfterDerived = applyDerivedRules (getLogic "minimal") pfLines
