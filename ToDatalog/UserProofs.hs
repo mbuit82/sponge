@@ -50,11 +50,6 @@ userToDatalog' logicName proofName = do
     compileDatalogProof proofName goal logic ((deductionFunc . applyDerivedRules derivedRules logic) userLines)
     where logic = getLogic logicName
 
-    -- fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
-    -- createDirectoryIfMissing False ("datalog_proofs/" ++ logicName ++ "/" ++ proofName)
-    -- let (goal, proofLines) = parseUserProofFile (getLogic logicName) fileContent in
-    --     compileDatalogProof proofName goal (getLogic logicName) proofLines
-
 main :: IO ()
 main = do 
     [logicName, proofName] <- getArgs

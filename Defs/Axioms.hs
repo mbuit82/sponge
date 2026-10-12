@@ -3,8 +3,10 @@ module Defs.Axioms where
 import Core
 import Defs.Operators
 
+-- FOR SOME POINTERS: the parse function needs to know what symbols are operators and what symbols are defined operators. The first list passed to parse is the list of operators it needs to know about to parse the string, and the second list is the list of defined operators. 
+
 -- the names for these come from the axiomatization in 18.510. Axiom 1 was P -> P, but that's not necessary so took it out
--- I like K combinator and S combinator as names for axiom2 and axiom3, but since we have modal axiom k I'm iffy abt using it in case of confusion. In my indecision these have remained
+-- I like K combinator and S combinator as names for axiom2 and axiom3, but since we have modal axiom K I'm iffy abt using it in case of confusion. In my indecision these names have remained. 
 axiom2 :: Axiom
 axiom2 = Axiom "Axiom2" (parse [cond] [] "P -> (Q -> P)")
 axiom3 :: Axiom
@@ -14,7 +16,7 @@ axiom4 = Axiom "Axiom4" (parse [cond, bot] [] "(P -> Bot) -> (P -> Q)")
 axiom5 :: Axiom
 axiom5 = Axiom "Axiom5" (parse [cond, bot] [] "((P -> Bot) -> Bot) -> P")
 
--- These are from an ND-ish axiomatization; I took it from Bezhanishvili's book on intuitionistic logic
+-- These are from an ND-ish axiomatization; I took them from Bezhanishvili's book on intuitionistic logic
 andEL :: Axiom
 andEL = Axiom "And-EL" (parse [cond, andOp, orOp] [] "(P & Q) -> P")
 andER :: Axiom
