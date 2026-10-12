@@ -36,18 +36,11 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
         hPutStr h ("#include \"../../../datalog_engines/" ++ (logicName proofLogic) ++ ".dl\"\n\n")
         hPutStr h (proofToDatalog proofGoal proofLines)
 
-parseUserProofFile :: String -> String -> IO (Sentence, ([Line] -> [Line]), [Line])
-parseUserProofFile logicName proofName = do
-    fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
-    createDirectoryIfMissing False ("datalog_proofs/" ++ logicName ++ "/" ++ proofName)
-    pure (parseUserProofFile' (getLogic logicName) fileContent)
-
 -- complete function to compile user input to Datalog
 userToDatalog' :: String -> String -> IO ()
 userToDatalog' logicName proofName = do
-    (goal, deductionFunc, userLines) <- parseUserProofFile logicName proofName
-    -- HERE is where the going through cited proofs would go
-    compileDatalogProof proofName goal logic ((deductionFunc . applyDerivedRules derivedRules logic) userLines)
+    (goal, haskellProof) <- getHaskellProof logicName proofName
+    compileDatalogProof proofName goal logic haskellProof
     where logic = getLogic logicName
 
 main :: IO ()

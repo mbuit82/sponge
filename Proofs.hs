@@ -1,28 +1,54 @@
 module Proofs where
 
 import Core
+import Defs.Rules
+import Defs.Specs
 
 import Data.Maybe
 import Data.List
 import Data.Char
 import qualified Data.Map as Map
+import System.Directory (createDirectoryIfMissing)
 
 
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
 
+appendTransformation' :: [Line] -> Transformant -> Transformant
+appendTransformation' transformationResult oldState = undefined
+
+
+
 -- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
 applyTransformation :: Transformation -> Transformant -> Transformant
 applyTransformation transformation oldState =
-    case curr oldState of
-        Nothing -> error "can't apply transformation to when we have no current step!" -- we could just return oldState but that would be defective behavior so I'll leave it like this. not really sure what should happpen in this case
-        Just currLine -> 
-            case transformanda oldState of
-                [] -> 
-                    let applied = reverse (transformation oldState) in 
-                        Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState) (transformantLogic oldState)
-                nxt : remLines -> 
-                    let applied = reverse (transformation oldState) in
-                        Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState) (transformantLogic oldState)
+    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState)
+    where 
+        applied = reverse (transformation oldState)
+        (newCurr, newTransformanda) = case transformanda oldState of
+            [] -> (Nothing, [])
+            nxt:remLines -> (Just nxt, remLines)
+    -- case transformanda oldState of
+    --     [] -> 
+    --         let applied = reverse (transformation oldState) in 
+    --             Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState) (transformantLogic oldState)
+    --     nxt : remLines -> 
+    --         let applied = reverse (transformation oldState) in
+    --             Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState) (transformantLogic oldState)
+    -- case curr oldState of
+    --     Nothing -> error "can't apply transformation to when we have no current step!" -- we could just return oldState but that would be defective behavior so I'll leave it like this. not really sure what should happpen in this case
+    --     Just currLine -> 
+        -- This is (almost) the old code
+            
+
+-- this is going to be redundant. 
+applyIOTransformation :: (Transformant -> IO [Line]) -> Transformant -> IO (Transformant)
+applyIOTransformation ioTransformation oldState = do
+    applied <- reverse <$> (ioTransformation oldState)
+    pure (Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState))
+    where 
+        (newCurr, newTransformanda) = case transformanda oldState of
+            [] -> (Nothing, [])
+            nxt:remLines -> (Just nxt, remLines)
 
 -- the first arg is supposed to be a proof
 intoTransformant :: Logic -> [Line] -> Transformant
@@ -93,8 +119,9 @@ resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
 
 useDeduction :: Logic -> Sentence -> [Line] -> [Line]
-useDeduction logic hyp oldProof = 
-    resetUserNumbers (reverse (transformata (useDeduction' hyp (intoTransformant logic oldProof))))
+useDeduction logic hyp = 
+    resetUserNumbers . reverse . transformata . (useDeduction' hyp) . (intoTransformant logic)
+    -- resetUserNumbers (reverse (transformata (useDeduction' hyp (intoTransformant logic oldProof))))
 
 applyDerivedRules' :: Map.Map String Transformation -> Transformant -> Transformant
 applyDerivedRules' derRulesDict state =
@@ -104,9 +131,55 @@ applyDerivedRules' derRulesDict state =
             Nothing -> applyDerivedRules' derRulesDict (applyTransformation identityTransformation state)
             Just transformation -> applyDerivedRules' derRulesDict (applyTransformation transformation state)
     
-applyDerivedRules :: Map.Map String Transformation -> Logic -> [Line] -> [Line]
-applyDerivedRules derRulesDict logic oldProof = 
-    resetUserNumbers (reverse (transformata (applyDerivedRules' derRulesDict (intoTransformant logic oldProof))))
+applyDerivedRules :: Logic -> Map.Map String Transformation -> [Line] -> [Line]
+applyDerivedRules logic derRulesDict = 
+    resetUserNumbers . reverse . transformata . (applyDerivedRules' derRulesDict) . (intoTransformant logic)
+    -- resetUserNumbers (reverse (transformata (applyDerivedRules' derRulesDict (intoTransformant logic oldProof))))
+
+applySubstToSent :: Map.Map String Sentence -> Sentence -> Sentence
+applySubstToSent varMap (Atom a) = varMap Map.! a
+applySubstToSent varMap (OpNode op args) = (OpNode op (map (applySubstToSent varMap) args))
+
+-- this is meant for theorems that we have proved. To avoid two O(n) passes (do one instead), could also do substitutions as we go
+applyOffsetToInsertedTheorem :: Int -> Maybe Int -> Map.Map String Sentence -> IO [Line] -> IO [Line]
+applyOffsetToInsertedTheorem offset replacingUNum varMap ioLines = do 
+    lines <- ioLines
+    case lines of 
+        [] -> pure []
+        [Line lNum c j rfs _] -> 
+            pure [Line (lNum + offset) (applySubstToSent varMap c) j (map (+ offset) rfs) replacingUNum]
+        (Line lNum c j rfs _ : ls) ->
+            (Line (lNum + offset) (applySubstToSent varMap c) j (map (+ offset) rfs) Nothing :) <$> (applyOffsetToInsertedTheorem offset replacingUNum varMap (pure ls))
+
+-- see below for intended behavior
+-- in the returned tuple, first field is logic name, second is proofName, third is varMap
+-- it would be really nice to have a functionality that searches proven theorems that match what you type
+-- since I'm thinking the easiest way to specify this function is to specify what logic the cited theorem is coming from
+-- FUCK THIS IS IT UGH
+getCitedTheoremInfo :: String -> (String, String, Map.Map String Sentence)
+getCitedTheoremInfo = undefined
+
+citedTheoremIOTransformation :: Transformant -> IO [Line]
+citedTheoremIOTransformation state = do
+    let (logicName, proofName, varMap) = getCitedTheoremInfo (justification (fromJust (curr state))) in
+        applyOffsetToInsertedTheorem (offset state) (userNumber (fromJust (curr state))) varMap (snd <$> (getHaskellProof logicName proofName))
+
+applyCitedTheorems' :: IO (Transformant) -> IO (Transformant)
+applyCitedTheorems' pureState = 
+    do
+    state <- pureState
+    case curr state of
+        Nothing -> pureState
+        Just line -> 
+            if "citing" `isInfixOf` (justification line)
+                then do 
+                    applyCitedTheorems' (applyIOTransformation citedTheoremIOTransformation state)
+                else do
+                    applyCitedTheorems' (pure (applyTransformation identityTransformation state))
+
+applyCitedTheorems :: Logic -> IO [Line] -> IO [Line]
+applyCitedTheorems logic pureOldProof = do
+    (resetUserNumbers . reverse. transformata) <$> (applyCitedTheorems' ((intoTransformant logic) <$> pureOldProof))
 
 
 
@@ -165,8 +238,24 @@ parseUserProofFile' logic fileContent =
         deductionFunc = getDeductionsFunc logic goal preamble in
             (goal, deductionFunc, parseUserProof logic pfLines)
 
+
+parseUserProofFile :: String -> String -> IO (Sentence, ([Line] -> [Line]), [Line])
+parseUserProofFile logicName proofName = do
+    fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
+    createDirectoryIfMissing False ("datalog_proofs/" ++ logicName ++ "/" ++ proofName)
+    pure (parseUserProofFile' (getLogic logicName) fileContent)
+
+getHaskellProof :: String -> String -> IO (Sentence, [Line])
+getHaskellProof logicName proofName = do
+    (goal, deductionFunc, userLines) <- parseUserProofFile logicName proofName
+    afterCitingTheorems <- applyCitedTheorems logic (pure userLines)
+    pure (goal, (deductionFunc . applyDerivedRules logic derivedRules) afterCitingTheorems)
+    where logic = getLogic logicName
+
+-- I have a feeling this isn't the best definition; I don't think it's the moral one
 isSubLogic :: Logic -> Logic -> Bool
 isSubLogic logic1 logic2 =
+    and (map (\op -> elem op (operators logic2)) (operators logic1)) &&
     and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
     and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
 

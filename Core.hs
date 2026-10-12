@@ -315,11 +315,3 @@ identityTransformation transformant =
         Just (Line lNum c j rfs uNum) -> 
             [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
 
--- this is meant for theorems that we have proved. To avoid two O(n) passes (do one instead), could also do substitutions as we go
-applyOffsetToInsertedTheorem :: Int -> Int -> [Line] -> [Line]
-applyOffsetToInsertedTheorem offset replacingUNum [] = []
-applyOffsetToInsertedTheorem offset replacingUNum [Line lNum c j rfs _] = 
-    [Line (lNum + offset) c j (map (+ offset) rfs) (Just replacingUNum)]
-applyOffsetToInsertedTheorem offset replacingUNum (Line lNum c j rfs _ : ls) =
-    Line (lNum + offset) c j (map (+ offset) rfs) Nothing : applyOffsetToInsertedTheorem offset replacingUNum ls
-
