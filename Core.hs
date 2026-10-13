@@ -109,6 +109,15 @@ isInstance sentence (OpNode schemaOp schemaArgs) =
 haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
+-- I have a feeling this isn't the best definition; I don't think it's the moral one
+isSubLogic :: Logic -> Logic -> Bool
+isSubLogic logic1 logic2 =
+    and (map (\op -> elem op (operators logic2)) (operators logic1)) &&
+    and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
+    and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
+
+
+
 
 
 -- for avoiding that stupid souffle warning

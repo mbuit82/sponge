@@ -144,3 +144,14 @@ pfStrs = [curr1, curr2, curr3, curr4, curr5]
 pfLines = parseUserProof (getLogic "minimal") pfStrs
 
 -- pfLinesAfterDerived = applyDerivedRules (getLogic "minimal") pfLines
+
+
+cpf1 = "1. |- (A -> (B -> C)) -> ((A & B) -> C)                             by citing uncurrying (from minimal) [A/A, B/B, C/C]"
+cpf2 = "2. |- (B & A) -> (A & B)                                            by citing and_commutativity (from minimal) [A/B, B/A]"
+cpf3 = "3. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C))    by citing transitivity (from minimal) [(B & A)/P, (A & B)/Q, C/R]"
+cpf4 = "4. |- ((A & B) -> C) -> ((B & A) -> C)                              by Modus Ponens: 2 3"
+cpf5 = "5. |- (A -> (B -> C)) -> ((B & A) -> C)                             by Hypothetical Syllogism: 1 4"
+
+cpfStrs = [cpf1, cpf2, cpf3, cpf4, cpf5]
+cpfLines = parseUserProof (getLogic "minimal") cpfStrs
+asdf2 = map (userNumber) <$> applyCitedTheorems (getLogic "minimal") (pure cpfLines)

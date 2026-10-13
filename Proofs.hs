@@ -27,28 +27,6 @@ applyTransformation transformation oldState =
         (newCurr, newTransformanda) = case transformanda oldState of
             [] -> (Nothing, [])
             nxt:remLines -> (Just nxt, remLines)
-    -- case transformanda oldState of
-    --     [] -> 
-    --         let applied = reverse (transformation oldState) in 
-    --             Transformant (applied ++ transformata oldState) Nothing [] ((length applied) - 1 + offset oldState) (transformantLogic oldState)
-    --     nxt : remLines -> 
-    --         let applied = reverse (transformation oldState) in
-    --             Transformant (applied ++ transformata oldState) (Just nxt) remLines ((length applied) - 1 + offset oldState) (transformantLogic oldState)
-    -- case curr oldState of
-    --     Nothing -> error "can't apply transformation to when we have no current step!" -- we could just return oldState but that would be defective behavior so I'll leave it like this. not really sure what should happpen in this case
-    --     Just currLine -> 
-        -- This is (almost) the old code
-            
-
--- this is going to be redundant. 
-applyIOTransformation :: (Transformant -> IO [Line]) -> Transformant -> IO (Transformant)
-applyIOTransformation ioTransformation oldState = do
-    applied <- reverse <$> (ioTransformation oldState)
-    pure (Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState))
-    where 
-        (newCurr, newTransformanda) = case transformanda oldState of
-            [] -> (Nothing, [])
-            nxt:remLines -> (Just nxt, remLines)
 
 -- the first arg is supposed to be a proof
 intoTransformant :: Logic -> [Line] -> Transformant
@@ -136,6 +114,22 @@ applyDerivedRules logic derRulesDict =
     resetUserNumbers . reverse . transformata . (applyDerivedRules' derRulesDict) . (intoTransformant logic)
     -- resetUserNumbers (reverse (transformata (applyDerivedRules' derRulesDict (intoTransformant logic oldProof))))
 
+
+
+
+
+-- CITING PROOFS
+
+-- this is going to be redundant. 
+applyIOTransformation :: (Transformant -> IO [Line]) -> Transformant -> IO (Transformant)
+applyIOTransformation ioTransformation oldState = do
+    applied <- reverse <$> (ioTransformation oldState)
+    pure (Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState))
+    where 
+        (newCurr, newTransformanda) = case transformanda oldState of
+            [] -> (Nothing, [])
+            nxt:remLines -> (Just nxt, remLines)
+
 applySubstToSent :: Map.Map String Sentence -> Sentence -> Sentence
 applySubstToSent varMap (Atom a) = varMap Map.! a
 applySubstToSent varMap (OpNode op args) = (OpNode op (map (applySubstToSent varMap) args))
@@ -148,15 +142,8 @@ applyOffsetToInsertedTheorem offset replacingUNum varMap ioLines = do
         [] -> pure []
         [Line lNum c j rfs _] -> 
             pure [Line (lNum + offset) (applySubstToSent varMap c) j (map (+ offset) rfs) replacingUNum]
-        (Line lNum c j rfs _ : ls) ->
-            (Line (lNum + offset) (applySubstToSent varMap c) j (map (+ offset) rfs) Nothing :) <$> (applyOffsetToInsertedTheorem offset replacingUNum varMap (pure ls))
-
--- see below for intended behavior
--- in the returned tuple, first field is logic name, second is proofName, third is varMap
--- it would be really nice to have a functionality that searches proven theorems that match what you type
--- since I'm thinking the easiest way to specify this function is to specify what logic the cited theorem is coming from
--- FUCK THIS IS IT UGH
--- " citing {PROOFNAME} (PROOFLOGIC) [new/P, old/Q, ...]"
+        ((Line lNum c j rfs _) : ls) ->
+            ((Line (lNum + offset) (applySubstToSent varMap c) j (map (+ offset) rfs) Nothing) :) <$> (applyOffsetToInsertedTheorem offset replacingUNum varMap (pure ls))
 
 splitOn' :: Char -> String -> [String]
 splitOn' c s = case break (== c) s of
@@ -190,7 +177,7 @@ getCitedTheoremInfo logic jus =
 citedTheoremIOTransformation :: Transformant -> IO [Line]
 citedTheoremIOTransformation state = do
     let (logicName, proofName, varMap) = getCitedTheoremInfo (transformantLogic state) (justification (fromJust (curr state))) in
-        applyOffsetToInsertedTheorem (offset state) (userNumber (fromJust (curr state))) varMap (snd <$> (getHaskellProof logicName proofName))
+        applyOffsetToInsertedTheorem (offset state + lineNumber (fromJust (curr state)) - 1) (userNumber (fromJust (curr state))) varMap (snd <$> (getHaskellProof logicName proofName))
 
 applyCitedTheorems' :: IO (Transformant) -> IO (Transformant)
 applyCitedTheorems' pureState = 
@@ -279,11 +266,3 @@ getHaskellProof logicName proofName = do
     afterCitingTheorems <- applyCitedTheorems logic (pure userLines)
     pure (goal, (deductionFunc . applyDerivedRules logic derivedRules) afterCitingTheorems)
     where logic = getLogic logicName
-
--- I have a feeling this isn't the best definition; I don't think it's the moral one
-isSubLogic :: Logic -> Logic -> Bool
-isSubLogic logic1 logic2 =
-    and (map (\op -> elem op (operators logic2)) (operators logic1)) &&
-    and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
-    and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
-

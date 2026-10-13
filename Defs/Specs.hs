@@ -13,8 +13,7 @@ data Spec = Spec
     newOperators :: [Operator],
     newDefinedOperators :: [DefinedOperator],
     newAxioms :: [Axiom],
-    newInferenceRules :: [InferenceRule],
-    newDerivedRules :: Map.Map String Transformation
+    newInferenceRules :: [InferenceRule]
   }
 
 getLogicFromSpec :: Spec -> Logic
@@ -37,7 +36,7 @@ getLogicFromSpec spec =
 makeLogicsDict :: [Spec] -> Map.Map String Logic
 makeLogicsDict specs = Map.fromList (map (\s -> (specName s, getLogicFromSpec s)) specs)
 
--- this function is not to be exported. use the below anywhere this could be needed instead. 
+-- this map is not to be exported. use the below anywhere this could be needed instead. 
 logicsDict :: Map.Map String Logic
 logicsDict = makeLogicsDict specsList -- specsList is at the bottom. Add any specs to it if you want to use them!
 
@@ -45,11 +44,11 @@ getLogic :: String -> Logic
 getLogic logicName = logicsDict Map.! logicName
 
 logicNames :: [String]
-logicNames = (Map.keys logicsDict)
+logicNames = Map.keys logicsDict
 
 extendWithAxioms :: Spec -> [Axiom] -> String -> Spec
 extendWithAxioms baseSpec newAxs newName =
-    Spec newName (Just baseSpec) [] [] newAxs [] Map.empty
+    Spec newName (Just baseSpec) [] [] newAxs []
 
 -- specs
 specMinimalSmall :: Spec
@@ -59,8 +58,7 @@ specMinimalSmall = Spec {
     newOperators = [cond], -- from core, since it plays role in deduction lemma thing
     newDefinedOperators = [],
     newAxioms = [axiom2, axiom3],
-    newInferenceRules = [modusPonens],
-    newDerivedRules = Map.empty
+    newInferenceRules = [modusPonens]
 }
 
 specIntuitionisticSmall :: Spec
@@ -70,8 +68,7 @@ specIntuitionisticSmall = Spec {
     newOperators = [bot],
     newDefinedOperators = [],
     newAxioms = [axiom4],
-    newInferenceRules = [],
-    newDerivedRules = Map.empty
+    newInferenceRules = []
 }
 
 specClassicalSmall :: Spec
@@ -81,8 +78,7 @@ specClassicalSmall = Spec {
     newOperators = [],
     newDefinedOperators = [], -- in theory you could add all the definitions here... ugh i don't wanna
     newAxioms = [axiom5],
-    newInferenceRules = [],
-    newDerivedRules = Map.empty
+    newInferenceRules = []
 }
 
 specMinimal :: Spec
@@ -92,11 +88,7 @@ specMinimal = Spec {
     newOperators = [cond, andOp, orOp],
     newDefinedOperators = [bicond],
     newAxioms = [axiom2, axiom3, andEL, andER, andI, orIL, orIR, orE],
-    newInferenceRules = [modusPonens],
-    newDerivedRules = Map.fromList [
-        andElimLDerivedRule, andElimRDerivedRule, adjunctionDerivedRule, 
-        orElimDerivedRule, 
-        hypSyllDerivedRule, modusTollens]
+    newInferenceRules = [modusPonens]
 }
 
 specIntuitionistic :: Spec
@@ -106,8 +98,7 @@ specIntuitionistic = Spec {
     newOperators = [bot],
     newDefinedOperators = [neg],
     newAxioms = [explosion],
-    newInferenceRules = [],
-    newDerivedRules = Map.empty
+    newInferenceRules = []
 }
 
 specClassical :: Spec
@@ -120,8 +111,7 @@ specK = Spec {
     newOperators = [box],
     newDefinedOperators = [diamond],
     newAxioms = [kAxiom],
-    newInferenceRules = [necessitation],
-    newDerivedRules = Map.empty
+    newInferenceRules = [necessitation]
 }
 
 specD :: Spec
@@ -179,8 +169,7 @@ specLinearIntensionalKernelHesselink = Spec {
     newInferenceRules = [
         InferenceRule "(0)Forward" (parse [] [] "A", Nothing) (parse [linNull, linOr] [] "0 + A"),
         InferenceRule "(0)Backward" (parse [linNull, linOr] [] "0 + A", Nothing) (parse [] [] "A"),
-        InferenceRule "cut-rule" (parse [linOr] [] "A + B", Just (parse [linNeg, linOr] [] "~B + C")) (parse [linOr] [] "A + C")],
-    newDerivedRules = Map.empty
+        InferenceRule "cut-rule" (parse [linOr] [] "A + B", Just (parse [linNeg, linOr] [] "~B + C")) (parse [linOr] [] "A + C")]
 }
 
 linOps = [linNull, linOr, linNeg, quest] -- not as familiar with these so to be safe and avoid bugs am just gonna use this list lol
@@ -199,8 +188,7 @@ specLinearHesselink = Spec {
     newInferenceRules = [
         InferenceRule "(25)Forward" (parse linOps [] "~A + ?B", Nothing) (parse linOps [] "~?A + ?B"),
         InferenceRule "(25)Backward" (parse linOps [] "~?A + ?B", Nothing) (parse linOps [] "~A + ?B")
-    ],
-    newDerivedRules = Map.empty
+    ]
 }
 
 specsList :: [Spec]

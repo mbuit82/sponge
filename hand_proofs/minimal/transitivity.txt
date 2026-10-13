@@ -7,3 +7,14 @@ Proof
 1. |- P -> Q by Assumption
 2. |- Q -> R by Assumption
 3. |- P -> R by Hypothetical Syllogism: 1 2
+
+
+
+
+IGNORE (Q -> R) -> ((P -> Q) -> (P -> R))
+IGNORE (P -> Q -> R) -> ((P -> Q) -> (P -> R))
+IGNORE Using deduction to instead prove (P -> Q) |- ((Q -> R) -> (P -> R))
+
+IGNORE Proof
+IGNORE 1. |- P -> Q by Assumption
+IGNORE 2. 
