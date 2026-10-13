@@ -12,12 +12,6 @@ import System.Directory (createDirectoryIfMissing)
 
 
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
-
-appendTransformation' :: [Line] -> Transformant -> Transformant
-appendTransformation' transformationResult oldState = undefined
-
-
-
 -- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
 applyTransformation :: Transformation -> Transformant -> Transformant
 applyTransformation transformation oldState =
@@ -199,8 +193,6 @@ applyCitedTheorems logic pureOldProof = do
 
 
 -- stuff below is for getting proofs from user input
--- function to use after getting the goal
--- For now, use this one, but am thinking of having a general one where deduction is one of many last-transformations done
 parseUserProofWithDeduction :: Logic -> Sentence -> [String] -> [Line]
 parseUserProofWithDeduction _ _ [] = []
 parseUserProofWithDeduction logic deductionRelativeGoal (fl : remFileLines)
@@ -244,7 +236,6 @@ splitByProofLine seen toSee =
             then (seen, xs) 
             else splitByProofLine (seen ++ [x]) xs
 
--- the main version of this is in Defs.UserProofs
 parseUserProofFile' :: Logic -> String -> (Sentence, ([Line] -> [Line]), [Line])
 parseUserProofFile' logic fileContent =
     let (goalLine, pfLines') = splitByGoalLine (lines fileContent)

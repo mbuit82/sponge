@@ -42,7 +42,6 @@ data Logic = Logic
     definedOperators :: [DefinedOperator],
     axioms :: [Axiom],
     inferenceRules :: [InferenceRule]
-    -- derivedRules :: Map.Map String Transformation
   }
 
 -- for proofs
@@ -296,6 +295,7 @@ getProofGoal logic seen (c:remChars) = getProofGoal logic (seen ++ [c]) remChars
 
 
 -- need to move now that derived rules are transformations and are in logics :/
+-- Wait. And now that they're not, I can move it back... 
 data Transformant = Transformant {  transformata :: [Line], 
                                     curr :: Maybe Line, 
                                     transformanda :: [Line], 
