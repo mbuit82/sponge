@@ -1,6 +1,6 @@
 Theorem: |- P <> ~~P
 
 Proof
-1. |- P -> ~~P by citing double_negation_introduction (from intuitionistic) [P/P]
+1. |- P -> ~~P by citing double_negation_introduction (from minimal) [P/P]
 2. |- ~~P -> P by Excluded Middle
 3. |- P <> ~~P by Adjunction: 1 2
