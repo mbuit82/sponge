@@ -9,7 +9,6 @@ import Data.List
 import Data.Char
 import qualified Data.Map as Map
 import System.Directory (createDirectoryIfMissing)
-import qualified Data.Set as S
 
 
 -- This is all general, not specific to the deduction lemma. I think this can be kept. 
