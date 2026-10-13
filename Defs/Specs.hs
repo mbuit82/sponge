@@ -57,51 +57,30 @@ specMinimalSmall :: Spec
 specMinimalSmall = Spec {
     specName = "minimal_small",
     baseSystem = Nothing,
-    newOperators = [cond], -- from core, since it plays role in deduction lemma thing
+    newOperators = [cond, bot], -- from core, since it plays role in deduction lemma thing
     newDefinedOperators = [],
     newAxioms = [axiom2, axiom3],
     newInferenceRules = [modusPonens]
 }
 
 specIntuitionisticSmall :: Spec
-specIntuitionisticSmall = Spec {
-    specName = "intuitionistic_small",
-    baseSystem = Just specMinimalSmall,
-    newOperators = [bot],
-    newDefinedOperators = [],
-    newAxioms = [axiom4],
-    newInferenceRules = []
-}
+specIntuitionisticSmall = extendWithAxioms specMinimalSmall [axiom4] "intuitionistic_small"
 
 specClassicalSmall :: Spec
-specClassicalSmall = Spec {
-    specName = "classical_small",
-    baseSystem = Just specIntuitionisticSmall,
-    newOperators = [],
-    newDefinedOperators = [], -- in theory you could add all the definitions here... ugh i don't wanna
-    newAxioms = [axiom5],
-    newInferenceRules = []
-}
+specClassicalSmall = extendWithAxioms specIntuitionisticSmall [axiom5] "classical_small"
 
 specMinimal :: Spec
 specMinimal = Spec {
     specName = "minimal",
     baseSystem = Nothing,
-    newOperators = [cond, andOp, orOp],
-    newDefinedOperators = [bicond],
+    newOperators = [cond, andOp, orOp, bot],
+    newDefinedOperators = [bicond, neg],
     newAxioms = [simp, frege, andEL, andER, andI, orIL, orIR, orE],
     newInferenceRules = [modusPonens]
 }
 
 specIntuitionistic :: Spec
-specIntuitionistic = Spec {
-    specName = "intuitionistic",
-    baseSystem = Just specMinimal,
-    newOperators = [bot],
-    newDefinedOperators = [neg],
-    newAxioms = [explosion],
-    newInferenceRules = []
-}
+specIntuitionistic = extendWithAxioms specMinimal [explosion] "intuitionistic"
 
 specClassical :: Spec
 specClassical = extendWithAxioms specIntuitionistic [lem] "classical"

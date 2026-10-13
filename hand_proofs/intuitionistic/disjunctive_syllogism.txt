@@ -1,0 +1,15 @@
+Theorem: |- ~A -> ((A v B) -> B)
+
+Using deduction
+
+
+
+Proof
+IGNORE 1. |- (~A -> ((A -> B) -> ((A v B) -> B))) -> ((A -> B) -> ((A v B) -> B)) -> 
+IGNORE This is possible in less steps. To beat is ~50 lines right now, def possible
+
+1. |- ~A by Assumption
+2. |- B -> B by citing identity (from minimal) [B/A]
+3. |- ~A -> (A -> B) by citing axiom4 (from intuitionistic) [A/A, B/B]
+4. |- A -> B by Modus Ponens: 1 3
+5. |- (A v B) -> B by Or Elim: 4 2
