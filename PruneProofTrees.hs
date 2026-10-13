@@ -85,20 +85,16 @@ reNumberTransformation transformant =
             [Line (offset transformant + 1) c j (getUpdatedCurrentRefs transformant) uNum]
 
 -- modified version of applyTransformation
-reNumber'' :: Transformant -> Transformant
-reNumber'' oldState =
-    Transformant (applied ++ transformata oldState) newCurr newTransformanda (offset oldState + 1) (transformantLogic oldState)
+reNumber' :: Transformant -> Transformant
+reNumber' oldState = 
+    case curr oldState of
+        Nothing -> oldState
+        _ -> reNumber' (Transformant (applied ++ transformata oldState) newCurr newTransformanda (offset oldState + 1) (transformantLogic oldState))
     where 
         applied = reNumberTransformation oldState
         (newCurr, newTransformanda) = case transformanda oldState of
             [] -> (Nothing, [])
             nxt:remLines -> (Just nxt, remLines)
-
-reNumber' :: Transformant -> Transformant
-reNumber' state = 
-    case curr state of
-        Nothing -> state
-        Just a -> reNumber' (reNumber'' state)
 
 dummyLogic :: Logic
 dummyLogic = Logic "" [] [] [] []

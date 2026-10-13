@@ -1,0 +1,13 @@
+Theorem: |- (A -> (B -> C)) -> (B -> (A -> C))
+
+
+Using deduction
+Using deduction
+Using deduction
+
+Proof
+1. |- A -> (B -> C) by Assumption
+2. |- B by Assumption
+3. |- A by Assumption
+4. |- B -> C by Modus Ponens: 3 1
+5. |- C by Modus Ponens: 2 4
