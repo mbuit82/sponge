@@ -1,0 +1,9 @@
+#include "../../../datalog_engines/minimal.dl"
+
+Goal($Conditional($Atom("A"), $Atom("A"))).
+
+Line(1, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Atom("A")), $Atom("A"))), $Conditional($Conditional($Atom("A"), $Conditional($Atom("A"), $Atom("A"))), $Conditional($Atom("A"), $Atom("A")))), "Frege", 0, 0).
+Line(2, $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Atom("A")), $Atom("A"))), "Simp", 0, 0).
+Line(3, $Conditional($Conditional($Atom("A"), $Conditional($Atom("A"), $Atom("A"))), $Conditional($Atom("A"), $Atom("A"))), "Modus Ponens", 2, 1).
+Line(4, $Conditional($Atom("A"), $Conditional($Atom("A"), $Atom("A"))), "Simp", 0, 0).
+Line(5, $Conditional($Atom("A"), $Atom("A")), "Modus Ponens", 4, 3).

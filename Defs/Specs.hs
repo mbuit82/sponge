@@ -41,7 +41,9 @@ logicsDict :: Map.Map String Logic
 logicsDict = makeLogicsDict specsList -- specsList is at the bottom. Add any specs to it if you want to use them!
 
 getLogic :: String -> Logic
-getLogic logicName = logicsDict Map.! logicName
+getLogic logicName = case logicsDict Map.!? logicName of
+    Nothing -> error (logicName ++ " not in available logics right now")
+    Just logic -> logic
 
 logicNames :: [String]
 logicNames = Map.keys logicsDict
@@ -87,7 +89,7 @@ specMinimal = Spec {
     baseSystem = Nothing,
     newOperators = [cond, andOp, orOp],
     newDefinedOperators = [bicond],
-    newAxioms = [axiom2, axiom3, andEL, andER, andI, orIL, orIR, orE],
+    newAxioms = [simp, frege, andEL, andER, andI, orIL, orIR, orE],
     newInferenceRules = [modusPonens]
 }
 

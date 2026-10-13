@@ -7,6 +7,8 @@ import Defs.Operators
 
 -- the names for these come from the axiomatization in 18.510. Axiom 1 was P -> P, but that's not necessary so took it out
 -- I like K combinator and S combinator as names for axiom2 and axiom3, but since we have modal axiom K I'm iffy abt using it in case of confusion. In my indecision these names have remained. 
+axiom1 :: Axiom
+axiom1 = Axiom "Axiom1" (parse [cond] [] "P -> P")
 axiom2 :: Axiom
 axiom2 = Axiom "Axiom2" (parse [cond] [] "P -> (Q -> P)")
 axiom3 :: Axiom
@@ -17,6 +19,10 @@ axiom5 :: Axiom
 axiom5 = Axiom "Axiom5" (parse [cond, bot] [] "((P -> Bot) -> Bot) -> P")
 
 -- These are from an ND-ish axiomatization; I took them from Bezhanishvili's book on intuitionistic logic
+simp :: Axiom
+simp = Axiom "Simp" (parse [cond] [] "P -> (Q -> P)")
+frege :: Axiom
+frege = Axiom "Frege" (parse [cond] [] "(P -> (Q -> R)) -> ((P -> Q) -> (P -> R))")
 andEL :: Axiom
 andEL = Axiom "And-EL" (parse [cond, andOp, orOp] [] "(P & Q) -> P")
 andER :: Axiom

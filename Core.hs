@@ -238,10 +238,15 @@ parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
 
 type Substitution = [(String, Sentence)]
 
+instantiateVar :: Map.Map String Sentence -> String -> Sentence
+instantiateVar varMap str = case varMap Map.!? str of
+    Nothing -> error ("variable " ++ str ++ " is not in the substitution " ++ show varMap)
+    Just sent -> sent
+
 parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> Substitution -> Sentence
 parseWithSubst ops defOps input varTuples = 
     let varMap = Map.fromList varTuples in
-        getTopLevelSentence (\s -> varMap Map.! s) (tokenize ops defOps input)
+        getTopLevelSentence (instantiateVar varMap) (tokenize ops defOps input)
 
 -- used in substitutions in derived rules
 getApplySubstFromTransformant :: Transformant -> String -> Substitution -> Sentence

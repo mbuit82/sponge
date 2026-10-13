@@ -1,0 +1,17 @@
+Theorem: |- P -> ((P -> Q) -> Q)
+
+Using deduction
+
+Proof
+IGNORE 1. |- P by Assumption
+IGNORE 2. |- P -> Q by Assumption
+IGNORE 3. |- Q by Modus Ponens: 1 2
+IGNORE the old proof used deduction twice. This one uses deduction once, and it is just as long. No gains. 
+
+1. |- ((P -> Q) -> (P -> Q)) -> (((P -> Q) -> P) -> ((P -> Q) -> Q)) by Frege
+2. |- (P -> Q) -> (P -> Q) by citing identity (from minimal) [(P -> Q)/A]
+3. |- ((P -> Q) -> P) -> ((P -> Q) -> Q) by Modus Ponens: 2 1
+4. |- P by Assumption
+5. |- P -> ((P -> Q) -> P) by Simp
+6. |- (P -> Q) -> P by Modus Ponens: 4 5
+7. |- (P -> Q) -> Q by Modus Ponens: 6 3

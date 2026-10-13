@@ -1,9 +1,6 @@
 Theorem: |- P -> ~ ~ P
 
-Using deduction
-Using deduction
 
 Proof
-1. |- P by Assumption
-2. |- P -> Bot by Assumption
-3. |- Bot by Modus Ponens: 1 2
+1. |- P -> ~ ~ P by citing assertion (from minimal) [P/P, Bot/Q]
+IGNORE Never realized this! But yeah, kinda crazy fact

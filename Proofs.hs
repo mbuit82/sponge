@@ -41,7 +41,7 @@ axiomCaseTransformation :: Sentence -> Transformation
 axiomCaseTransformation hyp transformant = 
     [   
         Line n (lineContent currLine) (justification currLine) [] Nothing,
-        Line (n + 1) (applySubst "C -> (H -> C)" [("H", hyp), ("C", c)]) "Axiom2" [] Nothing,
+        Line (n + 1) (applySubst "C -> (H -> C)" [("H", hyp), ("C", c)]) "Simp" [] Nothing,
         Line (n + 2) (applySubst "H -> C" [("H", hyp), ("C", c)]) "Modus Ponens" [n, n + 1] (userNumber currLine)
     ]
     where 
@@ -53,10 +53,10 @@ axiomCaseTransformation hyp transformant =
 hypCaseTransformation :: Transformation
 hypCaseTransformation transformant = 
     [
-        Line n (applySubst "((H -> (H -> H)) -> ((H -> ((H -> H) -> H)) -> (H -> H)))" [("H", c)]) "Axiom3" [] Nothing,
-        Line (n + 1) (applySubst "H -> (H -> H)" [("H", c)]) "Axiom2" [] Nothing,
-        Line (n + 2) (applySubst "(H -> ((H -> H) -> H)) -> (H -> H)" [("H", c)]) "Modus Ponens" [n + 1, n] Nothing,
-        Line (n + 3) (applySubst "H -> ((H -> H) -> H)" [("H", c)]) "Axiom2" [] Nothing,
+        Line n (applySubst "((H -> ((H -> H) -> H)) -> ((H -> (H -> H)) -> (H -> H)))" [("H", c)]) "Frege" [] Nothing,
+        Line (n + 1) (applySubst "H -> ((H -> H) -> H)" [("H", c)]) "Simp" [] Nothing,
+        Line (n + 2) (applySubst "(H -> (H -> H)) -> (H -> H))" [("H", c)]) "Modus Ponens" [n + 1, n] Nothing,
+        Line (n + 3) (applySubst "H -> (H -> H)" [("H", c)]) "Simp" [] Nothing,
         Line (n + 4) (applySubst "H -> H" [("H", c)]) "Modus Ponens" [n + 3, n + 2] (userNumber currLine)
     ]
     where 
@@ -68,9 +68,9 @@ hypCaseTransformation transformant =
 modusPonensCaseTransformation :: Sentence -> Transformation
 modusPonensCaseTransformation hyp transformant = -- pLine and pqLine are already transformed
     [
-        Line n (applySubst "HP -> (HPQ -> (H -> Q))" [("HP", hp), ("HPQ", hpq), ("H", hyp), ("Q", c)]) "Axiom3" [] Nothing,
-        Line (n + 1) (applySubst "HPQ -> (H -> Q)" [("HPQ", hpq), ("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pLine, n] Nothing,
-        Line (n + 2) (applySubst "H -> Q" [("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pqLine, n + 1] (userNumber currLine)
+        Line n (applySubst "HPQ -> (HP -> (H -> Q))" [("HP", hp), ("HPQ", hpq), ("H", hyp), ("Q", c)]) "Frege" [] Nothing,
+        Line (n + 1) (applySubst "HP -> (H -> Q)" [("HP", hp), ("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pqLine, n] Nothing,
+        Line (n + 2) (applySubst "H -> Q" [("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pLine, n + 1] (userNumber currLine)
     ]
     where 
         applySubst = getApplySubstFromTransformant transformant
@@ -131,7 +131,7 @@ applyIOTransformation ioTransformation oldState = do
             nxt:remLines -> (Just nxt, remLines)
 
 applySubstToSent :: Map.Map String Sentence -> Sentence -> Sentence
-applySubstToSent varMap (Atom a) = varMap Map.! a
+applySubstToSent varMap (Atom a) = instantiateVar varMap a
 applySubstToSent varMap (OpNode op args) = (OpNode op (map (applySubstToSent varMap) args))
 
 -- this is meant for theorems that we have proved. To avoid two O(n) passes (do one instead), could also do substitutions as we go

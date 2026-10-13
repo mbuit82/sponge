@@ -18,8 +18,8 @@ Proven(f) :- Goal(f),
 .output Justified
 .output Proven
 
-Justified(n) :- Line(n, $Conditional(P, $Conditional(_, P)), "Axiom2", _, _).
-Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional(P, R))), "Axiom3", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(_, P)), "Simp", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional($Conditional(P, Q), $Conditional(P, R))), "Frege", _, _).
 Justified(n) :- Line(n, $Conditional($And(P, _), P), "And-EL", _, _).
 Justified(n) :- Line(n, $Conditional($And(_, Q), Q), "And-ER", _, _).
 Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And-I", _, _).

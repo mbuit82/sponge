@@ -115,11 +115,11 @@ orElimDerivedRule = ("Or Elim", orElimTransformation)
 hypSyllTransformation :: Transformation
 hypSyllTransformation transformant =
     [
-        Line n (applySubst "PQ -> ((P -> QR) -> PR)" [("P", p), ("PQ", pq), ("QR", qr), ("PR", pr)]) "Axiom3" [] Nothing,
-        Line (n + 1) (applySubst "QR -> (P -> QR)" [("P", p), ("QR", qr), ("PR", pr)]) "Axiom2" [] Nothing,
-        Line (n + 2) (applySubst "P -> QR" [("P", p), ("QR", qr)]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
-        Line (n + 3) (applySubst "(P -> QR) -> PR" [("P", p), ("QR", qr), ("PR", pr)]) "Modus Ponens" [lineNumber pqLine, n] Nothing,
-        Line (n + 4) pr "Modus Ponens" [n + 2, n + 3] (userNumber currLine)
+        Line n (applySubst "(P -> QR) -> (PQ -> PR)" [("P", p), ("PQ", pq), ("QR", qr), ("PR", pr)]) "Frege" [] Nothing,
+        Line (n + 1) (applySubst "QR -> (P -> QR)" [("P", p), ("PQ", pq), ("QR", qr), ("PR", pr)]) "Simp" [] Nothing,
+        Line (n + 2) (applySubst "P -> QR" [("P", p), ("PQ", pq), ("QR", qr), ("PR", pr)]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
+        Line (n + 3) (applySubst "PQ -> PR" [("P", p), ("PQ", pq), ("QR", qr), ("PR", pr)]) "Modus Ponens" [n + 2, n] Nothing,
+        Line (n + 4) pr "Modus Ponens" [lineNumber pqLine, n + 3] (userNumber currLine)
     ]
     where 
         applySubst = getApplySubstFromTransformant transformant
