@@ -19,6 +19,12 @@ axiom5 :: Axiom
 axiom5 = Axiom "Axiom5" (parse [cond, bot] [] "((P -> Bot) -> Bot) -> P")
 
 -- These are from an ND-ish axiomatization; I took them from Bezhanishvili's book on intuitionistic logic
+-- Decided to change the names of axiom2 and axiom3 for this axiomatization to Simp and Frege. 
+-- Changed because found that the S-combinator version of Axiom3/Frege/Distribution is easier to work with sometimes. 
+-- And figured that now that i was changing the syntax of the axiom I might as well make a decision on the name.
+-- Ideally I would have named these K-combinator and S-combinator, but those names are off the table because of modal logic
+-- Next up is simplification and distribution, which seem to be fairly traditional names for these. Simplification feels like it could be a billion things (this one included, if you squint), and distribution feels like it could be a trillion things (this one too but if I see that next to a proof line I think applying the distributive laws, or e.g. &L <> L& distribution). 
+-- "Simp" and "Frege" seem to be relatively accepted names for these things in the literature. Particularly, these names are both used in metamath and in A.N. Prior's Formal Logic Appendix II. Plus I don't think I'll find myself dying to name a theorem or a derived rule either "Simp" ("simplification" yes, "Simplifying" yes, "Simpl" also yes, but "Simp" ehh) or "Frege", so the name conflicting issue the other two had pairs of names had is less pressing. 
 simp :: Axiom
 simp = Axiom "Simp" (parse [cond] [] "P -> (Q -> P)")
 frege :: Axiom
