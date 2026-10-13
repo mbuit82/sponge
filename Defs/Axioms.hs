@@ -22,9 +22,12 @@ axiom5 = Axiom "Axiom5" (parse [cond, bot] [] "((P -> Bot) -> Bot) -> P")
 -- Decided to change the names of axiom2 and axiom3 for this axiomatization to Simp and Frege. 
 -- Changed because found that the S-combinator version of Axiom3/Frege/Distribution is easier to work with sometimes. 
 -- And figured that now that i was changing the syntax of the axiom I might as well make a decision on the name.
--- Ideally I would have named these K-combinator and S-combinator, but those names are off the table because of modal logic
+-- Ideally I would have named these K-combinator and S-combinator, but those names are off the table because of modal logic ("K" is already overloaded with the name of a logic and an axiom)
 -- Next up is simplification and distribution, which seem to be fairly traditional names for these. Simplification feels like it could be a billion things (this one included, if you squint), and distribution feels like it could be a trillion things (this one too but if I see that next to a proof line I think applying the distributive laws, or e.g. &L <> L& distribution). 
 -- "Simp" and "Frege" seem to be relatively accepted names for these things in the literature. Particularly, these names are both used in metamath and in A.N. Prior's Formal Logic Appendix II. Plus I don't think I'll find myself dying to name a theorem or a derived rule either "Simp" ("simplification" yes, "Simplifying" yes, "Simpl" also yes, but "Simp" ehh) or "Frege", so the name conflicting issue the other two had pairs of names had is less pressing. 
+-- Even though these names are more opaque (particularly "Frege"), I think no one name captures the many intuitions one can have on what these axioms are saying. 
+-- Which is a big reason why these axioms don't have widely accepted names. 
+-- Another good option is Axiom 1 and Axiom 2, which are the names Frege (or someone) gave to them. I didn't pursue this for purely personal reasons: I'm already used to Axiom 1 and Axiom 2 meaning other things because of the 18.510 axiomatization. 
 simp :: Axiom
 simp = Axiom "Simp" (parse [cond] [] "P -> (Q -> P)")
 frege :: Axiom
@@ -47,6 +50,7 @@ lem :: Axiom
 lem = Axiom "Excluded Middle" (parse [cond] [neg] "~ ~ P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
 
 -- modal axioms
+-- In lieu of ability to type a box and a diamond, going with Cresswell's 'L' and 'M' for box and diamond respectively
 kAxiom :: Axiom
 kAxiom = Axiom "K Axiom" (parse [cond, box] [] "L (P -> Q) -> (L P -> L Q)")
 tAxiom :: Axiom

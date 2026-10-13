@@ -3,30 +3,13 @@ module Proofs where
 import Core
 import Defs.Rules
 import Defs.Specs
+import PruneProofTrees
 
 import Data.Maybe
 import Data.List
 import Data.Char
 import qualified Data.Map as Map
 import System.Directory (createDirectoryIfMissing)
-
-
--- This is all general, not specific to the deduction lemma. I think this can be kept. 
--- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
-applyTransformation :: Transformation -> Transformant -> Transformant
-applyTransformation transformation oldState =
-    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState)
-    where 
-        applied = reverse (transformation oldState)
-        (newCurr, newTransformanda) = case transformanda oldState of
-            [] -> (Nothing, [])
-            nxt:remLines -> (Just nxt, remLines)
-
--- the first arg is supposed to be a proof
-intoTransformant :: Logic -> [Line] -> Transformant
-intoTransformant _ [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-intoTransformant logic (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0 logic 
-
 
 
 -- EXAMPLE: Deduction lemma. 
@@ -87,9 +70,6 @@ useDeduction' hyp state =
                         then useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
                         else error ("unknown justification for deduction" ++ j)
 
-resetUserNumbers :: [Line] -> [Line]
-resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
-
 useDeduction :: Logic -> Sentence -> [Line] -> [Line]
 useDeduction logic hyp = 
     resetUserNumbers . reverse . transformata . (useDeduction' hyp) . (intoTransformant logic)
@@ -113,7 +93,6 @@ applyDerivedRules logic derRulesDict =
 
 
 -- CITING PROOFS
-
 -- this is going to be redundant. 
 applyIOTransformation :: (Transformant -> IO [Line]) -> Transformant -> IO (Transformant)
 applyIOTransformation ioTransformation oldState = do
@@ -193,25 +172,6 @@ applyCitedTheorems logic pureOldProof = do
 
 
 -- stuff below is for getting proofs from user input
-parseUserProofWithDeduction :: Logic -> Sentence -> [String] -> [Line]
-parseUserProofWithDeduction _ _ [] = []
-parseUserProofWithDeduction logic deductionRelativeGoal (fl : remFileLines)
-    | "deduction" `isInfixOf` fl =
-        case deductionRelativeGoal of
-            OpNode op [lArg, rArg] -> 
-                if op == cond 
-                then useDeduction logic lArg (parseUserProofWithDeduction logic rArg remFileLines)
-                else error "ope should have conditional in goal to use deduction"
-            _ -> error "ope should have conditional in goal to use deduction"
-    | (all isSpace fl) || fl == "Proof" = parseUserProofWithDeduction logic deductionRelativeGoal remFileLines -- ignore conditions
-    | otherwise = getLineFromUser logic fl : parseUserProofWithDeduction logic deductionRelativeGoal remFileLines
-
-parseUserProof :: Logic -> [String] -> [Line]
-parseUserProof _ [] = []
-parseUserProof logic (fl : remFileLines)
-    | (all isSpace fl) || "IGNORE" `isInfixOf` fl = parseUserProof logic remFileLines
-    | otherwise = getLineFromUser logic fl : parseUserProof logic remFileLines
-
 getDeductionsFunc :: Logic -> Sentence -> [String] -> [Line] -> [Line]
 getDeductionsFunc _ _ [] = id
 getDeductionsFunc logic goalModuloDeduction (fl : remPreamble)
@@ -236,6 +196,12 @@ splitByProofLine seen toSee =
             then (seen, xs) 
             else splitByProofLine (seen ++ [x]) xs
 
+parseUserProof :: Logic -> [String] -> [Line]
+parseUserProof _ [] = []
+parseUserProof logic (fl : remFileLines)
+    | (all isSpace fl) || "IGNORE" `isInfixOf` fl = parseUserProof logic remFileLines
+    | otherwise = getLineFromUser logic fl : parseUserProof logic remFileLines
+
 parseUserProofFile' :: Logic -> String -> (Sentence, ([Line] -> [Line]), [Line])
 parseUserProofFile' logic fileContent =
     let (goalLine, pfLines') = splitByGoalLine (lines fileContent)
@@ -255,5 +221,5 @@ getHaskellProof :: String -> String -> IO (Sentence, [Line])
 getHaskellProof logicName proofName = do
     (goal, deductionFunc, userLines) <- parseUserProofFile logicName proofName
     afterCitingTheorems <- applyCitedTheorems logic (pure userLines)
-    pure (goal, (deductionFunc . applyDerivedRules logic derivedRules) afterCitingTheorems)
+    pure (goal, (pruneProofTree . deductionFunc . applyDerivedRules logic derivedRules) afterCitingTheorems)
     where logic = getLogic logicName

@@ -40,7 +40,7 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
 userToDatalog' :: String -> String -> IO ()
 userToDatalog' logicName proofName = do
     (goal, haskellProof) <- getHaskellProof logicName proofName
-    compileDatalogProof proofName goal logic (pruneProofTree haskellProof)
+    compileDatalogProof proofName goal logic (haskellProof)
     where logic = getLogic logicName
 
 main :: IO ()

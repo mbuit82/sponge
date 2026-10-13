@@ -1,7 +1,6 @@
 module PruneProofTrees where
 
 import Core
-import Proofs
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -36,16 +35,16 @@ verifyInOrder' n (ln:lns) = if n == lineNumber ln then verifyInOrder' (n + 1) ln
 verifyInOrder :: [Line] -> Bool
 verifyInOrder = verifyInOrder' 1
 
-getLineNumberDependencies' :: [Line] -> Set.Set Int -> Set.Set Int
-getLineNumberDependencies' [] dependents = dependents
-getLineNumberDependencies' (ln:lns) dependents = 
+getSubProofRefs' :: [Line] -> Set.Set Int -> Set.Set Int
+getSubProofRefs' [] dependents = dependents
+getSubProofRefs' (ln:lns) dependents = 
     if Set.member (lineNumber ln) dependents
         then let newDependents = dependents `Set.union` Set.fromList (refLines ln) in
-            getLineNumberDependencies' lns newDependents
-        else getLineNumberDependencies' lns dependents
+            getSubProofRefs' lns newDependents
+        else getSubProofRefs' lns dependents
 
-getLineNumberDependencies :: [Line] -> Int -> Set.Set Int
-getLineNumberDependencies lns rootRef = getLineNumberDependencies' (reverse lns) (Set.singleton rootRef)
+getSubProofRefs :: [Line] -> Int -> Set.Set Int
+getSubProofRefs lns rootRef = getSubProofRefs' (reverse lns) (Set.singleton rootRef)
 
 replaceRef :: (Int, Set.Set Int) -> [Int] -> [Int]
 replaceRef _ [] = []
@@ -57,8 +56,23 @@ replaceInRefs' _ [] = []
 replaceInRefs' repeatInfo (Line lNum c j rfs uNum : lns) =
     Line lNum c j (replaceRef repeatInfo rfs) uNum : replaceInRefs' repeatInfo lns
 
+step :: (Int, Int) -> (Int, Int) -> (Int, Int)
+step (0,0) kv = kv
+step currSmallest kv
+    | snd kv < snd currSmallest = kv
+    | otherwise = currSmallest
+
+pickLineFunc :: Set.Set Int -> [Line] -> (Int, Set.Set Int)
+-- pickLineFunc sameContentRefs lns = Set.deleteFindMin sameContentRefs
+-- below is the naive, keep-smallest-subproof approach
+pickLineFunc sameContentRefs lns = 
+    let asList = Set.toList sameContentRefs in
+        let sizeProofTrees = map (\int -> (int, Set.size (getSubProofRefs lns int))) asList in
+            let keepRef = fst (foldl' step (0,0) sizeProofTrees) in 
+                (keepRef, Set.delete keepRef sameContentRefs)
+
 replaceInRefs :: Set.Set Int -> [Line] -> [Line]
-replaceInRefs repeateds = replaceInRefs' (Set.deleteFindMin repeateds)
+replaceInRefs repeateds lns = replaceInRefs' (pickLineFunc repeateds lns) lns
 
 removeRepeatRefs :: [Line] -> [Line]
 removeRepeatRefs lns =
@@ -67,7 +81,7 @@ removeRepeatRefs lns =
             foldl' (\acc f -> f acc) lns listOfFuncs
 
 getUsedRefs :: [Line] -> Set.Set Int
-getUsedRefs lns = getLineNumberDependencies lns (lineNumber ((reverse lns) !! 0))
+getUsedRefs lns = getSubProofRefs lns (lineNumber ((reverse lns) !! 0))
         
 removeUnusedLines :: Set.Set Int -> [Line] -> [Line]
 removeUnusedLines usedRefs [] = []

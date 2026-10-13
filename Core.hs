@@ -331,6 +331,28 @@ data Transformant = Transformant {  transformata :: [Line],
 
 type Transformation = Transformant -> [Line]
 
+-- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
+applyTransformation :: Transformation -> Transformant -> Transformant
+applyTransformation transformation oldState =
+    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState)
+    where 
+        applied = reverse (transformation oldState)
+        (newCurr, newTransformanda) = case transformanda oldState of
+            [] -> (Nothing, [])
+            nxt:remLines -> (Just nxt, remLines)
+
+identityTransformation :: Transformation
+identityTransformation transformant = 
+    case curr transformant of
+        Nothing -> []
+        Just (Line lNum c j rfs uNum) -> 
+            [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
+
+-- the second arg is supposed to be a proof
+intoTransformant :: Logic -> [Line] -> Transformant
+intoTransformant _ [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
+intoTransformant logic (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0 logic 
+
 findLineWithUserNum' :: [Line] -> Int -> Maybe Line
 findLineWithUserNum' [] _ = Nothing
 findLineWithUserNum' (l : remLines) uNum =
@@ -349,10 +371,5 @@ getCurrentRefLines transformant =
 getUpdatedCurrentRefs :: Transformant -> [Int]
 getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
 
-identityTransformation :: Transformation
-identityTransformation transformant = 
-    case curr transformant of
-        Nothing -> []
-        Just (Line lNum c j rfs uNum) -> 
-            [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
-
+resetUserNumbers :: [Line] -> [Line]
+resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
