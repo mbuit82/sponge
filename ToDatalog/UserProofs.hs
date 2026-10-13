@@ -2,9 +2,9 @@ module ToDatalog.UserProofs where
 
 import Core
 import Defs.Specs
-import Defs.Rules
 import ToDatalog.Utils
 import Proofs
+import PruneProofTrees
 
 import System.IO
 import Data.List
