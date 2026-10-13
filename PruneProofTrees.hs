@@ -60,6 +60,7 @@ step :: (Int, Int) -> (Int, Int) -> (Int, Int)
 step (0,0) kv = kv
 step currSmallest kv
     | snd kv < snd currSmallest = kv
+    | snd kv == snd currSmallest = if fst kv < fst currSmallest then kv else currSmallest
     | otherwise = currSmallest
 
 pickLineFunc :: Set.Set Int -> [Line] -> (Int, Set.Set Int)
