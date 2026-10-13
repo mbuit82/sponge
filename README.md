@@ -10,7 +10,7 @@ On the first point, the idea is the tool should be easy to use for anyone_ who w
 
 On the second point, if you follow an axiomatic system to the foot of the letter then you have to justify _every_ line with an axiom or an inference rule. This doesn't correspond with how axiomatic proofs are done for systems where the user only cares about the reasoning relative to a fragment of the language, like in axiomatic proofs in modal logics. Consequently, the idea is to let the user be able to abstract rote sequences of axioms and inference rules, with e.g. derived rules, citing previous results, etc. 
 
-On the third point, oftentimes with modal logics (and axiomatic systems generally) it's nice to be able to define one system as a simple extension of another. As a result, the logics for this proof checker should be defined modularly to reflect that and make adding logics as easy as possible. For example, K is defined as classical logic + the K axiom and necessitation; classical logic is defined as intuitionistic logic + LEM; and intuitionistic logic is defined as minimal logic + explosion. 
+On the third point, oftentimes with modal logics (and axiomatic systems generally) it's nice to be able to define one system as a simple extension of another. As a result, the logics for this proof checker should be defined modularly to reflect that and make adding logics as easy as possible. For example, K is defined as classical logic + the K axiom and necessitation; classical logic is defined as intuitionistic logic + excluded middle; and intuitionistic logic is defined as minimal logic + explosion. 
 
 For details on the architecture and design choices, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
