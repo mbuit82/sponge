@@ -7,35 +7,6 @@ import Defs.Specs
 import Data.List
 import System.Environment (getArgs)
 
-prettyPrintOperator :: Operator -> String 
-prettyPrintOperator op =
-    (operatorSymbol op) ++ " (" ++ (operatorName op) ++ "), arity " ++ show (arity op)
-
-defOpDummyArgs :: Int -> [Sentence]
-defOpDummyArgs n = map (\(p, i) -> Atom (p ++ show i)) (zip (replicate n "P") (take n [1..]))
-
-dummyDefOp :: DefinedOperator -> String
-dummyDefOp defOp =
-    case (defOpArity defOp) of
-        1 -> (defOpSymbol defOp) ++ " P1"
-        2 -> intercalate (" " ++ (defOpSymbol defOp) ++ " ") (map prettyPrintSentence (defOpDummyArgs (defOpArity defOp)))
-        3 -> error "haven't figured out n-ary operators yet (printing out an n-ary defined operator)"
-
-prettyPrintDefOp :: DefinedOperator -> String
-prettyPrintDefOp defOp = 
-    (defOpSymbol defOp) ++ " (where " ++ (dummyDefOp defOp) ++ " := " ++ prettyPrintSentence ((definition defOp) (defOpDummyArgs (defOpArity defOp)))
-
-prettyPrintSentence :: Sentence -> String
-prettyPrintSentence (Atom str) = str
-prettyPrintSentence (OpNode (Operator _ opS 0) []) = opS
-prettyPrintSentence (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ prettyPrintSentence arg ++ ")"
-prettyPrintSentence (OpNode (Operator _ opS 2) [arg1, arg2]) = "(" ++ prettyPrintSentence arg1 ++ " " ++ opS ++ " " ++ prettyPrintSentence arg2 ++ ")"
-prettyPrintSentence (OpNode _ _) = error "either n-ary or something's gone wrong with an operator definition"
-
-prettyPrintAxiom :: Axiom -> String
-prettyPrintAxiom axiom =
-    axiomName axiom ++ ": |- " ++ prettyPrintSentence (axiomContent axiom)
-
 prettyPrintPremises :: (Sentence, Maybe Sentence) -> String
 prettyPrintPremises (prem1, Nothing) =
     "|- " ++ prettyPrintSentence prem1 

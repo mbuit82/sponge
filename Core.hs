@@ -1,13 +1,17 @@
 module Core where
 
 import Data.Maybe
+import Data.List
 import qualified Data.Map as Map
 
 data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
     operatorSymbol :: String, -- what the user will write. relevant at tokenizer level. 
     arity :: Int
-} deriving (Eq, Show, Read)
+} deriving (Eq, Show, Read, Ord)
+prettyPrintOperator :: Operator -> String 
+prettyPrintOperator op =
+    (operatorSymbol op) ++ " (" ++ (operatorName op) ++ "), arity " ++ show (arity op)
 
 data DefinedOperator = DefinedOperator {
     defOpName :: String,
@@ -15,15 +19,38 @@ data DefinedOperator = DefinedOperator {
     defOpArity :: Int,
     definition :: [Sentence] -> Sentence
 } 
+defOpDummyArgs :: Int -> [Sentence]
+defOpDummyArgs n = map (\(p, i) -> Atom (p ++ show i)) (zip (replicate n "P") (take n [1..]))
+
+dummyDefOp :: DefinedOperator -> String
+dummyDefOp defOp =
+    case (defOpArity defOp) of
+        1 -> (defOpSymbol defOp) ++ " P1"
+        2 -> intercalate (" " ++ (defOpSymbol defOp) ++ " ") (map prettyPrintSentence (defOpDummyArgs (defOpArity defOp)))
+        3 -> error "haven't figured out n-ary operators yet (printing out an n-ary defined operator)"
+
+prettyPrintDefOp :: DefinedOperator -> String
+prettyPrintDefOp defOp = 
+    (defOpSymbol defOp) ++ " (where " ++ (dummyDefOp defOp) ++ " := " ++ prettyPrintSentence ((definition defOp) (defOpDummyArgs (defOpArity defOp)))
 
 cond :: Operator
 cond = Operator "Conditional" "->" 2
 
 data Sentence = Atom {atomName :: String}
-              | OpNode {topOp :: Operator, args :: [Sentence]} deriving (Eq, Show, Read)
+              | OpNode {topOp :: Operator, args :: [Sentence]} deriving (Eq, Read, Ord)
+prettyPrintSentence :: Sentence -> String
+prettyPrintSentence (Atom str) = str
+prettyPrintSentence (OpNode (Operator _ opS 0) []) = opS
+prettyPrintSentence (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ prettyPrintSentence arg ++ ")"
+prettyPrintSentence (OpNode (Operator _ opS 2) [arg1, arg2]) = "(" ++ prettyPrintSentence arg1 ++ " " ++ opS ++ " " ++ prettyPrintSentence arg2 ++ ")"
+prettyPrintSentence (OpNode _ _) = error "either n-ary or something's gone wrong with an operator definition"
+instance Show Sentence where
+    show = prettyPrintSentence
 
-data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Eq, Show, Read)
--- low key not necessary
+data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Eq, Show, Read) -- low key not necessary
+prettyPrintAxiom :: Axiom -> String
+prettyPrintAxiom axiom =
+    axiomName axiom ++ ": |- " ++ prettyPrintSentence (axiomContent axiom)
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
