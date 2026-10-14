@@ -1,6 +1,9 @@
 import Core
 import Defs.Operators
 import Defs.Specs
+import Abstractions
+import Parse.Proofs
+import Parse.Sentences
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof)
 import qualified Data.Map as Map
