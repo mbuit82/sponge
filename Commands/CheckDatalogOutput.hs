@@ -1,4 +1,4 @@
-module CheckDatalogOutput where
+module Commands.CheckDatalogOutput where
 
 import Data.List
 import System.Environment (getArgs)
@@ -6,7 +6,7 @@ import Data.Binary (encodeFile, decodeFile)
 
 getCsvFileName :: String -> String -> String -> String
 getCsvFileName logicName proofName csvName =
-        intercalate "/" ["datalog_proofs", logicName, proofName, (csvName ++ ".csv")]
+        intercalate "/" ["datalog/datalog_proofs", logicName, proofName, (csvName ++ ".csv")]
 
 checkDatalogOutput' :: String -> String -> IO Bool
 checkDatalogOutput' logicName proofName = do

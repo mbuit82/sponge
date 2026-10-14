@@ -1,4 +1,4 @@
-module ShowLogic (main) where
+module Commands.ShowLogic (main) where
 
 import Core
 import Defs.Specs

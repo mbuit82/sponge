@@ -1,4 +1,4 @@
-module SearchForProof where
+module Commands.SearchForProof where
 
 import Core
 import Parse.Sentences

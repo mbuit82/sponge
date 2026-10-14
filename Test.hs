@@ -1,7 +1,6 @@
 import Core
 import Defs.Operators
 import Defs.Specs
-import Proofs
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof)
 import qualified Data.Map as Map
