@@ -118,7 +118,7 @@ compileDatalogEngine logicName =
     -- I think this ideally happens not here, but like in a check function. 
     -- for now I can run that check function here
     -- well like I want it to happen _before_ I apply all the transformations on proofs. Like it should be the _first_ thing that happens. 
-    withFile ("datalog_engines/" ++ logicName ++ ".dl") WriteMode $ \h -> do
+    withFile ("datalog/datalog_engines/" ++ logicName ++ ".dl") WriteMode $ \h -> do
         hSetEncoding h utf8
         hPutStr h ".type Sentence = Atom {name: symbol}"
         hPutStr h (syntaxToDatalog logic)
@@ -130,7 +130,7 @@ compileDatalogEngine logicName =
 
 makeLogicDirectories :: String -> IO ()
 makeLogicDirectories logicName = do
-    createDirectoryIfMissing False ("datalog_proofs/" ++ logicName)
+    createDirectoryIfMissing False ("datalog/datalog_proofs/" ++ logicName)
     createDirectoryIfMissing False ("hand_proofs/" ++ logicName)
 
 main :: IO ()
