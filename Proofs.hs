@@ -9,7 +9,7 @@ import Data.Maybe
 import Data.List
 import Data.Char
 import qualified Data.Map as Map
-import System.Directory (createDirectoryIfMissing)
+import System.Directory 
 
 
 -- EXAMPLE: Deduction lemma. 
@@ -223,3 +223,15 @@ getHaskellProof logicName proofName = do
     afterCitingTheorems <- applyCitedTheorems logic (pure userLines)
     pure (goal, (pruneProofTree . deductionFunc . applyDerivedRules logic derivedRules) afterCitingTheorems)
     where logic = getLogic logicName
+
+-- I have a feeling this isn't the best definition; I don't think it's the moral one
+isSubLogicByAxioms :: Logic -> Logic -> Bool
+isSubLogicByAxioms logic1 logic2 =
+    and (map (\op -> elem op (operators logic2)) (operators logic1)) &&
+    and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
+    and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
+
+getSubLogicsByAxioms :: String -> [String]
+getSubLogicsByAxioms logicName =
+    let logic = getLogic logicName in
+        filter (\lName -> isSubLogicByAxioms (getLogic lName) logic) logicNames

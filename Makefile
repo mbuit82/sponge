@@ -4,6 +4,7 @@ datalog-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs Defs/Specs.hs Core.hs
 	@ mkdir -p exec
 	@ ghc ToDatalog/Engines.hs -main-is ToDatalog.Engines.main -o exec/build-engines -outputdir build
 	@ ghc ShowLogic.hs -main-is ShowLogic.main -o exec/show-logic -outputdir build
+	@ ghc SearchForProof.hs -main-is SearchForProof.main -o exec/search-proof -outputdir build
 	@ ./exec/build-engines
 
 proof-processing: ToDatalog/UserProofs.hs ToDatalog/Utils.hs Proofs.hs Core.hs
@@ -21,4 +22,4 @@ show-logic:
 clean:
 	@ rm -rf build exec
 
-.PHONY: all clean datalog-engines proof-processing check-proof show-logic
+.PHONY: all clean datalog-engines proof-processing check-proof show-logic search-proof
