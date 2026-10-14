@@ -1,6 +1,8 @@
 module Defs.Axioms where
 
 import Core
+import Parse.Sentences
+
 import Defs.Operators
 
 -- FOR SOME POINTERS: the parse function needs to know what symbols are operators and what symbols are defined operators. The first list passed to parse is the list of operators it needs to know about to parse the string, and the second list is the list of defined operators. 

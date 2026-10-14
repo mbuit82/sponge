@@ -13,6 +13,9 @@ prettyPrintOperator :: Operator -> String
 prettyPrintOperator op =
     (operatorSymbol op) ++ " (" ++ (operatorName op) ++ "), arity " ++ show (arity op)
 
+cond :: Operator
+cond = Operator "Conditional" "->" 2
+
 data DefinedOperator = DefinedOperator {
     defOpName :: String,
     defOpSymbol :: String, 
@@ -33,9 +36,6 @@ prettyPrintDefOp :: DefinedOperator -> String
 prettyPrintDefOp defOp = 
     (defOpSymbol defOp) ++ " (where " ++ (dummyDefOp defOp) ++ " := " ++ prettyPrintSentence ((definition defOp) (defOpDummyArgs (defOpArity defOp)))
 
-cond :: Operator
-cond = Operator "Conditional" "->" 2
-
 data Sentence = Atom {atomName :: String}
               | OpNode {topOp :: Operator, args :: [Sentence]} deriving (Eq, Read, Ord)
 prettyPrintSentence :: Sentence -> String
@@ -47,6 +47,8 @@ prettyPrintSentence (OpNode _ _) = error "either n-ary or something's gone wrong
 instance Show Sentence where
     show = prettyPrintSentence
 
+type Substitution = [(String, Sentence)] -- largely just a shortcut
+
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Eq, Show, Read) -- low key not necessary
 prettyPrintAxiom :: Axiom -> String
 prettyPrintAxiom axiom =
@@ -56,8 +58,6 @@ data InferenceRule = InferenceRule {
     ruleName :: String,
     premises :: (Sentence, Maybe Sentence), -- can have max two (bc of how Datalog is set up)
     conclusion :: Sentence} deriving (Eq, Show, Read)
-
-type DerivedRule = (String, Transformation)
 
 -- well, by design, the operators in the axioms and inference rules need to be in the operators. 
 -- how can I enforce that with the type system? not sure I can
@@ -135,189 +135,18 @@ isInstance sentence (OpNode schemaOp schemaArgs) =
 haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
+-- I have a feeling this isn't the best definition; I don't think it's the moral one
+isSubLogicByAxioms :: Logic -> Logic -> Bool
+isSubLogicByAxioms logic1 logic2 =
+    and (map (\op -> elem op (operators logic2)) (operators logic1)) &&
+    and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
+    and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
 
 
 
 
 
 
--- for avoiding that stupid souffle warning
-getAtoms :: Sentence -> [String]
-getAtoms (Atom a) = [a]
-getAtoms (OpNode _ args) = concatMap getAtoms args
-
-getNumVarOccurences :: String -> Sentence -> Int
-getNumVarOccurences tgtVar (Atom a) =
-    if a == tgtVar then 1 else 0
-getNumVarOccurences tgtVar (OpNode _ args) =
-    sum (map (getNumVarOccurences tgtVar) args)
-
-getSingletonVars :: Sentence -> [String]
-getSingletonVars sentence =
-    let pairList = map (\str -> (str, getNumVarOccurences str sentence)) (getAtoms sentence) in
-        map fst (filter (\(_, numOcc) -> numOcc == 1) pairList)
-
-dashVarsOut :: [String] -> Sentence -> Sentence
-dashVarsOut toDash (Atom a) = if a `elem` toDash then Atom "_" else Atom a
-dashVarsOut toDash (OpNode op args) = OpNode op (map (dashVarsOut toDash) args)
-
-dashSingletonVars :: Sentence -> Sentence
-dashSingletonVars sentence =
-    let toDash = getSingletonVars sentence in
-        dashVarsOut toDash sentence
-
-
-
--- user input to Haskell
-data Token = LPToken | RPToken | OpToken Operator | DefOpToken DefinedOperator | AtomToken String
-instance Show Token where
-    show LPToken = "("
-    show RPToken = ")"
-    show (OpToken operator) = "OpToken " ++ operatorSymbol operator
-    show (DefOpToken defOp) = "DefOpToken " ++ defOpSymbol defOp
-    show (AtomToken str) = "AtomToken " ++ str
-
-toAtomToken :: String -> [Token]
-toAtomToken [] = []
-toAtomToken a = [AtomToken a]
-
-getWithStr :: (a -> String) -> [a] -> String -> Maybe a
-getWithStr _ [] _ = Nothing
-getWithStr strFunc (x:xs) str =
-    if strFunc x == str then (Just x) else getWithStr strFunc xs str
-
-getOpWithSymbol :: [Operator] -> String -> Maybe Operator
-getOpWithSymbol = getWithStr operatorSymbol
-
-getDefOpWithSymbol :: [DefinedOperator] -> String -> Maybe DefinedOperator
-getDefOpWithSymbol = getWithStr defOpSymbol
-
-tokenize' :: [Operator] -> [DefinedOperator] -> String -> String -> [Token]
-tokenize' ops defOps toSee beingBuilt
-    | beingBuilt `elem` (map operatorSymbol ops) = 
-        [OpToken (fromJust (getOpWithSymbol ops beingBuilt))] ++ tokenize' ops defOps toSee []
-    | beingBuilt `elem` (map defOpSymbol defOps) =
-        [DefOpToken (fromJust (getDefOpWithSymbol defOps beingBuilt))] ++ tokenize' ops defOps toSee []
-    | otherwise = case toSee of
-        [] -> toAtomToken beingBuilt
-        '(' : remChars -> toAtomToken beingBuilt ++ [LPToken] ++ tokenize' ops defOps remChars [] -- should never happen? 
-        ')' : remChars -> toAtomToken beingBuilt ++ [RPToken] ++ tokenize' ops defOps remChars []
-        ' ' : remChars -> toAtomToken beingBuilt              ++ tokenize' ops defOps remChars []
-        x : remChars -> tokenize' ops defOps remChars (beingBuilt ++ [x])
-
-tokenize :: [Operator] -> [DefinedOperator] -> String -> [Token]
-tokenize ops defOps str = tokenize' ops defOps str []
-
-pop :: [a] -> [a]
-pop [] = error "Stack underflow from pop"
-pop (_:xs) = xs
-
-fetch :: [a] -> a
-fetch [] = error "Stack underflow from fetch"
-fetch (x:_) = x
-
-getNextSentence' :: (String -> Sentence) -> [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
-getNextSentence' _ [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
-getNextSentence' _ opStack [] [] = error ("shid we reached the end and we have no sentences lel. current opStack (rest are empty): " ++ show opStack)
-getNextSentence' _ opStack [sent] [] = error ("this case doesn't make sense really. opStack and sentStack: " ++ show opStack ++ ", " ++ show sent)
-getNextSentence' _ opStack sentStack [] = error ("error in parsing. check for a missing set of parentheses? opStack and sentStack: " ++ show opStack ++ ", " ++ show sentStack)
-getNextSentence' atomFunc opStack sentStack toSee =
-    case toSee of
-        LPToken : toks -> getNextSentence' atomFunc (LPToken : opStack) sentStack toks
-        RPToken : toks -> case fetch opStack of
-                            -- we only put binary operaotrs/defops on the opstack. unary and nullary are just immediately put on the sentStack
-                            OpToken op -> case sentStack of
-                                            rArg : lArg : remSents -> getNextSentence' atomFunc (pop (pop opStack)) (OpNode op [lArg, rArg] : remSents) toks -- this should really be pop until you see a LPToken
-                                            _ -> error "not enough args"
-                            DefOpToken defOp -> case sentStack of
-                                            rArg : lArg : remSents -> getNextSentence' atomFunc (pop (pop opStack)) (((definition defOp) [lArg, rArg]) : remSents ) toks -- this should really be pop until you see a LPToken
-                                            _ -> error "not enough args"
-                            LPToken -> getNextSentence' atomFunc (pop opStack) sentStack toks -- sandwiched something lol (unary or nullary operator that over-parenthesized)
-                            _ -> error "should have been an operator on the stack but there wasn't"
-        AtomToken a : toks -> getNextSentence' atomFunc opStack (atomFunc a : sentStack) toks
-        OpToken op : toks -> case arity op of
-                                0 -> getNextSentence' atomFunc opStack (OpNode op [] : sentStack) toks
-                                1 -> let (nextSent, newRem) = getNextSentence' atomFunc [] [] toks in
-                                        getNextSentence' atomFunc opStack (OpNode op [nextSent] : sentStack) newRem
-                                2 -> getNextSentence' atomFunc (OpToken op : opStack) sentStack toks
-                                _ -> error "not doing n-ary predicates yet (got n-ary operator)"
-        DefOpToken defOp : toks -> case defOpArity defOp of
-                                0 -> getNextSentence' atomFunc opStack (((definition defOp) []) : sentStack) toks
-                                1 -> let (nextSent, newRem) = getNextSentence' atomFunc [] [] toks in
-                                        getNextSentence' atomFunc opStack (((definition defOp) [nextSent]) : sentStack) newRem
-                                2 -> getNextSentence' atomFunc (DefOpToken defOp : opStack) sentStack toks
-                                _ -> error "not doing n-ary predicates yet (got n-ary defined operator)"
-
--- lmao so we just add an extra set of parentheses onto everything lol
--- to avoid O(n) iteration through toks, could move this to base case of tokenize' function
--- or think of smarter way to do top level parens lol
-getTopLevelSentence :: (String -> Sentence) -> [Token] -> Sentence
-getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToken : toks ++ [RPToken]))
-
-parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
-parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
-
-type Substitution = [(String, Sentence)]
-
-instantiateVar :: Map.Map String Sentence -> String -> Sentence
-instantiateVar varMap str = case varMap Map.!? str of
-    Nothing -> error ("variable " ++ str ++ " is not in the substitution " ++ show varMap)
-    Just sent -> sent
-
-parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> Substitution -> Sentence
-parseWithSubst ops defOps input varTuples = 
-    let varMap = Map.fromList varTuples in
-        getTopLevelSentence (instantiateVar varMap) (tokenize ops defOps input)
-
--- used in substitutions in derived rules
-getApplySubstFromTransformant :: Transformant -> String -> Substitution -> Sentence
-getApplySubstFromTransformant transformant =
-    let logic = transformantLogic transformant in
-        parseWithSubst (operators logic) (definedOperators logic)
-
-getLineNumFromLine :: String -> String -> (Int, String)
-getLineNumFromLine seen toSee = 
-    case toSee of
-        '.' : ' ' : '|' : '-' : ' ' : remChars -> (read seen, remChars)
-        [] -> error "couldn't find line number split. Maybe you forgot to include \"|-\" in a line?"
-        c : remChars -> getLineNumFromLine (seen ++ [c]) remChars
-
--- here is where automatic use of defined operators happens
-getContentFromLine :: Logic -> String -> String -> (Sentence, String)
-getContentFromLine logic seen toSee =
-    case toSee of
-        'b' : 'y' : ' ' : remChars -> (parse (operators logic) (definedOperators logic) seen, remChars)
-        [] -> error "line wasn't justified!"
-        c : remChars -> getContentFromLine logic (seen ++ [c]) remChars
-
--- meant to be applied after getting the content
-getJustificationFromLine :: String -> String -> (String, [Int])
-getJustificationFromLine seen toSee =
-    case toSee of
-        ':' : remChars -> case remChars of
-                            [] -> (seen, [])
-                            s -> (seen, map read (words s))
-                                    -- [i, j] -> (seen, Just (read i, read j))
-                                    -- _ -> error "theres stuff after justification but it's not just ints"
-        [] -> (seen, []) -- axiom case (with no trailing comma)
-        c : remChars -> getJustificationFromLine (seen ++ [c]) remChars
-
-getLineFromUser :: Logic -> String -> Line
-getLineFromUser logic userLine =
-    let (lNum, rem1) = getLineNumFromLine "" userLine in
-        let (content, rem2) = getContentFromLine logic "" rem1 in
-            let (j, rfs) = getJustificationFromLine "" rem2 in
-                Line lNum content j rfs (Just lNum)
-
-getProofGoal :: Logic -> String -> String -> Sentence
-getProofGoal _ _ [] = error "proof has no goal!"
-getProofGoal logic _ ('|' : '-' : remChars) = parse (operators logic) (definedOperators logic) remChars
-getProofGoal logic seen (c:remChars) = getProofGoal logic (seen ++ [c]) remChars
-
-
-
--- need to move now that derived rules are transformations and are in logics :/
--- Wait. And now that they're not, I can move it back... 
 data Transformant = Transformant {  transformata :: [Line], 
                                     curr :: Maybe Line, 
                                     transformanda :: [Line], 
@@ -325,6 +154,8 @@ data Transformant = Transformant {  transformata :: [Line],
                                     transformantLogic :: Logic}
 
 type Transformation = Transformant -> [Line]
+
+type DerivedRule = (String, Transformation)
 
 -- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
 applyTransformation :: Transformation -> Transformant -> Transformant

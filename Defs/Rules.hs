@@ -1,7 +1,10 @@
 module Defs.Rules where
 
 import Core
+import Parse.Sentences
+
 import Defs.Operators
+
 import Data.Maybe
 import qualified Data.Map as Map
 

@@ -1,6 +1,7 @@
 module Defs.Operators where
 
 import Core
+import Parse.Sentences
 
 -- cond, the conditonal operator, is currently in Core
 

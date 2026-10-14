@@ -1,13 +1,18 @@
 module SearchForProof where
 
 import Core
+import Parse.Sentences
 import Defs.Specs
 
 import Control.Monad
-import Proofs
+import Abstractions
 import System.Environment (getArgs)
 import System.Directory 
 
+getSubLogicsByAxioms :: String -> [String]
+getSubLogicsByAxioms logicName =
+    let logic = getLogic logicName in
+        filter (\lName -> isSubLogicByAxioms (getLogic lName) logic) logicNames
 
 doesProofMatchSearchSent :: String -> Sentence -> String -> IO (Bool)
 doesProofMatchSearchSent searchLogicName searchSent proofName = do

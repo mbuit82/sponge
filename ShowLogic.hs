@@ -1,4 +1,3 @@
-
 module ShowLogic (main) where
 
 import Core

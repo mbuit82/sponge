@@ -1,9 +1,11 @@
 module Defs.Specs (getLogic, logicNames) where
 
+import Core
+import Parse.Sentences
+
 import Defs.Operators
 import Defs.Axioms
 import Defs.Rules
-import Core
 
 import qualified Data.Map as Map
 
