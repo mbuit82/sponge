@@ -1,9 +1,11 @@
 import Core
 import Defs.Operators
+import Defs.Rules
 import Defs.Specs
 import Abstractions
 import Parse.Proofs
 import Parse.Sentences
+import PruneProofTrees
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof)
 import qualified Data.Map as Map
@@ -157,3 +159,17 @@ cpf5 = "5. |- (A -> (B -> C)) -> ((B & A) -> C)                             by H
 cpfStrs = [cpf1, cpf2, cpf3, cpf4, cpf5]
 cpfLines = parseUserProof (getLogic "minimal") cpfStrs
 asdf2 = map (userNumber) <$> applyCitedTheorems (getLogic "minimal") (pure cpfLines)
+
+
+
+
+strength1 = "1. |- x -> (y -> x)            by Simp"
+strength2 = "2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (S -> (y -> x))))) by Strengthening: 1"
+
+strengthpf = parseUserProof (getLogic "minimal") [strength1, strength2]
+
+strength1' = "1. |- (S -> x) -> (y -> (S -> x))            by Simp"
+strength2' = "2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (y -> (S -> x))))) by Strengthening: 1"
+
+strengthpf' = parseUserProof (getLogic "minimal") [strength1', strength2']
+

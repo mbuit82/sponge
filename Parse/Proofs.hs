@@ -134,7 +134,7 @@ splitByGoalLine (l:tl) = (l, tl)
 splitByProofLine :: [String] -> [String] -> ([String], [String])
 splitByProofLine seen toSee =
     case toSee of
-        [] -> error "you done fuked up"
+        [] -> error "you done fuked up. Maybe you forgot the \"Proof\" header?"
         x : xs -> if isInfixOf "Proof" x 
             then (seen, xs) 
             else splitByProofLine (seen ++ [x]) xs

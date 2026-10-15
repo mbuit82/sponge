@@ -1,0 +1,36 @@
+Theorem: |- (~Q -> ~P) -> (P -> Q)
+
+Using deduction
+Using deduction
+
+
+Proof
+1. |- ~Q -> ~P by Assumption
+2. |- P by Assumption
+3. |- P -> ~~P by citing double_negation_introduction (from minimal) [P/P]
+4. |- ~~P by Modus Ponens: 2 3
+5. |- ~~Q by Modus Tollens: 1 4
+6. |- ~~Q -> Q by Excluded Middle
+7. |- Q by Modus Ponens: 5 6
+
+
+
+IGNORE this uses deduction once optimized proof length at 200 ish
+IGNORE 1. |- (~Q -> ~P) -> (~~P -> ~~Q) by citing contrapositive_forward (from minimal) [~Q/P, ~P/Q, Bot/R]
+IGNORE 2. |- (~Q -> ~P) by Assumption
+IGNORE 3. |- ~~P -> ~~Q by Modus Ponens: 2 1
+IGNORE 4. |- P -> ~~P by citing double_negation_introduction (from minimal) [P/P]
+IGNORE 5. |- P -> ~~Q by Hypothetical Syllogism: 4 3
+IGNORE 6. |- ~~Q -> Q by Excluded Middle
+IGNORE 7. |- P -> Q by Hypothetical Syllogism: 5 6
+
+IGNORE this is the no-deductions attempt
+IGNORE 1. |- (~Q -> ~P) -> (~~P -> ~~Q) by citing contrapositive_forward (from minimal) [~Q/P, ~P/Q, Bot/R]
+IGNORE 2. |- ~~Q -> Q by Excluded Middle
+IGNORE 3. |- (~~P -> ~~Q) -> ((~~Q -> Q) -> (~~P -> Q)) by citing transitivity (from minimal) [~~P/P, ~~Q/Q, Q/R]
+IGNORE 4. |- ((~~Q -> Q) -> (~~P -> Q)) -> ((~~P -> Q) -> (P -> Q)) -> 
+
+
+IGNORE ((Q -> Bot) -> (P -> Bot)) -> (P -> Q)
+
+IGNORE P -> (((Q -> Bot) -> (P -> Bot)) -> Q)

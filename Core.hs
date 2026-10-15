@@ -179,6 +179,7 @@ intoTransformant :: Logic -> [Line] -> Transformant
 intoTransformant _ [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
 intoTransformant logic (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0 logic 
 
+-- finds the first occurrence. This is taken advantage of in the strengthening derived rule
 findLineWithUserNum' :: [Line] -> Int -> Maybe Line
 findLineWithUserNum' [] _ = Nothing
 findLineWithUserNum' (l : remLines) uNum =

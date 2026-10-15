@@ -21,7 +21,8 @@ necessitation = InferenceRule "Necessitation" (parse [] [] "P", Nothing) (parse 
 derivedRules :: Map.Map String Transformation
 derivedRules = Map.fromList [ andElimLDerivedRule, andElimRDerivedRule, adjunctionDerivedRule,
     orElimDerivedRule, 
-    hypSyllDerivedRule, modusTollens
+    hypSyllDerivedRule, modusTollens,
+    strengtheningDerivedRule
     ]
 
 andElimLTransformation :: Transformation
@@ -140,3 +141,138 @@ hypSyllDerivedRule = ("Hypothetical Syllogism", hypSyllTransformation)
 
 modusTollens :: DerivedRule
 modusTollens = ("Modus Tollens", hypSyllTransformation) -- works because modus tollens is a subcase of hypSyll when we don't define neg hehe
+
+
+
+
+
+
+
+-- STRENGTHENING
+
+getNEmbeddedAntecedents :: Int -> Sentence -> [Sentence]
+getNEmbeddedAntecedents 0 _ = []
+getNEmbeddedAntecedents n (OpNode op [arg1, arg2])
+    | op == cond = arg1 : getNEmbeddedAntecedents (n-1) arg2
+    | otherwise = error "can only get N antecedents on a conditional"
+
+getNthConsequent :: Int -> Sentence -> Sentence
+getNthConsequent 0 sent = sent
+getNthConsequent n (OpNode op [arg1, arg2])
+    | op == cond = getNthConsequent (n-1) arg2
+    | otherwise = error "can only get Nth consequent on a conditional"
+
+getAllEmbeddedAntecedents :: Sentence -> [Sentence]
+getAllEmbeddedAntecedents (Atom a) = []
+getAllEmbeddedAntecedents (OpNode op [arg1, arg2])
+    | op == cond = arg1 : getAllEmbeddedAntecedents arg2
+    | otherwise = error "can only get all antecedents on a chain of conditionals"
+    
+getLastConsequent :: Sentence -> Sentence
+getLastConsequent (Atom a) = Atom a
+getLastConsequent (OpNode op [arg1, arg2])
+    | op == cond = getLastConsequent arg2
+    | otherwise = error "can only get last consequent on a chain of conditionals"
+
+getEmbeddedAntecedentsUpTo :: Sentence -> Sentence -> [Sentence]
+getEmbeddedAntecedentsUpTo stopSent sent
+    | sent == stopSent = []
+    | otherwise = case sent of
+        Atom a -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
+        (OpNode op [arg1, arg2]) -> 
+            if op == cond
+                then arg1 : getEmbeddedAntecedentsUpTo stopSent arg2
+                else error "can only get all antecedents on a chain of conditionals"
+
+makeChain :: [Sentence] -> Sentence -> Sentence
+makeChain [] consq = consq
+makeChain (p:rem) consq = OpNode cond [p, makeChain rem consq]
+
+
+strengtheningTransformation' :: [Sentence] -> Transformant -> [Line]
+strengtheningTransformation' [] _ = []
+strengtheningTransformation' [p] state =
+    [
+        Line n (applySubst "(X -> Y) -> ((P -> (X -> Y)))" [("P", p), ("X", x), ("Y", y)]) "Simp" [] Nothing,
+        Line (n+1) (applySubst "P -> (X -> Y)" [("P", p), ("X", x), ("Y", y)]) "Modus Ponens" [lineNumber xyLine, n] Nothing,
+        Line (n+2) (applySubst "(P -> (X -> Y)) -> ((P -> X) -> (P -> Y))" [("P", p), ("X", x), ("Y", y)]) "Frege" [] Nothing,
+        Line (n+3) (applySubst "(P -> X) -> (P -> Y)" [("P", p), ("X", x), ("Y", y)]) "Modus Ponens" [n+1, n+2] (userNumber currLine)
+    ]
+    where 
+        currLine = fromJust (curr state)
+        [xyLineNum] = refLines currLine
+        xyLine = fromJust (findLineWithUserNum state xyLineNum)
+        [x, y] = args (lineContent xyLine)
+        applySubst = getApplySubstFromTransformant state
+        n = lineNumber currLine + offset state
+
+-- technically wrong bc will have multiple lines with userNumber currLine but I think any resulting searches will find the first one
+-- would matter if we invoke a derived rule on the result of this. so in K! Well no bc I'll avoid that by construction lol
+strengtheningTransformation' (p:rest) state =
+    strengthenRest ++ -- the last line looks like chainX -> chainY
+    [
+        Line n (applySubst "(X' -> Y') -> (P -> (X' -> Y'))" [("X'", x'), ("Y'", y'), ("P", p)]) "Simp" [] Nothing,
+        Line (n+1) (applySubst "P -> (X' -> Y')" [("P", p), ("X'", x'), ("Y'", y')]) "Modus Ponens" [lineNumber (last strengthenRest), n] Nothing,
+        Line (n+2) (applySubst "(P -> (X' -> Y')) -> ((P -> X') -> (P -> Y'))" [("P", p), ("X'", x'), ("Y'", y')]) "Frege" [] Nothing,
+        Line (n+3) (applySubst "(P -> X') -> (P -> Y')" [("P", p), ("X'", x'), ("Y'", y')]) "Modus Ponens" [n+1, n+2] (userNumber currLine)
+    ]
+    where 
+        currLine = fromJust (curr state)
+        applySubst = getApplySubstFromTransformant state
+        strengthenRest = strengtheningTransformation' rest state
+        [x', y'] = args (lineContent (last strengthenRest))
+        n = lineNumber currLine + offset state + length strengthenRest
+
+strengtheningTransformation :: Transformation
+strengtheningTransformation state = 
+    strengtheningTransformation' (getEmbeddedAntecedentsUpTo x arg1) state
+    where 
+        currLine = fromJust (curr state)
+        [arg1, _] = args (lineContent currLine)
+        [xyLineRef] = refLines currLine
+        xyLine = fromJust (findLineWithUserNum state xyLineRef)
+        [x, _] = args (lineContent xyLine)
+strengtheningDerivedRule :: DerivedRule
+strengtheningDerivedRule = ("Strengthening", strengtheningTransformation)
+
+
+
+
+
+
+
+
+-- -- K Box distribution derived rule
+
+-- distributeBoxes :: Int -> Transformation
+-- distributeBoxes 0 state =
+--     [
+--         Line n (applySubst "L(X -> Y) -> (LX -> LY)" [("X", x), ("Y", y)]) "K Axiom" [] Nothing,
+--         Line (n+1) (applySubst "LX -> LY" [("X", x), ("Y", y)]) "Modus Ponens" [lpqLineNumber, n] (userNumber currLine) 
+--     ]
+--     where
+--         currLine = fromJust (curr state)
+--         applySubst = getApplySubstFromTransformant state
+--         n = lineNumber currLine + offset state
+--         [lpqLineNumber] = refLines currLine
+--         (OpNode _ [OpNode _ [x, y]]) = lineContent (fromJust (findLineWithUserNum state lpqLineNumber))
+-- distributeBoxes k state =
+--     [
+--         Line n (applySubst "L(X -> Y) -> (LX -> LY)" [("X", x), ("Y", y)]) "K Axiom" [] Nothing,
+--         -- alright. _this_ is where we build the chain
+--     ] ++
+--     map (\(Line n c j r u) -> Line (n + 1) c j (map (+1) r) u) strengthenResult ++ --FUCK! This doesn't work because we don't want to add one to the previous ugh
+--     recursionOnBoxes ++ 
+--     [
+--         Line (n + 1 + length strengthenResult + length recursionOnBoxes) 
+--     ]
+--     where 
+--         n = undefined
+--         applySubst = getApplySubstFromTransformant state
+--         x = undefined
+--         y = undefined
+--         strengthenResult = undefined -- strengtheningTransformation on the state, except we want the state to have the first line as current
+--         recursionOnBoxes = distributeBoxes k-1 state
+
+-- k1 :: Transformation 
+-- k1 state = 

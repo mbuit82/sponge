@@ -1,20 +1,9 @@
-Theorem: |- (P -> Q) -> ((Q -> R) -> (P -> R))
+Theorem: |- (Q -> R) -> ((P -> Q) -> (P -> R))
 
-Using deduction
-Using deduction
+
+
 
 Proof
-1. |- P -> Q by Assumption
-2. |- Q -> R by Assumption
-3. |- P -> R by Hypothetical Syllogism: 1 2
-
-
-
-
-IGNORE (Q -> R) -> ((P -> Q) -> (P -> R))
-IGNORE (P -> Q -> R) -> ((P -> Q) -> (P -> R))
-IGNORE Using deduction to instead prove (P -> Q) |- ((Q -> R) -> (P -> R))
-
-IGNORE Proof
-IGNORE 1. |- P -> Q by Assumption
-IGNORE 2. 
+1. |- (P -> (Q -> R)) -> ((P -> Q) -> (P -> R)) by Frege
+2. |- (Q -> R) -> (P -> (Q -> R)) by Simp
+3. |- (Q -> R) -> ((P -> Q) -> (P -> R)) by Hypothetical Syllogism: 2 1
