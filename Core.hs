@@ -201,7 +201,6 @@ findLineWithContent' (l : remLines) sent =
 findLineWithContent :: Transformant -> Sentence -> Maybe Line
 findLineWithContent transformant = findLineWithContent' (transformata transformant)
 
-
 getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
 getCurrentRefLines transformant =
     let currLine = fromJust (curr transformant) in 
