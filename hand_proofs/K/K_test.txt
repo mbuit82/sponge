@@ -4,5 +4,6 @@ Proof
 1. |- A -> (B -> A) by Simp
 2. |- LA -> (LB -> LA) by K reasoning: 1
 
+IGNORE replacing line 2 above with what's below also works
 IGNORE 2. |- L(A -> (B -> A)) by Necessitation: 1
 IGNORE 3. |- LA -> (LB -> LA) by K reasoning: 2
