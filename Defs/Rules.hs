@@ -22,7 +22,7 @@ derivedRules :: Map.Map String Transformation
 derivedRules = Map.fromList [ andElimLDerivedRule, andElimRDerivedRule, adjunctionDerivedRule,
     orElimDerivedRule, 
     hypSyllDerivedRule, modusTollens,
-    strengtheningDerivedRule
+    strengtheningDerivedRule, kDerivedRule
     ]
 
 andElimLTransformation :: Transformation
@@ -161,18 +161,8 @@ getNthConsequent 0 sent = sent
 getNthConsequent n (OpNode op [arg1, arg2])
     | op == cond = getNthConsequent (n-1) arg2
     | otherwise = error "can only get Nth consequent on a conditional"
-
-getAllEmbeddedAntecedents :: Sentence -> [Sentence]
-getAllEmbeddedAntecedents (Atom a) = []
-getAllEmbeddedAntecedents (OpNode op [arg1, arg2])
-    | op == cond = arg1 : getAllEmbeddedAntecedents arg2
-    | otherwise = error "can only get all antecedents on a chain of conditionals"
-    
-getLastConsequent :: Sentence -> Sentence
-getLastConsequent (Atom a) = Atom a
-getLastConsequent (OpNode op [arg1, arg2])
-    | op == cond = getLastConsequent arg2
-    | otherwise = error "can only get last consequent on a chain of conditionals"
+getNthConsequent n sent = 
+    error ("dunno what went wrong. debugging info: getNthConsequent, " ++ show n ++ ", " ++ show sent)
 
 getEmbeddedAntecedentsUpTo :: Sentence -> Sentence -> [Sentence]
 getEmbeddedAntecedentsUpTo stopSent sent
@@ -188,7 +178,6 @@ makeChain :: [Sentence] -> Sentence -> Sentence
 makeChain [] consq = consq
 makeChain (p:rem) consq = OpNode cond [p, makeChain rem consq]
 
-
 strengtheningTransformation' :: [Sentence] -> Transformant -> [Line]
 strengtheningTransformation' [] _ = []
 strengtheningTransformation' [p] state =
@@ -203,9 +192,8 @@ strengtheningTransformation' [p] state =
         [xyLineNum] = refLines currLine
         xyLine = fromJust (findLineWithUserNum state xyLineNum)
         [x, y] = args (lineContent xyLine)
-        applySubst = getApplySubstFromTransformant state
+        applySubst = parseWithSubst [cond] []
         n = lineNumber currLine + offset state
-
 -- technically wrong bc will have multiple lines with userNumber currLine but I think any resulting searches will find the first one
 -- would matter if we invoke a derived rule on the result of this. so in K! Well no bc I'll avoid that by construction lol
 strengtheningTransformation' (p:rest) state =
@@ -242,37 +230,69 @@ strengtheningDerivedRule = ("Strengthening", strengtheningTransformation)
 
 
 
--- -- K Box distribution derived rule
+-- K Box distribution derived rule
+countConds :: Int -> Sentence -> Int
+countConds n (OpNode op args)
+    | op == cond = countConds (n+1) (args !! 1) 
+    | op == box = n
+    | otherwise = error "somethings up"
 
--- distributeBoxes :: Int -> Transformation
--- distributeBoxes 0 state =
---     [
---         Line n (applySubst "L(X -> Y) -> (LX -> LY)" [("X", x), ("Y", y)]) "K Axiom" [] Nothing,
---         Line (n+1) (applySubst "LX -> LY" [("X", x), ("Y", y)]) "Modus Ponens" [lpqLineNumber, n] (userNumber currLine) 
---     ]
---     where
---         currLine = fromJust (curr state)
---         applySubst = getApplySubstFromTransformant state
---         n = lineNumber currLine + offset state
---         [lpqLineNumber] = refLines currLine
---         (OpNode _ [OpNode _ [x, y]]) = lineContent (fromJust (findLineWithUserNum state lpqLineNumber))
--- distributeBoxes k state =
---     [
---         Line n (applySubst "L(X -> Y) -> (LX -> LY)" [("X", x), ("Y", y)]) "K Axiom" [] Nothing,
---         -- alright. _this_ is where we build the chain
---     ] ++
---     map (\(Line n c j r u) -> Line (n + 1) c j (map (+1) r) u) strengthenResult ++ --FUCK! This doesn't work because we don't want to add one to the previous ugh
---     recursionOnBoxes ++ 
---     [
---         Line (n + 1 + length strengthenResult + length recursionOnBoxes) 
---     ]
---     where 
---         n = undefined
---         applySubst = getApplySubstFromTransformant state
---         x = undefined
---         y = undefined
---         strengthenResult = undefined -- strengtheningTransformation on the state, except we want the state to have the first line as current
---         recursionOnBoxes = distributeBoxes k-1 state
+-- we apply this on the current state of the transformant
+getNForBoxes :: Sentence -> Int
+getNForBoxes = countConds (-1)
 
--- k1 :: Transformation 
--- k1 state = 
+-- This is for a BOXED SENTENCE. Particularly, exactly the cited line
+makeKAxiom :: Sentence -> Sentence
+makeKAxiom (OpNode opCond [arg1, arg2])
+    | opCond == cond =
+        parseWithSubst [cond, box] [] "L(A1 -> A2) -> (LA1 -> LA2)" [("A1", arg1), ("A2", arg2)]
+    | otherwise = error "cited line for distributing boxes is not of form L(A1 -> A2) but ALMOST AAGGHHH"
+makeKAxiom _ = error "cited line for distributing boxes is not of form L(A1 -> A2)"
+
+kRuleTransformation' :: Int -> Transformation
+kRuleTransformation' 0 state =
+    [
+        Line n kInstance "K Axiom" [] Nothing,
+        Line (n+1) kConsq "Modus Ponens" [boxOutRef, n] (userNumber currLine) 
+    ]
+    where
+        n = lineNumber currLine + offset state
+        currLine = fromJust (curr state)
+        c = lineContent currLine
+        [boxOutRef] = refLines currLine
+        boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
+        [unboxed] = args boxOut
+        kInstance = makeKAxiom unboxed
+        [_, kConsq] = args kInstance
+kRuleTransformation' k state =
+    recKRuleCall ++
+    kLine ++
+    strengtheningK ++
+    [Line (n + 1 + length strengtheningK) (embed kConsq) "Modus Ponens" [n - 1, n + length strengtheningK] (userNumber currLine)]
+    where
+        recKRuleCall = kRuleTransformation' (k-1) state
+        n = lineNumber currLine + offset state + length recKRuleCall
+        currLine = fromJust (curr state)
+        c = lineContent currLine
+        [boxOutRef] = refLines currLine
+        boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
+        [unboxed] = args boxOut
+        kInstance = makeKAxiom (getNthConsequent k unboxed)
+        kLine = [Line n kInstance "K Axiom" [] (Just n)]
+        [kAnt, kConsq] = args kInstance
+        embed = makeChain (getNEmbeddedAntecedents k c)
+        strengthenedContent = OpNode cond [embed kAnt, embed kConsq]
+        dummyLogic = Logic "" [] [] [] []
+        dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [n] Nothing)) [] 0 dummyLogic
+        strengtheningK = map (\(Line ln c j r _) -> Line ln c j r Nothing) (strengtheningTransformation dummyState)
+
+kRuleTransformation :: Transformation
+kRuleTransformation state =
+    kRuleTransformation' (getNForBoxes (lineContent (fromJust (curr state)))) state
+    where 
+        currLine = fromJust (curr state)
+        [boxOutRef] = refLines currLine
+        boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
+        boxesIn = lineContent (fromJust (curr state))
+kDerivedRule :: DerivedRule
+kDerivedRule = ("Distributing Boxes", kRuleTransformation)

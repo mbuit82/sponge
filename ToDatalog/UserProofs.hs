@@ -15,12 +15,20 @@ sentenceToDatalog = formulaToDatalog False
 
 lineToDatalog :: Line -> String
 lineToDatalog line =
-    let rfs = if refLines line == [] then [0, 0] else refLines line in
-        "Line(" ++ show (lineNumber line) ++ ", " ++
-        sentenceToDatalog (lineContent line) ++ ", " ++ 
-        "\"" ++ justification line ++ "\", " ++ 
-        (intercalate ", " . map show) rfs ++ ").\n"
+    "Line(" ++ show (lineNumber line) ++ ", " ++
+    sentenceToDatalog (lineContent line) ++ ", " ++ 
+    "\"" ++ justification line ++ "\", " ++ 
+    (intercalate ", " . map show) rfs ++ ").\n"
+    where rfs = case refLines line of
+                    [] -> [0,0]
+                    [n] -> [n, 0]
+                    [i,j] -> [i,j]
+                    _ -> error "too many references for a Line! "
 
+    -- case refLines line of
+    --     [] -> 
+    -- let rfs = if refLines line == [] then [0, 0] else refLines line in
+        
 proofToDatalog :: Sentence -> [Line] -> String
 proofToDatalog proofGoal proofLines =
     "Goal(" ++ 

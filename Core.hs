@@ -188,7 +188,18 @@ findLineWithUserNum' (l : remLines) uNum =
         _ -> findLineWithUserNum' remLines uNum
     
 findLineWithUserNum :: Transformant -> Int -> Maybe Line
-findLineWithUserNum transformant uNum = findLineWithUserNum' (transformata transformant) uNum
+findLineWithUserNum transformant = findLineWithUserNum' (transformata transformant)
+
+findLineWithContent' :: [Line] -> Sentence -> Maybe Line
+findLineWithContent' [] _ = Nothing
+findLineWithContent' (l : remLines) sent =
+    if lineContent l == sent 
+        then Just l
+        else findLineWithContent' remLines sent
+
+findLineWithContent :: Transformant -> Sentence -> Maybe Line
+findLineWithContent transformant = findLineWithContent' (transformata transformant)
+
 
 getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
 getCurrentRefLines transformant =
