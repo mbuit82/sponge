@@ -41,18 +41,19 @@ extendWithAxioms baseSpec newAxs newName =
 
 -- Add any specs to here if you want to use them!
 specsList :: [Spec]
-specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall, 
-                specMinimal, specIntuitionistic, specClassical,
-                specK, 
-                specD, specKT, specKB, 
-                specS4, specS5,
-                specSE, 
-                specS42, specS44,
-                specS43, specK43,
-                specKW, specKH,
-                specKD4, specKD45,
-                specLinearIntensionalKernelHesselink, specLinearHesselink
-            ]
+specsList = [   
+    specMinimalSmall, -- specIntuitionisticSmall, specClassicalSmall, 
+    specMinimal, specIntuitionistic, specClassical,
+    specK, 
+    specD, specKT, specKB, 
+    specS4, specS5,
+    specSE, 
+    specS42, specS44,
+    specS43, specK43,
+    specKW, specKH,
+    specKD4, specKD45,
+    specLinearIntensionalKernelHesselink, specLinearHesselink
+    ]
     
 
 -- specs
