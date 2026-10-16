@@ -34,27 +34,29 @@ getLogicFromSpec spec =
                         definedOperators = definedOperators baseLogic ++ newDefinedOperators spec,
                         axioms = axioms baseLogic ++ newAxioms spec, 
                         inferenceRules = inferenceRules baseLogic ++ newInferenceRules spec })
-
-makeLogicsDict :: [Spec] -> Map.Map String Logic
-makeLogicsDict specs = Map.fromList (map (\s -> (specName s, getLogicFromSpec s)) specs)
-
--- this map is not to be exported. use the below anywhere this could be needed instead. 
-logicsDict :: Map.Map String Logic
-logicsDict = makeLogicsDict specsList -- specsList is at the bottom. Add any specs to it if you want to use them!
-
-getLogic :: String -> Logic
-getLogic logicName = case logicsDict Map.!? logicName of
-    Nothing -> error (logicName ++ " not in available logics right now")
-    Just logic -> logic
-
-logicNames :: [String]
-logicNames = Map.keys logicsDict
-
+                        
 extendWithAxioms :: Spec -> [Axiom] -> String -> Spec
 extendWithAxioms baseSpec newAxs newName =
     Spec newName (Just baseSpec) [] [] newAxs []
 
+-- Add any specs to here if you want to use them!
+specsList :: [Spec]
+specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall, 
+                specMinimal, specIntuitionistic, specClassical,
+                specK, 
+                specD, specKT, specKB, 
+                specS4, specS5,
+                specSE, 
+                specS42, specS44,
+                specS43, specK43,
+                specKW, specKH,
+                specKD4, specKD45,
+                specLinearIntensionalKernelHesselink, specLinearHesselink
+            ]
+    
+
 -- specs
+-- see Defs.Operators for definitions of operators and Defs.Axioms for Axioms, and Defs.Rules for inference rules
 specMinimalSmall :: Spec
 specMinimalSmall = Spec {
     specName = "minimal_small",
@@ -174,16 +176,18 @@ specLinearHesselink = Spec {
     ]
 }
 
-specsList :: [Spec]
-specsList = [   specMinimalSmall, specIntuitionisticSmall, specClassicalSmall, 
-                specMinimal, specIntuitionistic, specClassical,
-                specK, 
-                specD, specKT, specKB, 
-                specS4, specS5,
-                specSE, 
-                specS42, specS44,
-                specS43, specK43,
-                specKW, specKH,
-                specKD4, specKD45,
-                specLinearIntensionalKernelHesselink, specLinearHesselink
-            ]
+makeLogicsDict :: [Spec] -> Map.Map String Logic
+makeLogicsDict specs = Map.fromList (map (\s -> (specName s, getLogicFromSpec s)) specs)
+
+-- this map is not to be exported. use the below anywhere this could be needed instead. 
+logicsDict :: Map.Map String Logic
+logicsDict = makeLogicsDict specsList 
+
+-- the only things exported from here
+getLogic :: String -> Logic
+getLogic logicName = case logicsDict Map.!? logicName of
+    Nothing -> error (logicName ++ " not in available logics right now")
+    Just logic -> logic
+
+logicNames :: [String]
+logicNames = Map.keys logicsDict
