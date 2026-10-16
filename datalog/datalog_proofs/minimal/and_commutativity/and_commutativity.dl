@@ -1,6 +1,6 @@
 #include "../../../datalog_engines/minimal.dl"
 
-Goal($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A")))).
+Goal($And($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B"))))).
 
 Line(1, $Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), "And-EL", 0, 0).
 Line(2, $Conditional($And($Atom("A"), $Atom("B")), $Atom("B")), "And-ER", 0, 0).
@@ -13,3 +13,17 @@ Line(8, $Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("A"), $And
 Line(9, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))), $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), $Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))))), "Frege", 0, 0).
 Line(10, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), $Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A")))), "Modus Ponens", 8, 9).
 Line(11, $Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), "Modus Ponens", 1, 10).
+Line(12, $Conditional($And($Atom("B"), $Atom("A")), $Atom("B")), "And-EL", 0, 0).
+Line(13, $Conditional($And($Atom("B"), $Atom("A")), $Atom("A")), "And-ER", 0, 0).
+Line(14, $Conditional($Atom("A"), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B")))), "And-I", 0, 0).
+Line(15, $Conditional($Conditional($Atom("A"), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B")))), $Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("A"), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B")))))), "Simp", 0, 0).
+Line(16, $Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("A"), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B"))))), "Modus Ponens", 14, 15).
+Line(17, $Conditional($Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("A"), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B"))))), $Conditional($Conditional($And($Atom("B"), $Atom("A")), $Atom("A")), $Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B")))))), "Frege", 0, 0).
+Line(18, $Conditional($Conditional($And($Atom("B"), $Atom("A")), $Atom("A")), $Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B"))))), "Modus Ponens", 16, 17).
+Line(19, $Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B")))), "Modus Ponens", 13, 18).
+Line(20, $Conditional($Conditional($And($Atom("B"), $Atom("A")), $Conditional($Atom("B"), $And($Atom("A"), $Atom("B")))), $Conditional($Conditional($And($Atom("B"), $Atom("A")), $Atom("B")), $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B"))))), "Frege", 0, 0).
+Line(21, $Conditional($Conditional($And($Atom("B"), $Atom("A")), $Atom("B")), $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B")))), "Modus Ponens", 19, 20).
+Line(22, $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B"))), "Modus Ponens", 12, 21).
+Line(23, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), $Conditional($Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B"))), $And($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B")))))), "And-I", 0, 0).
+Line(24, $Conditional($Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B"))), $And($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B"))))), "Modus Ponens", 11, 23).
+Line(25, $And($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), $Conditional($And($Atom("B"), $Atom("A")), $And($Atom("A"), $Atom("B")))), "Modus Ponens", 22, 24).

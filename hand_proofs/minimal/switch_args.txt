@@ -3,6 +3,7 @@ Theorem: |- (A -> (B -> C)) -> (B -> (A -> C))
 
 Using deduction
 Using deduction
+Using deduction
 
 Proof
 1. |- A -> (B -> C) by Assumption

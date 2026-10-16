@@ -9,17 +9,24 @@ Proof
 1. |- (A & B) -> C by Assumption
 2. |- B by Assumption
 3. |- A by Assumption
-4. |- (B & A) -> (A & B) by citing and_commutativity (from minimal) [A/B, B/A]
-5. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C)) by citing transitivity (from minimal) [(B & A)/P, (A & B)/Q, C/R]
-6. |- ((A & B) -> C) -> ((B & A) -> C) by Modus Ponens: 4 5
-7. |- (B & A) -> C by Modus Ponens: 1 6
+4. |- (B & A) -> (A & B) by citing and_comm_forward (from minimal) [A/B, B/A]
+5. |- ((A & B) -> C) -> (((B & A) -> (A & B)) -> ((B & A) -> C)) by citing transitivity (from minimal) [(B & A)/P, (A & B)/Q, C/R]
+6. |- ((B & A) -> (A & B)) -> ((B & A) -> C) by Modus Ponens: 1 5
+7. |- (B & A) -> C by Modus Ponens: 4 6
 8. |- B & A by Adjunction: 2 3
 9. |- C by Modus Ponens: 8 7
+
+
 IGNORE this proof is not really useful, it's more to see the efficacy of the pruning proof trees optimization
 
+IGNORE 3k line version (unoptimized). Above is a lot shorter because new transitivity is a lot shorter than the older one
+IGNORE 1. |- (A & B) -> C by Assumption
+IGNORE 2. |- B by Assumption
+IGNORE 3. |- A by Assumption
+IGNORE 4. |- (B & A) -> (A & B) by citing and_commutativity (from minimal) [A/B, B/A]
+IGNORE 5. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C)) by citing transitivity_old (from minimal) [(B & A)/P, (A & B)/Q, C/R]
+IGNORE 6. |- ((A & B) -> C) -> ((B & A) -> C) by Modus Ponens: 4 5
+IGNORE 7. |- (B & A) -> C by Modus Ponens: 1 6
+IGNORE 8. |- B & A by Adjunction 2 3
+IGNORE 9. |- C by Modus Ponens: 8 7
 
-IGNORE 1. |- (A -> (B -> C)) -> ((A & B) -> C)                             by citing uncurrying (from minimal) [A/A, B/B, C/C]
-IGNORE 2. |- (B & A) -> (A & B)                                            by citing and_commutativity (from minimal) [A/B, B/A]
-IGNORE 3. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C))    by citing transitivity (from minimal) [(B & A)/P, (A & B)/Q, C/R]
-IGNORE 4. |- ((A & B) -> C) -> ((B & A) -> C)                              by Modus Ponens: 2 3
-IGNORE 5. |- (A -> (B -> C)) -> ((B & A) -> C)                             by Hypothetical Syllogism: 1 4
