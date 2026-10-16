@@ -56,22 +56,22 @@ modusPonensCaseTransformation hyp transformant = -- pLine and pqLine are already
         (hp, hpq, c) = (lineContent pLine, lineContent pqLine, lineContent currLine)
 
 -- deduction should be the last transformation that happens
-useDeduction' :: Sentence -> Transformant -> Transformant
-useDeduction' hyp state =
+useDeduction' :: Logic -> Sentence -> Transformant -> Transformant
+useDeduction' logic hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-            "Modus Ponens" -> useDeduction' hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
+            "Modus Ponens" -> useDeduction' logic hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
             "Assumption" -> if lineContent line == hyp 
-                                then useDeduction' hyp (applyTransformation hypCaseTransformation state) 
-                                else useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
-            j -> if j `elem` (map axiomName (axioms (transformantLogic state)))
-                        then useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
+                                then useDeduction' logic hyp (applyTransformation hypCaseTransformation state) 
+                                else useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
+            j -> if j `elem` (map axiomName (axioms logic))
+                        then useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
                         else error ("unknown justification for deduction" ++ j)
 
 useDeduction :: Logic -> Sentence -> [Line] -> [Line]
 useDeduction logic hyp = 
-    resetUserNumbers . reverse . transformata . (useDeduction' hyp) . (intoTransformant logic)
+    resetUserNumbers . reverse . transformata . (useDeduction' logic hyp) . intoTransformant
 
 
 -- stuff below is for getting proofs from user input

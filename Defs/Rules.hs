@@ -224,8 +224,7 @@ pushingBoxTransformation' k state =
         [kAnt, kConsq] = args kInstance
         embed = makeChain (getNEmbeddedAntecedents k c)
         strengthenedContent = OpNode cond [embed kAnt, embed kConsq]
-        dummyLogic = Logic "" [] [] [] []
-        dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [n] Nothing)) [] 0 dummyLogic
+        dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [n] Nothing)) [] 0
         strengtheningK = map (\(Line ln c j r _) -> Line ln c j r Nothing) (strengtheningTransformation dummyState)
 
 pushingBoxTransformation :: Transformation
@@ -249,8 +248,7 @@ distributingBoxTransformation state =
         necLine = Line n (applySubst "LC" [("C", unboxed)]) "Necessitation" (refLines currLine) (Just n)
         n = lineNumber currLine + offset state
         applySubst = parseWithSubst [cond, box] []
-        dummyLogic = Logic "" [] [] [] []
-        pushTheBox = pushingBoxTransformation (Transformant [necLine] (Just (Line (n + 1) (lineContent currLine) "" [n] (userNumber currLine))) [] 0 dummyLogic)
+        pushTheBox = pushingBoxTransformation (Transformant [necLine] (Just (Line (n + 1) (lineContent currLine) "" [n] (userNumber currLine))) [] 0)
 distributingBoxDerivedRule :: DerivedRule
 distributingBoxDerivedRule = ("K reasoning (distributing Box)", distributingBoxTransformation)
 

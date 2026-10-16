@@ -25,14 +25,14 @@ applyDerivedRules' derRulesDict state =
     
 applyDerivedRules :: Logic -> Map.Map String Transformation -> [Line] -> [Line]
 applyDerivedRules logic derRulesDict = 
-    resetUserNumbers . reverse . transformata . (applyDerivedRules' derRulesDict) . (intoTransformant logic)
+    resetUserNumbers . reverse . transformata . (applyDerivedRules' derRulesDict) . intoTransformant
 
 -- CITING PROOFS
 -- this is going to be redundant. 
 applyIOTransformation :: (Transformant -> IO [Line]) -> Transformant -> IO (Transformant)
 applyIOTransformation ioTransformation oldState = do
     applied <- reverse <$> (ioTransformation oldState)
-    pure (Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState))
+    pure (Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState))
     where 
         (newCurr, newTransformanda) = case transformanda oldState of
             [] -> (Nothing, [])
@@ -82,13 +82,13 @@ getCitedTheoremInfo logic jus =
                 let subsStrWithBrackets = dropWhile isSpace (dropWhile (==')') rest') in
                     (logicName, dropWhileEnd isSpace proofName', getVarMap logic (stripBrackets subsStrWithBrackets))
 
-citedTheoremIOTransformation :: Transformant -> IO [Line]
-citedTheoremIOTransformation state = do
-    let (logicName, proofName, varMap) = getCitedTheoremInfo (transformantLogic state) (justification (fromJust (curr state))) in
+citedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
+citedTheoremIOTransformation logic state = do
+    let (logicName, proofName, varMap) = getCitedTheoremInfo logic (justification (fromJust (curr state))) in
         applyOffsetToInsertedTheorem (offset state + lineNumber (fromJust (curr state)) - 1) (userNumber (fromJust (curr state))) varMap (snd <$> (getHaskellProof logicName proofName))
 
-applyCitedTheorems' :: IO (Transformant) -> IO (Transformant)
-applyCitedTheorems' pureState = 
+applyCitedTheorems' :: Logic -> IO (Transformant) -> IO (Transformant)
+applyCitedTheorems' logic pureState = 
     do
     state <- pureState
     case curr state of
@@ -96,13 +96,13 @@ applyCitedTheorems' pureState =
         Just line -> 
             if "citing" `isInfixOf` (justification line)
                 then do 
-                    applyCitedTheorems' (applyIOTransformation citedTheoremIOTransformation state)
+                    applyCitedTheorems' logic (applyIOTransformation (citedTheoremIOTransformation logic) state)
                 else do
-                    applyCitedTheorems' (pure (applyTransformation identityTransformation state))
+                    applyCitedTheorems' logic (pure (applyTransformation identityTransformation state))
 
 applyCitedTheorems :: Logic -> IO [Line] -> IO [Line]
 applyCitedTheorems logic pureOldProof = do
-    (resetUserNumbers . reverse. transformata) <$> (applyCitedTheorems' ((intoTransformant logic) <$> pureOldProof))
+    (resetUserNumbers . reverse. transformata) <$> (applyCitedTheorems' logic (intoTransformant <$> pureOldProof))
 
 
 

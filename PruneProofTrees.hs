@@ -104,7 +104,7 @@ reNumber' :: Transformant -> Transformant
 reNumber' oldState = 
     case curr oldState of
         Nothing -> oldState
-        _ -> reNumber' (Transformant (applied ++ transformata oldState) newCurr newTransformanda (offset oldState + 1) (transformantLogic oldState))
+        _ -> reNumber' (Transformant (applied ++ transformata oldState) newCurr newTransformanda (offset oldState + 1))
     where 
         applied = reNumberTransformation oldState
         (newCurr, newTransformanda) = case transformanda oldState of
@@ -115,7 +115,7 @@ dummyLogic :: Logic
 dummyLogic = Logic "" [] [] [] []
 
 reNumber :: [Line] -> [Line]
-reNumber = resetUserNumbers.reverse.transformata.reNumber'.(intoTransformant dummyLogic)
+reNumber = resetUserNumbers.reverse.transformata.reNumber'.intoTransformant
 
 pruneProofTree :: [Line] -> [Line]
 pruneProofTree lns =

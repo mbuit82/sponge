@@ -150,8 +150,9 @@ isSubLogicByAxioms logic1 logic2 =
 data Transformant = Transformant {  transformata :: [Line], 
                                     curr :: Maybe Line, 
                                     transformanda :: [Line], 
-                                    offset :: Int,
-                                    transformantLogic :: Logic}
+                                    offset :: Int
+                                    -- transformantLogic :: Logic
+                                    }
 
 type Transformation = Transformant -> [Line]
 
@@ -160,7 +161,7 @@ type DerivedRule = (String, Transformation)
 -- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
 applyTransformation :: Transformation -> Transformant -> Transformant
 applyTransformation transformation oldState =
-    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState) (transformantLogic oldState)
+    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState)
     where 
         applied = reverse (transformation oldState)
         (newCurr, newTransformanda) = case transformanda oldState of
@@ -175,9 +176,9 @@ identityTransformation transformant =
             [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
 
 -- the second arg is supposed to be a proof
-intoTransformant :: Logic -> [Line] -> Transformant
-intoTransformant _ [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-intoTransformant logic (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0 logic 
+intoTransformant :: [Line] -> Transformant
+intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
+intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
 
 -- finds the first occurrence. This is taken advantage of in the strengthening derived rule
 findLineWithUserNum' :: [Line] -> Int -> Maybe Line
