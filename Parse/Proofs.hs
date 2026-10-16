@@ -21,7 +21,7 @@ axiomCaseTransformation hyp transformant =
         Line (n + 2) (applySubst "H -> C" [("H", hyp), ("C", c)]) "Modus Ponens" [n, n + 1] (userNumber currLine)
     ]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         c = lineContent currLine
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
@@ -36,7 +36,7 @@ hypCaseTransformation transformant =
         Line (n + 4) (applySubst "H -> H" [("H", c)]) "Modus Ponens" [n + 3, n + 2] (userNumber currLine)
     ]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         currLine = fromJust (curr transformant)
         c = lineContent currLine
         n = lineNumber (currLine) + (offset transformant)
@@ -49,7 +49,7 @@ modusPonensCaseTransformation hyp transformant = -- pLine and pqLine are already
         Line (n + 2) (applySubst "H -> Q" [("H", hyp), ("Q", c)]) "Modus Ponens" [lineNumber pLine, n + 1] (userNumber currLine)
     ]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
         [pLine, pqLine] = getCurrentRefLines transformant

@@ -31,7 +31,7 @@ andElimLTransformation transformant =
     [Line n (applySubst "PandQ -> P" [("PandQ", pandq), ("P", p)]) "And-EL" [] Nothing,
      Line (n + 1) p "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         currLine = fromJust (curr transformant)
         [pandqLine] = getCurrentRefLines transformant
         (pandq, p) = (lineContent pandqLine, lineContent currLine)
@@ -44,7 +44,7 @@ andElimRTransformation transformant =
     [Line n (applySubst "PandQ -> Q" [("PandQ", lineContent pandqLine), ("Q", lineContent currLine)]) "And-ER" [] Nothing,
      Line (n + 1) (lineContent currLine) "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         currLine = fromJust (curr transformant)
         n = lineNumber (currLine) + (offset transformant)
         [pandqLine] = getCurrentRefLines transformant
@@ -59,7 +59,7 @@ adjunctionTransformation transformant =
         Line (n + 2) (applySubst "P & Q" [("P", p), ("Q", q)]) "Modus Ponens" [lineNumber qLine, n +1] (userNumber currLine)
     ]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond, andOp] []
         currLine = fromJust (curr transformant)
         (p, q) = (lineContent pLine, lineContent qLine)
         n = lineNumber (currLine) + (offset transformant)
@@ -86,7 +86,7 @@ orElimTransformation transformant =
         Line (n + 2) porqr "Modus Ponens" [lineNumber qrLine, n + 1] (userNumber currLine)
     ]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         [prLine, qrLine] = getCurrentRefLines transformant
         currLine = fromJust (curr transformant)
         pr = lineContent prLine
@@ -106,7 +106,7 @@ hypSyllTransformation transformant =
         Line (n + 4) pr "Modus Ponens" [lineNumber pqLine, n + 3] (userNumber currLine)
     ]
     where 
-        applySubst = getApplySubstFromTransformant transformant
+        applySubst = parseWithSubst [cond] []
         currLine = fromJust (curr transformant)
         [pqLine, qrLine] = getCurrentRefLines transformant
         pq = lineContent pqLine
@@ -153,7 +153,7 @@ strengtheningTransformation' (p:rest) state =
     ]
     where 
         currLine = fromJust (curr state)
-        applySubst = getApplySubstFromTransformant state
+        applySubst = parseWithSubst [cond] []
         strengthenRest = strengtheningTransformation' rest state
         [x', y'] = args (lineContent (last strengthenRest))
         n = lineNumber currLine + offset state + length strengthenRest

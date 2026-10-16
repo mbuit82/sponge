@@ -106,11 +106,11 @@ parseWithSubst ops defOps input varTuples =
     let varMap = Map.fromList varTuples in
         getTopLevelSentence (instantiateVar varMap) (tokenize ops defOps input)
 
--- used in substitutions in derived rules
-getApplySubstFromTransformant :: Transformant -> String -> Substitution -> Sentence
-getApplySubstFromTransformant transformant =
-    let logic = transformantLogic transformant in
-        parseWithSubst (operators logic) (definedOperators logic)
+-- -- used in substitutions in derived rules
+-- getApplySubstFromTransformant :: Transformant -> String -> Substitution -> Sentence
+-- getApplySubstFromTransformant transformant =
+--     let logic = transformantLogic transformant in
+--         parseWithSubst (operators logic) (definedOperators logic)
 
 
 
