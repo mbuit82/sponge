@@ -1,0 +1,9 @@
+Theorem: |- (LA & LB) -> L(A & B)
+
+
+
+Proof
+1. |- A -> (B -> (A & B)) by And-I
+2. |- LA -> (LB -> L(A & B)) by K reasoning: 1
+3. |- (LA -> (LB -> L(A & B))) -> ((LA & LB) -> L(A & B)) by citing uncurrying (from minimal) [LA/A, LB/B, L(A & B)/C]
+4. |- (LA & LB) -> L(A & B) by Modus Ponens: 2 3
