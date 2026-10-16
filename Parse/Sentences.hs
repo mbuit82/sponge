@@ -1,4 +1,4 @@
-module Parse.Sentences where
+module Parse.Sentences (parse, instantiateVar, parseWithSubst) where
 
 import Core
 
@@ -91,10 +91,11 @@ getNextSentence' atomFunc opStack sentStack toSee =
 getTopLevelSentence :: (String -> Sentence) -> [Token] -> Sentence
 getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToken : toks ++ [RPToken]))
 
+
+
+-- these below are really the only functions that should be exported
 parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
 parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
-
-
 
 instantiateVar :: Map.Map String Sentence -> String -> Sentence
 instantiateVar varMap str = case varMap Map.!? str of
@@ -111,7 +112,3 @@ parseWithSubst ops defOps input varTuples =
 -- getApplySubstFromTransformant transformant =
 --     let logic = transformantLogic transformant in
 --         parseWithSubst (operators logic) (definedOperators logic)
-
-
-
-
