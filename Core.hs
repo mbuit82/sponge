@@ -211,3 +211,31 @@ getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
 
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
+
+getNEmbeddedAntecedents :: Int -> Sentence -> [Sentence]
+getNEmbeddedAntecedents 0 _ = []
+getNEmbeddedAntecedents n (OpNode op [arg1, arg2])
+    | op == cond = arg1 : getNEmbeddedAntecedents (n-1) arg2
+    | otherwise = error "can only get N antecedents on a conditional"
+
+getNthConsequent :: Int -> Sentence -> Sentence
+getNthConsequent 0 sent = sent
+getNthConsequent n (OpNode op [arg1, arg2])
+    | op == cond = getNthConsequent (n-1) arg2
+    | otherwise = error "can only get Nth consequent on a conditional"
+getNthConsequent n sent = 
+    error ("dunno what went wrong. debugging info: getNthConsequent, " ++ show n ++ ", " ++ show sent)
+
+getEmbeddedAntecedentsUpTo :: Sentence -> Sentence -> [Sentence]
+getEmbeddedAntecedentsUpTo stopSent sent
+    | sent == stopSent = []
+    | otherwise = case sent of
+        Atom a -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
+        (OpNode op [arg1, arg2]) -> 
+            if op == cond
+                then arg1 : getEmbeddedAntecedentsUpTo stopSent arg2
+                else error "can only get all antecedents on a chain of conditionals"
+
+makeChain :: [Sentence] -> Sentence -> Sentence
+makeChain [] consq = consq
+makeChain (p:rem) consq = OpNode cond [p, makeChain rem consq]

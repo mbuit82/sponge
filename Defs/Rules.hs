@@ -96,27 +96,6 @@ orElimTransformation transformant =
 orElimDerivedRule :: DerivedRule
 orElimDerivedRule = ("Or Elim", orElimTransformation)
 
--- think I'll keep the one with two. Used it once in a modal logic proof lol so reason to have the one with only 2. 
--- orElimTransformation :: Transformation
--- orElimTransformation transformant =
---     [
---         Line n (applySubst "PR -> (QR -> (PorQ -> R))" [("PR", pr), ("QR", qr), ("PorQ", porq), ("R", r)]) "Or-E" [] Nothing,
---         Line (n + 1) (applySubst "QR -> (PorQ -> R)" [("QR", qr), ("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber prLine, n] Nothing,
---         Line (n + 2) (applySubst "PorQ -> R" [("PorQ", porq), ("R", r)]) "Modus Ponens" [lineNumber qrLine, n + 1] Nothing,
---         Line (n + 3) r "Modus Ponens" [lineNumber porqLine, n + 2] (userNumber currLine)
---     ]
---     where 
---         applySubst = getApplySubstFromTransformant transformant
---         [prLine, qrLine, porqLine] = getCurrentRefLines transformant
---         currLine = fromJust (curr transformant)
---         pr = lineContent prLine
---         qr = lineContent qrLine
---         porq = lineContent porqLine
---         r = lineContent currLine
---         n = lineNumber currLine + offset transformant
--- orElimDerivedRule :: DerivedRule
--- orElimDerivedRule = ("Or Elim", orElimTransformation)
-
 hypSyllTransformation :: Transformation
 hypSyllTransformation transformant =
     [
@@ -145,40 +124,7 @@ modusTollens = ("Modus Tollens", hypSyllTransformation) -- works because modus t
 
 
 
-
-
-
-
 -- STRENGTHENING
-
-getNEmbeddedAntecedents :: Int -> Sentence -> [Sentence]
-getNEmbeddedAntecedents 0 _ = []
-getNEmbeddedAntecedents n (OpNode op [arg1, arg2])
-    | op == cond = arg1 : getNEmbeddedAntecedents (n-1) arg2
-    | otherwise = error "can only get N antecedents on a conditional"
-
-getNthConsequent :: Int -> Sentence -> Sentence
-getNthConsequent 0 sent = sent
-getNthConsequent n (OpNode op [arg1, arg2])
-    | op == cond = getNthConsequent (n-1) arg2
-    | otherwise = error "can only get Nth consequent on a conditional"
-getNthConsequent n sent = 
-    error ("dunno what went wrong. debugging info: getNthConsequent, " ++ show n ++ ", " ++ show sent)
-
-getEmbeddedAntecedentsUpTo :: Sentence -> Sentence -> [Sentence]
-getEmbeddedAntecedentsUpTo stopSent sent
-    | sent == stopSent = []
-    | otherwise = case sent of
-        Atom a -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
-        (OpNode op [arg1, arg2]) -> 
-            if op == cond
-                then arg1 : getEmbeddedAntecedentsUpTo stopSent arg2
-                else error "can only get all antecedents on a chain of conditionals"
-
-makeChain :: [Sentence] -> Sentence -> Sentence
-makeChain [] consq = consq
-makeChain (p:rem) consq = OpNode cond [p, makeChain rem consq]
-
 strengtheningTransformation' :: [Sentence] -> Transformant -> [Line]
 strengtheningTransformation' [] _ = []
 strengtheningTransformation' [p] state =
@@ -223,11 +169,6 @@ strengtheningTransformation state =
         [x, _] = args (lineContent xyLine)
 strengtheningDerivedRule :: DerivedRule
 strengtheningDerivedRule = ("Strengthening", strengtheningTransformation)
-
-
-
-
-
 
 
 
