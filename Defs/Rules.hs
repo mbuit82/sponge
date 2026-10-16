@@ -23,7 +23,7 @@ derivedRules = Map.fromList [ andElimLDerivedRule, andElimRDerivedRule, adjuncti
     orElimDerivedRule, 
     hypSyllDerivedRule, modusTollens,
     strengtheningDerivedRule, 
-    pushingBoxDerivedRule, distributingBoxDerivedRule
+    pushingBoxDerivedRule, distributingBoxDerivedRule, kReasoningDerivedRule
     ]
 
 andElimLTransformation :: Transformation
@@ -296,7 +296,7 @@ pushingBoxTransformation state =
         boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
         boxesIn = lineContent (fromJust (curr state))
 pushingBoxDerivedRule :: DerivedRule
-pushingBoxDerivedRule = ("K reasoning (pushing Box through)", pushingBoxTransformation)
+pushingBoxDerivedRule = ("K reasoning (pushing Box)", pushingBoxTransformation)
 
 distributingBoxTransformation :: Transformation
 distributingBoxTransformation state =
@@ -311,5 +311,15 @@ distributingBoxTransformation state =
         dummyLogic = Logic "" [] [] [] []
         pushTheBox = pushingBoxTransformation (Transformant [necLine] (Just (Line (n + 1) (lineContent currLine) "" [n] (userNumber currLine))) [] 0 dummyLogic)
 distributingBoxDerivedRule :: DerivedRule
-distributingBoxDerivedRule = ("K reasoning (distributing Box through)", distributingBoxTransformation)
+distributingBoxDerivedRule = ("K reasoning (distributing Box)", distributingBoxTransformation)
 
+kReasoningTransformation :: Transformation
+kReasoningTransformation state =
+    if topOp referencedLineContent == box
+        then pushingBoxTransformation state
+        else distributingBoxTransformation state
+    where 
+        [referencedLineNum] = refLines (fromJust (curr state))
+        referencedLineContent = lineContent (fromJust (findLineWithUserNum state referencedLineNum))
+kReasoningDerivedRule :: DerivedRule
+kReasoningDerivedRule = ("K reasoning", kReasoningTransformation)
