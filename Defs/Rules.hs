@@ -22,7 +22,8 @@ derivedRules :: Map.Map String Transformation
 derivedRules = Map.fromList [ andElimLDerivedRule, andElimRDerivedRule, adjunctionDerivedRule,
     orElimDerivedRule, 
     hypSyllDerivedRule, modusTollens,
-    strengtheningDerivedRule, kDerivedRule
+    strengtheningDerivedRule, 
+    pushingBoxDerivedRule, distributingBoxDerivedRule
     ]
 
 andElimLTransformation :: Transformation
@@ -230,7 +231,7 @@ strengtheningDerivedRule = ("Strengthening", strengtheningTransformation)
 
 
 
--- K Box distribution derived rule
+-- K derived rules
 countConds :: Int -> Sentence -> Int
 countConds n (OpNode op args)
     | op == cond = countConds (n+1) (args !! 1) 
@@ -249,8 +250,8 @@ makeKAxiom (OpNode opCond [arg1, arg2])
     | otherwise = error "cited line for distributing boxes is not of form L(A1 -> A2) but ALMOST AAGGHHH"
 makeKAxiom _ = error "cited line for distributing boxes is not of form L(A1 -> A2)"
 
-kRuleTransformation' :: Int -> Transformation
-kRuleTransformation' 0 state =
+pushingBoxTransformation' :: Int -> Transformation
+pushingBoxTransformation' 0 state =
     [
         Line n kInstance "K Axiom" [] Nothing,
         Line (n+1) kConsq "Modus Ponens" [boxOutRef, n] (userNumber currLine) 
@@ -264,13 +265,13 @@ kRuleTransformation' 0 state =
         [unboxed] = args boxOut
         kInstance = makeKAxiom unboxed
         [_, kConsq] = args kInstance
-kRuleTransformation' k state =
+pushingBoxTransformation' k state =
     recKRuleCall ++
     kLine ++
     strengtheningK ++
     [Line (n + 1 + length strengtheningK) (embed kConsq) "Modus Ponens" [n - 1, n + length strengtheningK] (userNumber currLine)]
     where
-        recKRuleCall = kRuleTransformation' (k-1) state
+        recKRuleCall = map (\(Line ln c j r _) -> Line ln c j r Nothing) (pushingBoxTransformation' (k-1) state)
         n = lineNumber currLine + offset state + length recKRuleCall
         currLine = fromJust (curr state)
         c = lineContent currLine
@@ -286,13 +287,29 @@ kRuleTransformation' k state =
         dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [n] Nothing)) [] 0 dummyLogic
         strengtheningK = map (\(Line ln c j r _) -> Line ln c j r Nothing) (strengtheningTransformation dummyState)
 
-kRuleTransformation :: Transformation
-kRuleTransformation state =
-    kRuleTransformation' (getNForBoxes (lineContent (fromJust (curr state)))) state
+pushingBoxTransformation :: Transformation
+pushingBoxTransformation state =
+    pushingBoxTransformation' (getNForBoxes (lineContent (fromJust (curr state)))) state
     where 
         currLine = fromJust (curr state)
         [boxOutRef] = refLines currLine
         boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
         boxesIn = lineContent (fromJust (curr state))
-kDerivedRule :: DerivedRule
-kDerivedRule = ("Distributing Boxes", kRuleTransformation)
+pushingBoxDerivedRule :: DerivedRule
+pushingBoxDerivedRule = ("K reasoning (pushing Box through)", pushingBoxTransformation)
+
+distributingBoxTransformation :: Transformation
+distributingBoxTransformation state =
+    [(\(Line ln c j r _) -> Line ln c j r Nothing) necLine] ++ pushTheBox
+    where 
+        currLine = fromJust (curr state)
+        [unboxedRef] = refLines currLine
+        unboxed = lineContent (fromJust (findLineWithUserNum state unboxedRef))
+        necLine = Line n (applySubst "LC" [("C", unboxed)]) "Necessitation" (refLines currLine) (Just n)
+        n = lineNumber currLine + offset state
+        applySubst = parseWithSubst [cond, box] []
+        dummyLogic = Logic "" [] [] [] []
+        pushTheBox = pushingBoxTransformation (Transformant [necLine] (Just (Line (n + 1) (lineContent currLine) "" [n] (userNumber currLine))) [] 0 dummyLogic)
+distributingBoxDerivedRule :: DerivedRule
+distributingBoxDerivedRule = ("K reasoning (distributing Box through)", distributingBoxTransformation)
+
