@@ -8,6 +8,9 @@ import Defs.Operators
 import Data.Maybe
 import qualified Data.Map as Map
 
+
+
+-- INFERENCE RULES
 modusPonens :: InferenceRule
 modusPonens = InferenceRule "Modus Ponens" (parse [] [] "P", Just (parse [cond] [] "P -> Q")) (parse [] [] "Q")
 
@@ -17,7 +20,7 @@ necessitation = InferenceRule "Necessitation" (parse [] [] "P", Nothing) (parse 
 
 
 -- DERIVED RULES
--- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
+-- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required operators or axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
 derivedRules :: Map.Map String Transformation
 derivedRules = Map.fromList [ 
     andElimLDerivedRule, -- from |- A & B infer |- A
@@ -73,6 +76,7 @@ adjunctionDerivedRule :: DerivedRule
 adjunctionDerivedRule = ("Adjunction", adjunctionTransformation)
 
 -- -- for Or Intro L and Or Intro R, we need to be able to add arbitrary sentences to the additional material
+-- -- can now do that, just need to figure out parsing
 -- orIntroLTransformation :: Transformation
 -- orIntroLTransformation transformant =
 --     [
