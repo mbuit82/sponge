@@ -1,10 +1,8 @@
 Theorem: |- (P -> Q) -> (~Q -> ~P)
 
 Using deduction
-Using deduction
 
 
 Proof
 1. |- P -> Q by Assumption
-2. |- ~Q by Assumption
-3. |- ~P by Modus Tollens: 1 2
+2. |- ~Q -> ~P by Contraposition: 1

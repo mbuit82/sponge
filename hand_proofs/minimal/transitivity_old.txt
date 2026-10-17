@@ -1,10 +1,13 @@
 Theorem: |- (P -> Q) -> ((Q -> R) -> (P -> R))
 
-Using deduction
+
 Using deduction
 
 Proof
 1. |- P -> Q by Assumption
 2. |- Q -> R by Assumption
-3. |- P -> R by Hypothetical Syllogism: 1 2
+3. |- P by Assumption
+4. |- Q by Modus Ponens: 3 1
+5. |- R by Modus Ponens: 4 2
+IGNORE 3. |- P -> R by Hypothetical Syllogism: 1 2
 IGNORE this datalog proof is _10 times_ longer than for transitivity.txt!! (unoptimized. Optimized, 5 times longer)

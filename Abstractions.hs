@@ -112,3 +112,9 @@ getHaskellProof logicName proofName = do
     afterCitingTheorems <- applyCitedTheorems logic (pure userLines)
     pure (goal, (pruneProofTree . deductionFunc . applyDerivedRules logic derivedRules) afterCitingTheorems)
     where logic = getLogic logicName
+
+seeHaskellProof :: String -> String -> IO ()
+seeHaskellProof logicName proofName = do
+    (_, pf) <- getHaskellProof logicName proofName
+    let relevantContents = map (\l -> (lineNumber l, lineContent l, justification l, refLines l)) pf in
+        mapM_ print relevantContents
