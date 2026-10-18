@@ -78,14 +78,17 @@ data Line = Line {
     justification :: String,
     refLines :: [Int],
     userNumber :: Maybe Int -- the original line number the user used (NOTE: actually this is not that lol it's like an old pointer type thing lol)
-} deriving (Eq, Show, Read) -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
+} deriving Eq -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
 -- keeping this here in case it's ever relevant
--- prettyPrintLine :: Line -> String
--- prettyPrintLine (Line lNum c j rfs uNum) = 
---     show lNum ++ " " ++
---     userNumberHuh uNum ++ ". " ++ 
---     prettyPrintSentence c ++ "\t" ++ 
---     "by " ++ j ++ show rfs
+prettyPrintLine :: Line -> String
+prettyPrintLine (Line lNum c j rfs uNum) = 
+    show lNum ++ " " ++
+    userNumberHuh uNum ++ ". " ++ 
+    prettyPrintSentence c ++ "\t" ++ 
+    "by " ++ j ++ show rfs
+instance Show Line where
+    show = prettyPrintLine
+
 
 userNumberHuh :: Maybe Int -> String
 userNumberHuh Nothing = "-"
@@ -152,7 +155,7 @@ data Transformant = Transformant {  transformata :: [Line],
                                     transformanda :: [Line], 
                                     offset :: Int
                                     -- transformantLogic :: Logic
-                                    }
+                                    } deriving Show
 
 type Transformation = Transformant -> [Line]
 
@@ -180,6 +183,26 @@ intoTransformant :: [Line] -> Transformant
 intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
 intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
 
+deleteUserNum :: Line -> Line
+deleteUserNum (Line ln c j r _) = Line ln c j r Nothing
+
+increaseLineNum :: Int -> Line -> Line
+increaseLineNum x (Line ln c j r u) = Line (x+ln) c j r u
+
+-- I think I do need to make a dummy transformation if I want to be able to cite lines from other proofs... 
+-- I'm not sure I'll be able to use this as I'm thinking I wanted to
+stackTransformationStep :: Transformation -> Transformation -> Transformation
+stackTransformationStep transf1 transf2 state =
+    transf1Result ++ transf2Result
+    where
+        transf1Result' = transf1 state
+        transf2Result' = transf2 state
+        transf1Result = map deleteUserNum transf1Result'
+        transf2Result = map (increaseLineNum (length transf1Result)) transf2Result'
+
+stackTransformations :: [Transformation] -> Transformation
+stackTransformations = foldl1' stackTransformationStep
+
 -- finds the first occurrence. This is taken advantage of in the strengthening derived rule
 findLineWithUserNum' :: [Line] -> Int -> Maybe Line
 findLineWithUserNum' [] _ = Nothing
@@ -201,10 +224,19 @@ findLineWithContent' (l : remLines) sent =
 findLineWithContent :: Transformant -> Sentence -> Maybe Line
 findLineWithContent transformant = findLineWithContent' (transformata transformant)
 
+getCurrentRefLine :: Transformant -> Int -> Line
+getCurrentRefLine state r =
+    case findLineWithUserNum state r of
+        Nothing -> error ("ope couldn't find refline " ++ show r ++ " in transformant " ++ show state)
+        Just ln -> ln
+
 getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
 getCurrentRefLines transformant =
-    let currLine = fromJust (curr transformant) in 
-        map (fromJust . findLineWithUserNum transformant) (refLines currLine)
+    case curr transformant of
+        Nothing -> error "why u trying to get reflines when there's no current line"
+        Just currLine -> map (getCurrentRefLine transformant) (refLines currLine)
+    -- let currLine = fromJust (curr transformant) in 
+        -- map (fromJust . findLineWithUserNum transformant) (refLines currLine)
 
 getUpdatedCurrentRefs :: Transformant -> [Int]
 getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines

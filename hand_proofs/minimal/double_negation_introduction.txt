@@ -1,6 +1,11 @@
 Theorem: |- P -> ~ ~ P
 
+IGNORE Using deduction (this is a case where using deduction is good. If I did the theorem applying thing right, for contrapositive_backward the proof with this and just citing assertion should be the same length)
+
 
 Proof
-1. |- P -> ~ ~ P by citing assertion (from minimal) [P/P, Bot/Q]
+1. |- P by Assumption
+2. |- ~ ~ P by applying assertion (from minimal) [P/P, Bot/Q]: 1
+
+IGNORE 1. |- P -> ~~P by applying assertion (from minimal) [P/P, Bot/Q]
 IGNORE Never realized this! But yeah, kinda crazy fact

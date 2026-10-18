@@ -111,9 +111,6 @@ reNumber' oldState =
             [] -> (Nothing, [])
             nxt:remLines -> (Just nxt, remLines)
 
-dummyLogic :: Logic
-dummyLogic = Logic "" [] [] [] []
-
 reNumber :: [Line] -> [Line]
 reNumber = resetUserNumbers.reverse.transformata.reNumber'.intoTransformant
 

@@ -156,9 +156,9 @@ cpf3 = "3. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C))    by c
 cpf4 = "4. |- ((A & B) -> C) -> ((B & A) -> C)                              by Modus Ponens: 2 3"
 cpf5 = "5. |- (A -> (B -> C)) -> ((B & A) -> C)                             by Hypothetical Syllogism: 1 4"
 
-cpfStrs = [cpf1, cpf2, cpf3, cpf4, cpf5]
-cpfLines = parseUserProof (getLogic "minimal") cpfStrs
-asdf2 = map (userNumber) <$> applyCitedTheorems (getLogic "minimal") (pure cpfLines)
+-- cpfStrs = [cpf1, cpf2, cpf3, cpf4, cpf5]
+-- cpfLines = parseUserProof (getLogic "minimal") cpfStrs
+-- asdf2 = map (userNumber) <$> useCitedTheorems (getLogic "minimal") (pure cpfLines)
 
 
 

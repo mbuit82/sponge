@@ -2,6 +2,8 @@ Theorem: |- (P -> Q) -> ((Q -> R) -> (P -> R))
 
 
 Using deduction
+Using deduction
+Using deduction
 
 Proof
 1. |- P -> Q by Assumption

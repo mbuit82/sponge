@@ -21,4 +21,4 @@ IGNORE 6. |- (A -> B) -> (A -> C) by Modus Ponens: 1 5
 IGNORE 7. |- A -> C by Modus Ponens: 4 6
 
 IGNORE with the optimization, it looks like these two proofs are the same! (Like, the same result in Datalog)
-IGNORE this proof is the same as transitivity_old
+IGNORE this proof is the same as hypothetical_syllogism (used to be transitivity_old)—ish. Not really

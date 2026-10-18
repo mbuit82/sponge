@@ -1,10 +1,24 @@
 Theorem: |- (~Q -> ~P) -> (P -> Q)
 
-
+Using deduction
 Using deduction
 
-
 Proof
+1. |- ~Q -> ~P by Assumption
+2. |- P by Assumption
+3. |- ~~P -> ~~Q by applying contrapositive_forward (from minimal) [~Q/P, ~P/Q]: 1
+4. |- ~~P by applying double_negation_introduction (from minimal) [P/P]: 2
+5. |- ~~Q by Modus Ponens: 4 3
+6. |- ~~Q -> Q by Excluded Middle
+7. |- Q by Modus Ponens: 5 6
+
+IGNORE 1. |- ~Q -> ~P by Assumption
+IGNORE 2. |- ~~P -> ~~Q by applying contrapositive_forward (from minimal) [~Q/P, ~P/Q]: 1
+IGNORE 3. |- ~~Q -> Q by Excluded Middle
+IGNORE 4. |- ~~P -> Q by Hypothetical Syllogism: 2 3  
+IGNORE 5. |- ~~P -> P by applying double_negation_introduction (from minimal) [P/P]
+IGNORE 6. |- P -> Q by Hypothetical Syllogism: 5 4 
+
 IGNORE deduction-twice proof
 IGNORE 1. |- ~Q -> ~P by Assumption
 IGNORE 2. |- P by Assumption
@@ -15,13 +29,13 @@ IGNORE 6. |- ~~Q -> Q by Excluded Middle
 IGNORE 7. |- Q by Modus Ponens: 5 6
 
 IGNORE this uses deduction once optimized proof length at 200 ish
-1. |- (~Q -> ~P) -> (~~P -> ~~Q) by citing contrapositive_forward (from minimal) [~Q/P, ~P/Q, Bot/R]
-2. |- (~Q -> ~P) by Assumption
-3. |- ~~P -> ~~Q by Modus Ponens: 2 1
-4. |- P -> ~~P by citing double_negation_introduction (from minimal) [P/P]
-5. |- P -> ~~Q by Hypothetical Syllogism: 4 3
-6. |- ~~Q -> Q by Excluded Middle
-7. |- P -> Q by Hypothetical Syllogism: 5 6
+IGNORE 1. |- (~Q -> ~P) -> (~~P -> ~~Q) by citing contrapositive_forward (from minimal) [~Q/P, ~P/Q, Bot/R]
+IGNORE 2. |- (~Q -> ~P) by Assumption
+IGNORE 3. |- ~~P -> ~~Q by Modus Ponens: 2 1
+IGNORE 4. |- P -> ~~P by citing double_negation_introduction (from minimal) [P/P]
+IGNORE 5. |- P -> ~~Q by Hypothetical Syllogism: 4 3
+IGNORE 6. |- ~~Q -> Q by Excluded Middle
+IGNORE 7. |- P -> Q by Hypothetical Syllogism: 5 6
 
 IGNORE this is the no-deductions attempt
 IGNORE 1. |- (~Q -> ~P) -> (~~P -> ~~Q) by citing contrapositive_forward (from minimal) [~Q/P, ~P/Q, Bot/R]

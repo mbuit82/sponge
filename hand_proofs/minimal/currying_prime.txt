@@ -24,7 +24,7 @@ IGNORE 1. |- (A & B) -> C by Assumption
 IGNORE 2. |- B by Assumption
 IGNORE 3. |- A by Assumption
 IGNORE 4. |- (B & A) -> (A & B) by citing and_commutativity (from minimal) [A/B, B/A]
-IGNORE 5. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C)) by citing transitivity_old (from minimal) [(B & A)/P, (A & B)/Q, C/R]
+IGNORE 5. |- ((B & A) -> (A & B)) -> (((A & B) -> C) -> ((B & A) -> C)) by citing hypothetical_syllogism (from minimal) [(B & A)/P, (A & B)/Q, C/R]
 IGNORE 6. |- ((A & B) -> C) -> ((B & A) -> C) by Modus Ponens: 4 5
 IGNORE 7. |- (B & A) -> C by Modus Ponens: 1 6
 IGNORE 8. |- B & A by Adjunction 2 3
