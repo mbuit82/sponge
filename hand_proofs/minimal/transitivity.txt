@@ -5,8 +5,3 @@ Using deduction
 Proof
 1. |- Q -> R by Assumption
 2. |- (P -> Q) -> (P -> R) by Strengthening: 1
-
-IGNORE below is the same number of lines, but different proof in datalog (below didn't use deduction)
-IGNORE 1. |- (P -> (Q -> R)) -> ((P -> Q) -> (P -> R)) by Frege
-IGNORE 2. |- (Q -> R) -> (P -> (Q -> R)) by Simp
-IGNORE 3. |- (Q -> R) -> ((P -> Q) -> (P -> R)) by Hypothetical Syllogism: 2 1
