@@ -27,11 +27,11 @@ derivedRules = Map.fromList [
     andElimRDerivedRule,  -- from |- A & B infer |- B
     adjunctionDerivedRule, -- from |- A and |- B infer |- A & B
     orElimDerivedRule, -- from |- A -> C and |- B -> C infer |- (A v B) -> C
-    hypSyllDerivedRule, -- from |- A -> B and |- B -> C infer |- A -> C
+    -- hypSyllDerivedRule, -- from |- A -> B and |- B -> C infer |- A -> C
     modusTollens, -- special case of hypothetical syllogism with C=Bot
-    inversionDerivedRule, 
+    -- inversionDerivedRule, 
     contrapositionDerivedRule,
-    switchArgsDerivedRule,
+    -- switchArgsDerivedRule,
     adjunctionConsequentDerivedRule, -- from |- P -> Q and |- P -> R infer |- P -> (Q & R)
     strengtheningDerivedRule, -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
     pushingBoxDerivedRule, distributingBoxDerivedRule, kReasoningDerivedRule -- distribute boxes, push boxes through; hope to add diamonds
@@ -158,142 +158,83 @@ adjunctionConsequentTransformation state =
 adjunctionConsequentDerivedRule :: DerivedRule
 adjunctionConsequentDerivedRule = ("Adjunction in consequent", adjunctionConsequentTransformation)
 
-inversionTransformation :: Transformation
-inversionTransformation state = 
-    [
-        Line n (applySubst "(P -> Q) -> ((Q -> R) -> (P -> Q))" substList) "Simp" [] Nothing,
-        Line (n+1) (applySubst "(Q -> R) -> (P -> Q)" substList) "Modus Ponens" [i, n] Nothing,
-        Line (n+2) (applySubst "(Q -> R) -> (P -> (Q -> R))" substList) "Simp" [] Nothing,
-        Line (n+3) (applySubst "(P -> (Q -> R)) -> ((P -> Q) -> (P -> R))" substList) "Frege" [] Nothing,
-        Line (n+4) (applySubst "((P -> (Q -> R)) -> ((P -> Q) -> (P -> R))) -> ((Q -> R) -> ((P -> (Q -> R)) -> ((P -> Q) -> (P -> R))))" substList) "Simp" [] Nothing,
-        Line (n+5) (applySubst "(Q -> R) -> ((P -> (Q -> R)) -> ((P -> Q) -> (P -> R)))" substList) "Modus Ponens" [n+3, n+4] Nothing,
-        Line (n+6) (applySubst "((Q -> R) -> ((P -> (Q -> R)) -> ((P -> Q) -> (P -> R)))) -> (((Q -> R) -> (P -> (Q -> R))) -> ((Q -> R) -> ((P -> Q) -> (P -> R))))" substList) "Frege" [] Nothing,
-        Line (n+7) (applySubst "((Q -> R) -> (P -> (Q -> R))) -> ((Q -> R) -> ((P -> Q) -> (P -> R)))" substList) "Modus Ponens" [n+5, n+6] Nothing,
-        Line (n+8) (applySubst "(Q -> R) -> ((P -> Q) -> (P -> R))" substList) "Modus Ponens" [n+2, n+7] Nothing,
-        Line (n+9) (applySubst "((Q -> R) -> ((P -> Q) -> (P -> R))) -> (((Q -> R) -> (P -> Q)) -> ((Q -> R) -> (P -> R)))" substList) "Frege" [] Nothing,
-        Line (n+10) (applySubst "((Q -> R) -> (P -> Q)) -> ((Q -> R) -> (P -> R))" substList) "Modus Ponens" [n+8, n+9] Nothing,
-        Line (n+11) (applySubst "(Q -> R) -> (P -> R)" substList) "Modus Ponens" [n+1, n+10] (userNumber currLine)
-    ]
-    where 
-        n = lineNumber currLine + offset state
-        currLine = fromJust (curr state)
-        c = lineContent currLine
-        [qr, pr] = args c
-        [p, r] = args pr
-        [q, _] = args qr
-        [i] = getUpdatedCurrentRefs state
-        applySubst = parseWithSubst [cond] []
-        substList = [("P", p), ("Q", q), ("R", r)]
-inversionDerivedRule :: DerivedRule
-inversionDerivedRule = ("Inversion", inversionTransformation)
+-- inversionTransformation :: Transformation
+-- inversionTransformation state = 
+--     [
+--         Line n (applySubst "(P -> Q) -> ((Q -> R) -> (P -> Q))" substList) "Simp" [] Nothing,
+--         Line (n+1) (applySubst "(Q -> R) -> (P -> Q)" substList) "Modus Ponens" [i, n] Nothing,
+--         Line (n+2) (applySubst "(Q -> R) -> (P -> (Q -> R))" substList) "Simp" [] Nothing,
+--         Line (n+3) (applySubst "(P -> (Q -> R)) -> ((P -> Q) -> (P -> R))" substList) "Frege" [] Nothing,
+--         Line (n+4) (applySubst "((P -> (Q -> R)) -> ((P -> Q) -> (P -> R))) -> ((Q -> R) -> ((P -> (Q -> R)) -> ((P -> Q) -> (P -> R))))" substList) "Simp" [] Nothing,
+--         Line (n+5) (applySubst "(Q -> R) -> ((P -> (Q -> R)) -> ((P -> Q) -> (P -> R)))" substList) "Modus Ponens" [n+3, n+4] Nothing,
+--         Line (n+6) (applySubst "((Q -> R) -> ((P -> (Q -> R)) -> ((P -> Q) -> (P -> R)))) -> (((Q -> R) -> (P -> (Q -> R))) -> ((Q -> R) -> ((P -> Q) -> (P -> R))))" substList) "Frege" [] Nothing,
+--         Line (n+7) (applySubst "((Q -> R) -> (P -> (Q -> R))) -> ((Q -> R) -> ((P -> Q) -> (P -> R)))" substList) "Modus Ponens" [n+5, n+6] Nothing,
+--         Line (n+8) (applySubst "(Q -> R) -> ((P -> Q) -> (P -> R))" substList) "Modus Ponens" [n+2, n+7] Nothing,
+--         Line (n+9) (applySubst "((Q -> R) -> ((P -> Q) -> (P -> R))) -> (((Q -> R) -> (P -> Q)) -> ((Q -> R) -> (P -> R)))" substList) "Frege" [] Nothing,
+--         Line (n+10) (applySubst "((Q -> R) -> (P -> Q)) -> ((Q -> R) -> (P -> R))" substList) "Modus Ponens" [n+8, n+9] Nothing,
+--         Line (n+11) (applySubst "(Q -> R) -> (P -> R)" substList) "Modus Ponens" [n+1, n+10] (userNumber currLine)
+--     ]
+--     where 
+--         n = lineNumber currLine + offset state
+--         currLine = fromJust (curr state)
+--         c = lineContent currLine
+--         [qr, pr] = args c
+--         [p, r] = args pr
+--         [q, _] = args qr
+--         [i] = getUpdatedCurrentRefs state
+--         applySubst = parseWithSubst [cond] []
+--         substList = [("P", p), ("Q", q), ("R", r)]
+-- inversionDerivedRule :: DerivedRule
+-- inversionDerivedRule = ("Inversion", inversionTransformation)
 
-contrapositionBackwardTransformation :: Transformation
-contrapositionBackwardTransformation state = 
-    contraposed ++
-    [
-        Line n (applySubst "~~Q -> Q" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+1) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+2) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+3) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+4) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+5) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+6) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+7) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+8) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+9) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+10) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+11) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+12) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+13) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+14) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+15) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+16) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+17) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+18) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+19) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+20) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+21) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+22) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+23) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+24) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+25) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+26) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing, 
-        Line (n+27) (applySubst "" [("P", p), ("Q", q)]) "" [] Nothing
-    ]
-    where 
-        contraposed = inversionTransformation state
-        n = lineNumber currLine + offset state + length contraposed
-        currLine = fromJust (curr state)
-        c = lineContent currLine
-        [p, q] = args c
-        [i] = getUpdatedCurrentRefs state
-        applySubst = parseWithSubst [cond] [neg]
-        substList = [("P", p), ("Q", q)]
-
-
--- (1,(((P -> Bot) -> (((P -> Bot) -> (P -> Bot)) -> (P -> Bot))) -> (((P -> Bot) -> ((P -> Bot) -> (P -> Bot))) -> ((P -> Bot) -> (P -> Bot)))),"Frege",[])
--- (2,((P -> Bot) -> (((P -> Bot) -> (P -> Bot)) -> (P -> Bot))),"Simp",[])
--- (3,(((P -> Bot) -> ((P -> Bot) -> (P -> Bot))) -> ((P -> Bot) -> (P -> Bot))),"Modus Ponens",[2,1])
--- (4,((P -> Bot) -> ((P -> Bot) -> (P -> Bot))),"Simp",[])
--- (5,((P -> Bot) -> (P -> Bot)),"Modus Ponens",[4,3])
--- (6,(((P -> Bot) -> (P -> Bot)) -> (P -> ((P -> Bot) -> (P -> Bot)))),"Simp",[])
--- (7,(P -> ((P -> Bot) -> (P -> Bot))),"Modus Ponens",[5,6])
--- (8,(P -> ((P -> Bot) -> P)),"Simp",[])
--- (9,(((P -> Bot) -> (P -> Bot)) -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot))),"Frege",[])
--- (10,((((P -> Bot) -> (P -> Bot)) -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot))) -> (P -> (((P -> Bot) -> (P -> Bot)) -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot))))),"Simp",[])
--- (11,(P -> (((P -> Bot) -> (P -> Bot)) -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot)))),"Modus Ponens",[9,10])
--- (12,((P -> (((P -> Bot) -> (P -> Bot)) -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot)))) -> ((P -> ((P -> Bot) -> (P -> Bot))) -> (P -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot))))),"Frege",[])
--- (13,((P -> ((P -> Bot) -> (P -> Bot))) -> (P -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot)))),"Modus Ponens",[11,12])
--- (14,(P -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot))),"Modus Ponens",[7,13])
--- (15,((P -> (((P -> Bot) -> P) -> ((P -> Bot) -> Bot))) -> ((P -> ((P -> Bot) -> P)) -> (P -> ((P -> Bot) -> Bot)))),"Frege",[])
--- (16,((P -> ((P -> Bot) -> P)) -> (P -> ((P -> Bot) -> Bot))),"Modus Ponens",[14,15])
--- (17,(P -> ((P -> Bot) -> Bot)),"Modus Ponens",[8,16])
+-- contrapositionBackwardTransformation :: Transformation
+-- contrapositionBackwardTransformation state = undefined
 
 contrapositionTransformation :: Transformation
-contrapositionTransformation state
-    | curr1 == OpNode cond [refd2, OpNode bot []] &&
-        curr2 == OpNode cond [refd1, OpNode bot []] =
-            inversionTransformation state
-    | refd2 == OpNode cond [curr1, OpNode bot []] &&
-        refd1 == OpNode cond [curr2, OpNode bot []] = 
-            contrapositionBackwardTransformation state
-    | otherwise = error "error in using contraposition. seems like don't match reqs for contraposition"
-    where 
-        currContent = lineContent (fromJust (curr state))
-        [refdLine] = getCurrentRefLines state
-        refdContent = lineContent refdLine
-        [curr1, curr2] = args currContent
-        [refd1, refd2] = args refdContent
+contrapositionTransformation state = undefined
+--     | curr1 == OpNode cond [refd2, OpNode bot []] &&
+--         curr2 == OpNode cond [refd1, OpNode bot []] =
+--             inversionTransformation state
+--     | refd2 == OpNode cond [curr1, OpNode bot []] &&
+--         refd1 == OpNode cond [curr2, OpNode bot []] = 
+--             contrapositionBackwardTransformation state
+--     | otherwise = error "error in using contraposition. seems like don't match reqs for contraposition"
+--     where 
+--         currContent = lineContent (fromJust (curr state))
+--         [refdLine] = getCurrentRefLines state
+--         refdContent = lineContent refdLine
+--         [curr1, curr2] = args currContent
+--         [refd1, refd2] = args refdContent
 contrapositionDerivedRule :: (String, Transformation)
 contrapositionDerivedRule = ("Contraposition", contrapositionTransformation)
 
-switchArgsTransformation :: Transformation
-switchArgsTransformation state =
-    [
-        Line n (applySubst "(A -> (B -> C)) -> (B -> (A -> (B -> C)))" substList) "Simp" [] Nothing,
-        Line (n+1) (applySubst "B -> (A -> (B -> C))" substList) "Modus Ponens" [i, n] Nothing, 
-        Line (n+2) (applySubst "B -> (A -> B)" substList) "Simp" [] Nothing, 
-        Line (n+3) (applySubst "(A -> (B -> C)) -> ((A -> B) -> (A -> C))" substList) "Frege" [] Nothing, 
-        Line (n+4) (applySubst "((A -> (B -> C)) -> ((A -> B) -> (A -> C))) -> (B -> ((A -> (B -> C)) -> ((A -> B) -> (A -> C))))" substList) "Simp" [] Nothing, 
-        Line (n+5) (applySubst "B -> ((A -> (B -> C)) -> ((A -> B) -> (A -> C)))" substList) "Modus Ponens" [n+3, n+4] Nothing, 
-        Line (n+6) (applySubst "(B -> ((A -> (B -> C)) -> ((A -> B) -> (A -> C)))) -> ((B -> (A -> (B -> C))) -> (B -> ((A -> B) -> (A -> C))))" substList) "Frege" [] Nothing, 
-        Line (n+7) (applySubst "(B -> (A -> (B -> C))) -> (B -> ((A -> B) -> (A -> C)))" substList) "Modus Ponens" [n+5, n+6] Nothing, 
-        Line (n+8) (applySubst "B -> ((A -> B) -> (A -> C))" substList) "Modus Ponens" [n+1, n+7] Nothing, 
-        Line (n+9) (applySubst "(B -> ((A -> B) -> (A -> C))) -> ((B -> (A -> B)) -> (B -> (A -> C)))" substList) "Frege" [] Nothing, 
-        Line (n+10) (applySubst "(B -> (A -> B)) -> (B -> (A -> C))" substList) "Modus Ponens" [n+8, n+9] Nothing, 
-        Line (n+11) (applySubst "B -> (A -> C)" substList) "Modus Ponens" [n+2, n+10] (userNumber currLine)
-    ]
-    where 
-        n = lineNumber currLine + offset state
-        currLine = fromJust (curr state)
-        abc = lineContent currLine
-        [b, ac] = args abc
-        [a, c] = args ac
-        [i] = getUpdatedCurrentRefs state
-        applySubst = parseWithSubst [cond] []
-        substList = [("A", a), ("B", b), ("C", c)]
-switchArgsDerivedRule :: DerivedRule
-switchArgsDerivedRule = ("switching arguments", switchArgsTransformation)
+-- switchArgsTransformation :: Transformation
+-- switchArgsTransformation state =
+--     [
+--         Line n (applySubst "(A -> (B -> C)) -> (B -> (A -> (B -> C)))" substList) "Simp" [] Nothing,
+--         Line (n+1) (applySubst "B -> (A -> (B -> C))" substList) "Modus Ponens" [i, n] Nothing, 
+--         Line (n+2) (applySubst "B -> (A -> B)" substList) "Simp" [] Nothing, 
+--         Line (n+3) (applySubst "(A -> (B -> C)) -> ((A -> B) -> (A -> C))" substList) "Frege" [] Nothing, 
+--         Line (n+4) (applySubst "((A -> (B -> C)) -> ((A -> B) -> (A -> C))) -> (B -> ((A -> (B -> C)) -> ((A -> B) -> (A -> C))))" substList) "Simp" [] Nothing, 
+--         Line (n+5) (applySubst "B -> ((A -> (B -> C)) -> ((A -> B) -> (A -> C)))" substList) "Modus Ponens" [n+3, n+4] Nothing, 
+--         Line (n+6) (applySubst "(B -> ((A -> (B -> C)) -> ((A -> B) -> (A -> C)))) -> ((B -> (A -> (B -> C))) -> (B -> ((A -> B) -> (A -> C))))" substList) "Frege" [] Nothing, 
+--         Line (n+7) (applySubst "(B -> (A -> (B -> C))) -> (B -> ((A -> B) -> (A -> C)))" substList) "Modus Ponens" [n+5, n+6] Nothing, 
+--         Line (n+8) (applySubst "B -> ((A -> B) -> (A -> C))" substList) "Modus Ponens" [n+1, n+7] Nothing, 
+--         Line (n+9) (applySubst "(B -> ((A -> B) -> (A -> C))) -> ((B -> (A -> B)) -> (B -> (A -> C)))" substList) "Frege" [] Nothing, 
+--         Line (n+10) (applySubst "(B -> (A -> B)) -> (B -> (A -> C))" substList) "Modus Ponens" [n+8, n+9] Nothing, 
+--         Line (n+11) (applySubst "B -> (A -> C)" substList) "Modus Ponens" [n+2, n+10] (userNumber currLine)
+--     ]
+--     where 
+--         n = lineNumber currLine + offset state
+--         currLine = fromJust (curr state)
+--         abc = lineContent currLine
+--         [b, ac] = args abc
+--         [a, c] = args ac
+--         [i] = getUpdatedCurrentRefs state
+--         applySubst = parseWithSubst [cond] []
+--         substList = [("A", a), ("B", b), ("C", c)]
+-- switchArgsDerivedRule :: DerivedRule
+-- switchArgsDerivedRule = ("switching arguments", switchArgsTransformation)
 
 
 

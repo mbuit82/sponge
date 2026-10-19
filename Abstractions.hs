@@ -159,32 +159,31 @@ stripBrackets ('[':rest)
 stripBrackets subsStr = error ("somthing wrong w the user-inputted substitution: " ++ subsStr)
 
 -- the string here is the justification
-getTheoremInfo :: String -> Logic -> String -> (String, String, Map.Map String Sentence)
-getTheoremInfo str logic jus =
-    let jus' = stripPrefix str (dropWhile isSpace jus) in
-        let ((proofName'), rest) = break (=='(') (dropWhile isSpace (fromJust jus')) in
+getTheoremInfo :: Logic -> String -> (String, String, Map.Map String Sentence)
+getTheoremInfo logic jus =
+    let jus' = dropWhile (/= ' ') (dropWhile isSpace jus) in
+        let ((proofName'), rest) = break (=='(') (dropWhile isSpace jus') in
             let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
                 let subsStrWithBrackets = dropWhile isSpace (dropWhile (==')') rest') in
                     (logicName, dropWhileEnd isSpace proofName', getVarMap logic (stripBrackets subsStrWithBrackets))
 
-getCitedTheoremInfo :: Logic -> String -> (String, String, Map.Map String Sentence)
-getCitedTheoremInfo = getTheoremInfo "citing"
-
-citedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
-citedTheoremIOTransformation logic state = do
-    haskellProof <- snd <$> (getHaskellProof logicName proofName)
-    pure (applyOffsetToInsertedTheoremOLD currUNum offsetToApply varMap haskellProof)
-    where 
-        (logicName, proofName, varMap) = getCitedTheoremInfo logic (justification (fromJust (curr state)))
-        offsetToApply = (offset state + lineNumber (fromJust (curr state)) - 1)
-        currUNum = userNumber (fromJust (curr state))
+-- citedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
+-- citedTheoremIOTransformation logic state = do
+--     haskellProof <- snd <$> (getHaskellProof logicName proofName)
+--     pure (applyOffsetToInsertedTheoremOLD currUNum offsetToApply varMap haskellProof)
+--     where 
+--         (logicName, proofName, varMap) = getTheoremInfo logic (justification (fromJust (curr state)))
+--         offsetToApply = (offset state + lineNumber (fromJust (curr state)) - 1)
+--         currUNum = userNumber (fromJust (curr state))
 
 useCitedTheorems' :: Logic -> Transformant -> IO (Transformant)
 useCitedTheorems' logic state = do
     case curr state of
         Nothing -> pure state
         Just line -> 
-            if "applying" `isInfixOf` (justification line) -- CHANGED TO USE APPLYING
+            if "applying" `isInfixOf` (justification line) || 
+                "using" `isInfixOf` (justification line) || 
+                "citing" `isInfixOf` (justification line)
                 then do 
                     step <- applyIOTransformation (appliedTheoremIOTransformation logic) state -- CHANGED TO USE APPLYING
                     useCitedTheorems' logic step
@@ -205,10 +204,9 @@ getHaskellProofWithoutDeduction logicName proofName = do
 
 getHaskellProof :: String -> String -> IO (Sentence, [Line])
 getHaskellProof logicName proofName = do
+    let logic = getLogic logicName
     (goal, deductionArgs, lns) <- getHaskellProofWithoutDeduction logicName proofName
     pure (goal, (pruneProofTree . (makeDeductionsFunc logic deductionArgs)) lns)
-    where 
-        logic = getLogic logicName
 
 seeHaskellProof :: String -> String -> IO ()
 seeHaskellProof logicName proofName = do
@@ -311,7 +309,7 @@ addAppStuff logic leftovers lns =
 appliedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
 appliedTheoremIOTransformation logic state = do
     let currLine = fromJust (curr state) -- get the current state
-    let (logicName, proofName, varMap) = getTheoremInfo "applying" logic (justification currLine) -- parse the justification
+    let (logicName, proofName, varMap) = getTheoremInfo logic (justification currLine) -- parse the justification
     (goal, deductionArgs, userLines) <- getHaskellProofWithoutDeduction logicName proofName -- unfold everything but deduction in the cited proof
     let appRfs = getUpdatedCurrentRefs state
 

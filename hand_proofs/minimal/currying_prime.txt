@@ -17,6 +17,17 @@ Proof
 9. |- C by Modus Ponens: 8 7
 
 
+5. |- (B & A) -> C by applying transitivity (from minimal) [(B & A)/P, (A & B)/Q, C/R]: 1 4 IGNORE idk why this isn't working... 
+
+
+
+IGNORE this works
+IGNORE 5. |- ((B & A) -> (A & B)) -> ((B & A) -> C) by citing transitivity (from minimal) [(B & A)/P, (A & B)/Q, C/R]: 1
+IGNORE 6. |- (B & A) -> C by Modus Ponens: 4 5
+IGNORE 7. |- B & A by Adjunction: 2 3
+IGNORE 8. |- C by Modus Ponens: 7 6
+
+
 IGNORE this proof is not really useful, it's more to see the efficacy of the pruning proof trees optimization
 
 IGNORE 3k line version (unoptimized). Above is a lot shorter because new transitivity is a lot shorter than the older one
@@ -30,3 +41,7 @@ IGNORE 7. |- (B & A) -> C by Modus Ponens: 1 6
 IGNORE 8. |- B & A by Adjunction 2 3
 IGNORE 9. |- C by Modus Ponens: 8 7
 
+IGNORE here's an 85 line proof. (We've come a long way from 3k...)
+IGNORE 1. |- (A & B) -> C by Assumption
+IGNORE 2. |- A -> (B -> C) by applying currying (from minimal) [A/A, B/B, C/C]: 1
+IGNORE 3. |- B -> (A -> C) by applying switch_args (from minimal) [A/P, B/Q, C/R]: 2
