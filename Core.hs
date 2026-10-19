@@ -28,7 +28,7 @@ dummyDefOp defOp =
     case (defOpArity defOp) of
         1 -> (defOpSymbol defOp) ++ " P1"
         2 -> intercalate (" " ++ (defOpSymbol defOp) ++ " ") (map prettyPrintSentence (defOpDummyArgs (defOpArity defOp)))
-        3 -> error "haven't done how to do n-ary operators yet (printing out an n-ary defined operator)"
+        _ -> error "haven't done how to do n-ary operators yet (printing out an n-ary defined operator)"
 
 prettyPrintDefOp :: DefinedOperator -> String
 prettyPrintDefOp defOp = 
