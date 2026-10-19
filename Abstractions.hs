@@ -226,7 +226,8 @@ makeReplacementPairs pairs (ln:lns) =
         Nothing -> makeReplacementPairs pairs lns
         Just a -> if justification ln == "Assumption" || justification ln == "TEMP"
                     then (lineNumber ln, a) : makeReplacementPairs pairs lns
-                    else error "interesting case in a deduction to application thing"
+                    else makeReplacementPairs pairs lns
+                        -- error ("interesting case in a deduction to application thing: " ++ (show ln))
 
 -- map keys are old refs, map values are new refs
 -- this is a helper for intoAppStep

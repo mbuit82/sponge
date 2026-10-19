@@ -1,11 +1,13 @@
 Theorem: |- P -> ~ ~ P
 
 IGNORE Using deduction (this is a case where using deduction is good. If I did the theorem applying thing right, for contrapositive_backward the proof with this and just citing assertion should be the same length)
-
+IGNORE this is actually NOT a case where deduction is good. Because we'll be doing exactly the same work. 
+IGNORE though I do see the vision for why in theory this should add the same number of lines to contrapositive_backward as without deduction
+IGNORE No. This adds more lines because we're not actually applying the theorem. So it applies a useless deduction. 
+IGNORE what you're looking for is in fact tested with the use of contrapositive_forward in contrapositive_backward
 
 Proof
-1. |- P by Assumption
-2. |- ~ ~ P by applying assertion (from minimal) [P/P, Bot/Q]: 1
-
-IGNORE 1. |- P -> ~~P by applying assertion (from minimal) [P/P, Bot/Q]
+IGNORE 1. |- P by Assumption
+IGNORE 2. |- ~ ~ P by applying assertion (from minimal) [P/P, Bot/Q]: 1
+1. |- P -> ~~P by applying assertion (from minimal) [P/P, Bot/Q]
 IGNORE Never realized this! But yeah, kinda crazy fact

@@ -1,0 +1,9 @@
+Theorem: |- A -> A
+
+
+Proof
+1. |- ~A -> ~A by applying identity (from minimal) [A/A]
+2. |- A -> A by applying contrapositive_backward (from classical) [A/Q, A/P]: 1
+
+IGNORE it works! Here we're citing contrapositive_backward, and that proof is 115 datalog lines. However, this proof is only about 30 lines! So it was _actually good_ to use deduction in the proof of contrapositive_backward, since that how we plan on _using_ contrapositive backward! 
+IGNORE but funnily enough test_contrapositive_backward, which relies on contrapositive_forward down the chain, doesn't change length with the change... 

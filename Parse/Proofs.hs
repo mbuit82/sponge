@@ -56,6 +56,7 @@ getProofGoal logic seen (c:remChars) = getProofGoal logic (seen ++ [c]) remChars
 getDeductionArgs :: Sentence -> [String] -> [Sentence]
 getDeductionArgs _ [] = []
 getDeductionArgs goalModuloDeduction (fl : remPreamble)
+    | "IGNORE" `isInfixOf` fl = getDeductionArgs goalModuloDeduction remPreamble
     | "deduction" `isInfixOf` fl =
         case goalModuloDeduction of 
             OpNode op [lArg, rArg] -> 
