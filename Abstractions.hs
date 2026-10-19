@@ -288,9 +288,9 @@ applySubstToLine varMap (Line lNum c j r uNum) =
     Line lNum (applySubstToSent varMap c) j r uNum
 
 makeModusPonensLine :: Int -> Line -> Line
-makeModusPonensLine ref (Line lNum c j r uNum) = 
-    case c of
-        OpNode binOp [ant, consq] -> Line (lNum+1) consq "Modus Ponens" [ref, lNum] Nothing
+makeModusPonensLine ref (Line lNum (OpNode binOp [ant, consq]) j r uNum)
+    | binOp == cond = Line (lNum+1) consq "Modus Ponens" [ref, lNum] Nothing
+    | otherwise = error "can't make modus ponens line from smth that's not conditional (makeModusPonensLine)"
 
 makeModusPonensLines' :: [Int] -> Line -> [Line]
 makeModusPonensLines' [] _ = []
