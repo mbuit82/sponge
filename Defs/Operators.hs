@@ -3,9 +3,10 @@ module Defs.Operators where
 import Core
 import Parse.Sentences
 
--- cond, the conditonal operator, is currently in Core
-
 -- classical operators
+cond :: Operator
+cond = Operator "Conditional" "->" 2
+
 bot :: Operator
 bot = Operator { operatorName = "Bot", operatorSymbol = "Bot", arity = 0}
 

@@ -4,6 +4,7 @@ import Core
 import Parse.Sentences
 import Parse.Proofs
 
+import Defs.Operators
 import Defs.Rules
 import Defs.Specs
 

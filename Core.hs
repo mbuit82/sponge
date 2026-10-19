@@ -13,8 +13,6 @@ prettyPrintOperator :: Operator -> String
 prettyPrintOperator op =
     (operatorSymbol op) ++ " (" ++ (operatorName op) ++ "), arity " ++ show (arity op)
 
-cond :: Operator
-cond = Operator "Conditional" "->" 2
 
 data DefinedOperator = DefinedOperator {
     defOpName :: String,
@@ -244,30 +242,31 @@ getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
 
-getNEmbeddedAntecedents :: Int -> Sentence -> [Sentence]
-getNEmbeddedAntecedents 0 _ = []
-getNEmbeddedAntecedents n (OpNode op [arg1, arg2])
-    | op == cond = arg1 : getNEmbeddedAntecedents (n-1) arg2
+-- are used for conditionals in strengthening and K derived rules, but are more general processes so leaving here
+getNEmbeddedAntecedents :: Operator -> Int -> Sentence -> [Sentence]
+getNEmbeddedAntecedents op 0 _ = []
+getNEmbeddedAntecedents op n (OpNode op' [arg1, arg2])
+    | op' == op = arg1 : getNEmbeddedAntecedents op (n-1) arg2
     | otherwise = error "can only get N antecedents on a conditional"
 
-getNthConsequent :: Int -> Sentence -> Sentence
-getNthConsequent 0 sent = sent
-getNthConsequent n (OpNode op [arg1, arg2])
-    | op == cond = getNthConsequent (n-1) arg2
+getNthConsequent :: Operator -> Int -> Sentence -> Sentence
+getNthConsequent op 0 sent = sent
+getNthConsequent op n (OpNode op' [arg1, arg2])
+    | op' == op = getNthConsequent op (n-1) arg2
     | otherwise = error "can only get Nth consequent on a conditional"
-getNthConsequent n sent = 
+getNthConsequent op n sent = 
     error ("dunno what went wrong. debugging info: getNthConsequent, " ++ show n ++ ", " ++ show sent)
 
-getEmbeddedAntecedentsUpTo :: Sentence -> Sentence -> [Sentence]
-getEmbeddedAntecedentsUpTo stopSent sent
+getEmbeddedAntecedentsUpTo :: Operator -> Sentence -> Sentence -> [Sentence]
+getEmbeddedAntecedentsUpTo op stopSent sent
     | sent == stopSent = []
     | otherwise = case sent of
         Atom a -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
-        (OpNode op [arg1, arg2]) -> 
-            if op == cond
-                then arg1 : getEmbeddedAntecedentsUpTo stopSent arg2
+        (OpNode op' [arg1, arg2]) -> 
+            if op' == op
+                then arg1 : getEmbeddedAntecedentsUpTo op stopSent arg2
                 else error "can only get all antecedents on a chain of conditionals"
 
-makeChain :: [Sentence] -> Sentence -> Sentence
-makeChain [] consq = consq
-makeChain (p:rem) consq = OpNode cond [p, makeChain rem consq]
+makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
+makeChain op [] consq = consq
+makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]

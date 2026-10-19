@@ -3,6 +3,7 @@ module Parse.Proofs where
 import Core
 import Parse.Sentences
 
+import Defs.Operators
 import Defs.Specs
 
 import Data.List

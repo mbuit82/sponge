@@ -273,7 +273,7 @@ strengtheningTransformation' (p:rest) state =
 
 strengtheningTransformation :: Transformation
 strengtheningTransformation state = 
-    strengtheningTransformation' (getEmbeddedAntecedentsUpTo x arg1) state
+    strengtheningTransformation' (getEmbeddedAntecedentsUpTo cond x arg1) state
     where 
         currLine = fromJust (curr state)
         [arg1, _] = args (lineContent currLine)
@@ -337,10 +337,10 @@ pushingBoxTransformation' k state =
         -- [boxOutRef] = refLines currLine
         -- boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
         [unboxed] = args boxOut
-        kInstance = makeKAxiom (getNthConsequent k unboxed)
+        kInstance = makeKAxiom (getNthConsequent cond k unboxed)
         kLine = [Line n kInstance "K Axiom" [] (Just n)]
         [kAnt, kConsq] = args kInstance
-        embed = makeChain (getNEmbeddedAntecedents k c)
+        embed = makeChain cond (getNEmbeddedAntecedents cond k c)
         strengthenedContent = OpNode cond [embed kAnt, embed kConsq]
         dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [n] Nothing)) [] 0
         strengtheningK = map (\(Line ln c j r _) -> Line ln c j r Nothing) (strengtheningTransformation dummyState)
