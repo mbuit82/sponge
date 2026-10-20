@@ -119,12 +119,12 @@ applySubstToSent varMap (OpNode op args) = (OpNode op (map (applySubstToSent var
 -- this is meant for theorems that we have proved. To avoid two O(n) passes (do one instead), could also do substitutions as we go
 -- replacingUNum is the uNum that we want the final line to have? Yes
 -- this does two things: it instantiates vars and it applies an offset
-applyOffsetToInsertedTheorem :: Int -> Map.Map String Sentence -> [Line] -> [Line]
-applyOffsetToInsertedTheorem off varMap lines =
+applyOffsetAndSubstsToInsertedTheorem :: Int -> Map.Map String Sentence -> [Line] -> [Line]
+applyOffsetAndSubstsToInsertedTheorem off varMap lines =
     case lines of 
         [] -> []
         ((Line lNum c j rfs uNum) : ls) ->
-            (Line (lNum + off) (applySubstToSent varMap c) j (map (+ off) rfs) uNum) : (applyOffsetToInsertedTheorem off varMap ls)
+            (Line (lNum + off) (applySubstToSent varMap c) j (map (+ off) rfs) uNum) : (applyOffsetAndSubstsToInsertedTheorem off varMap ls)
 
 -- this is the last thing that should happen
 fixFinalUNum :: Maybe Int -> [Line] -> [Line]
@@ -133,26 +133,17 @@ fixFinalUNum finalUNum [Line lNum c j rfs _] = [Line lNum c j rfs finalUNum]
 fixFinalUNum finalUNum (Line lNum c j rfs _ : remLines) =
     Line lNum c j rfs Nothing : fixFinalUNum finalUNum remLines
 
-applyOffsetToInsertedTheoremOLD :: Maybe Int -> Int -> Map.Map String Sentence -> [Line] -> [Line]
-applyOffsetToInsertedTheoremOLD finalUNum off varMap = 
-    (fixFinalUNum finalUNum) . (applyOffsetToInsertedTheorem off varMap)
+makeCitedTheoremInstance :: Transformant -> Sentence
+makeCitedTheoremInstance state = 
+    makeChain cond refdContentList currContent
+    where 
+        currLine = fromJust (curr state)
+        refdContentList = map lineContent (getCurrentRefLines state)
+        currContent = lineContent currLine
 
-splitOn' :: Char -> String -> [String]
-splitOn' c s = case break (== c) s of
-    (a, []) -> [a]
-    (a, _ : rest) -> a : splitOn' c rest
-
--- technically inefficient w the isInfixOf since every substPair is checked, but gives more flexibility
-getSplitFunc :: Logic -> String -> (String, Sentence)
-getSplitFunc logic substPair = 
-    let parseFunc = parse (operators logic) (definedOperators logic) in
-        if isInfixOf "/" substPair 
-            then ((\[newSent, atomStr] -> (atomStr, parseFunc newSent)) . splitOn' '/') substPair 
-            else ((\[atomStr, newSent] -> (atomStr, parseFunc newSent)) . splitOn' '\\') substPair
-
--- the string here is e.g. "P/Q, Q/P"
-getVarMap :: Logic -> String -> Map.Map String Sentence
-getVarMap logic = Map.fromList . map (getSplitFunc logic) . splitOn' ','
+getVarMapFromState :: Transformant -> Sentence -> Map.Map String Sentence
+getVarMapFromState state schema =
+    getVarMap (makeCitedTheoremInstance state) schema
 
 stripBrackets :: String -> String
 stripBrackets ('[':rest)
@@ -160,22 +151,14 @@ stripBrackets ('[':rest)
 stripBrackets subsStr = error ("somthing wrong w the user-inputted substitution: " ++ subsStr)
 
 -- the string here is the justification
-getTheoremInfo :: Logic -> String -> (String, String, Map.Map String Sentence)
+getTheoremInfo :: Logic -> String -> (String, String)
 getTheoremInfo logic jus =
     let jus' = dropWhile (/= ' ') (dropWhile isSpace jus) in
         let ((proofName'), rest) = break (=='(') (dropWhile isSpace jus') in
             let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
-                let subsStrWithBrackets = dropWhile isSpace (dropWhile (==')') rest') in
-                    (logicName, dropWhileEnd isSpace proofName', getVarMap logic (stripBrackets subsStrWithBrackets))
-
--- citedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
--- citedTheoremIOTransformation logic state = do
---     haskellProof <- snd <$> (getHaskellProof logicName proofName)
---     pure (applyOffsetToInsertedTheoremOLD currUNum offsetToApply varMap haskellProof)
---     where 
---         (logicName, proofName, varMap) = getTheoremInfo logic (justification (fromJust (curr state)))
---         offsetToApply = (offset state + lineNumber (fromJust (curr state)) - 1)
---         currUNum = userNumber (fromJust (curr state))
+                -- let subsStrWithBrackets = dropWhile isSpace (dropWhile (==')') rest') in
+                    -- (logicName, dropWhileEnd isSpace proofName', getVarMapOLD logic (stripBrackets subsStrWithBrackets))
+                    (logicName, dropWhileEnd isSpace proofName')
 
 useCitedTheorems' :: Logic -> Transformant -> IO (Transformant)
 useCitedTheorems' logic state = do
@@ -215,9 +198,7 @@ seeHaskellProof logicName proofName = do
     let relevantContents = map (\l -> (lineNumber l, lineContent l, justification l, refLines l)) pf in
         mapM_ print relevantContents
 
-
-
--- helper for intoApp
+-- helper for markTempLines
 makeReplacementPairs :: (Map.Map Sentence Int) -> [Line] -> [(Int, Int)]
 makeReplacementPairs pairs [] = []
 makeReplacementPairs pairs (ln:lns) = 
@@ -266,6 +247,7 @@ removeTempLines' replacementMap prevLineNumber (ln:lns) =
         Nothing -> removeTempLines' replacementMap prevLineNumber lns 
         Just a -> a : removeTempLines' replacementMap (lineNumber a) lns
 
+-- also renumbers (since dependson removeTempLinesRefs)
 removeTempLines :: [(Sentence, Int)] -> [Line] -> [Line]
 removeTempLines pairs [] = error "why are you trying to remove temp lines from an empty proof"
 removeTempLines pairs (ln:lns) =
@@ -310,21 +292,23 @@ addAppStuff logic leftovers lns =
 appliedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
 appliedTheoremIOTransformation logic state = do
     let currLine = fromJust (curr state) -- get the current state
-    let (logicName, proofName, varMap) = getTheoremInfo logic (justification currLine) -- parse the justification
-    (goal, deductionArgs, userLines) <- getHaskellProofWithoutDeduction logicName proofName -- unfold everything but deduction in the cited proof
-    let appRfs = getUpdatedCurrentRefs state
+    let (logicName, proofName) = getTheoremInfo logic (justification currLine) -- parse the justification
+    (thmGoal, deductionArgs, userLines) <- getHaskellProofWithoutDeduction logicName proofName -- unfold everything but deduction in the cited proof
+    let varMap = getVarMapFromState state thmGoal -- make the varMap from the current and cited lines and cited thm goal
 
-    let offsetToApply = (offset state + lineNumber currLine - 1) -- COPIED. Check if still applies
-    let userLinesSubstd = applyOffsetToInsertedTheorem offsetToApply varMap userLines
+    let offsetToApply = (offset state + lineNumber currLine - 1) -- copied from citedTheoremIOTransformation (deprecated)
+    let userLinesSubstd = applyOffsetAndSubstsToInsertedTheorem offsetToApply varMap userLines
 
+    -- now we start the process of getting rid of the deduction stuff
     let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs
+    let appRfs = getUpdatedCurrentRefs state
     let (pairs, leftovers) = getSentIntPairs deductionArgsSubstd appRfs
 
     let tempLinesMarked = markTempLines pairs userLinesSubstd
 
     let postApp = addAppStuff logic leftovers tempLinesMarked
 
-    let noTempLines = removeTempLines pairs postApp
+    let noTempLines = removeTempLines pairs postApp -- also renumbers
 
     let afterEverything = fixFinalUNum (userNumber currLine) noTempLines
 

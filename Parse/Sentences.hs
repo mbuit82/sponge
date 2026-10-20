@@ -1,4 +1,4 @@
-module Parse.Sentences (parse, instantiateVar, parseWithSubst) where
+module Parse.Sentences (parse, parseWithSubst) where
 
 import Core
 
@@ -91,24 +91,13 @@ getNextSentence' atomFunc opStack sentStack toSee =
 getTopLevelSentence :: (String -> Sentence) -> [Token] -> Sentence
 getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToken : toks ++ [RPToken]))
 
-
+type Parser = [Operator] -> [DefinedOperator] -> String -> Sentence
 
 -- these below are really the only functions that should be exported
-parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
+parse :: Parser
 parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
 
-instantiateVar :: Map.Map String Sentence -> String -> Sentence
-instantiateVar varMap str = case varMap Map.!? str of
-    Nothing -> error ("variable " ++ str ++ " is not in the substitution " ++ show varMap)
-    Just sent -> sent
-
-parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> Substitution -> Sentence
+parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> [(String, Sentence)] -> Sentence
 parseWithSubst ops defOps input varTuples = 
     let varMap = Map.fromList varTuples in
         getTopLevelSentence (instantiateVar varMap) (tokenize ops defOps input)
-
--- -- used in substitutions in derived rules
--- getApplySubstFromTransformant :: Transformant -> String -> Substitution -> Sentence
--- getApplySubstFromTransformant transformant =
---     let logic = transformantLogic transformant in
---         parseWithSubst (operators logic) (definedOperators logic)

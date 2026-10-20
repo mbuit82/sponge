@@ -45,8 +45,6 @@ prettyPrintSentence (OpNode _ _) = error "either n-ary or something's gone wrong
 instance Show Sentence where
     show = prettyPrintSentence
 
-type Substitution = [(String, Sentence)] -- largely just a shortcut
-
 data Axiom = Axiom {axiomName :: String, axiomContent :: Sentence} deriving (Eq, Show, Read) -- low key not necessary
 prettyPrintAxiom :: Axiom -> String
 prettyPrintAxiom axiom =
@@ -136,14 +134,37 @@ isInstance sentence (OpNode schemaOp schemaArgs) =
 haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
+-- presupposes isInstance (ie will crash otherwise)
+getVarMap' :: Sentence -> Sentence -> [(String, Sentence)]
+-- the first Sentence is a sentence, second is a schema
+-- need to think about naming for sentences/formulae
+-- for now, assume everything is well-formed. 
+getVarMap' sentence (Atom a) = [(a, sentence)]
+getVarMap' sentence (OpNode schemaOp schemaArgs) =
+    case sentence of 
+        Atom _ -> error msg
+        OpNode sentOp sentArgs -> 
+            if schemaOp == sentOp 
+                then concatMap (\p -> getVarMap' (fst p) (snd p)) (zip sentArgs schemaArgs)
+                else error msg
+    where 
+        msg = ("looks like sentence " ++ show sentence ++ " isn't an instance of " ++ show (OpNode schemaOp schemaArgs))
+
+getVarMap :: Sentence -> Sentence -> Map.Map String Sentence
+getVarMap sent schema = Map.fromList (getVarMap' sent schema)
+
+instantiateVar :: Map.Map String Sentence -> String -> Sentence
+instantiateVar varMap str = case varMap Map.!? str of
+    Nothing -> error ("variable " ++ str ++ " is not in the substitution " ++ show varMap)
+    Just sent -> sent
+
+
 -- I have a feeling this isn't the best definition; I don't think it's the moral one
 isSubLogicByAxioms :: Logic -> Logic -> Bool
 isSubLogicByAxioms logic1 logic2 =
     and (map (\op -> elem op (operators logic2)) (operators logic1)) &&
     and (map (\rl -> elem rl (inferenceRules logic2)) (inferenceRules logic1)) &&
     and (map (\ax -> elem ax (axioms logic2)) (axioms logic1))
-
-
 
 
 

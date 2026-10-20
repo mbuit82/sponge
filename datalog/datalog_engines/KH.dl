@@ -29,7 +29,7 @@ Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Condition
 Justified(n) :- Line(n, $Conditional($Bot(), _), "Explosion", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional($Conditional(P, $Bot()), $Bot()), P), "Excluded Middle", _, _).
 Justified(n) :- Line(n, $Conditional($Box($Conditional(P, Q)), $Conditional($Box(P), $Box(Q))), "K Axiom", _, _).
-Justified(n) :- Line(n, $Box($Conditional($And($Conditional($Box(P), P), $Conditional(P, $Box(P))), $Box(P))), "H Axiom", _, _).
+Justified(n) :- Line(n, $Conditional($Box($And($Conditional($Box(P), P), $Conditional(P, $Box(P)))), $Box(P)), "H Axiom", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,
 	Justified(i),

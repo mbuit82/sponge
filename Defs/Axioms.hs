@@ -72,9 +72,9 @@ convergenceAxiom = Axiom "Convergence Axiom" (parse [cond, box] [diamond] "M L P
 gettierAxiom :: Axiom -- S4.4 axiom that gets Gettier cases in S4.4 as a logic of belief/knowledge
 gettierAxiom = Axiom "Gettier Axiom" (parse [cond, andOp, orOp, box] [diamond] "(P & M L Q) -> L(P v Q)")
 glAxiom :: Axiom
-glAxiom = Axiom "GL Axiom" (parse [cond, box] [] "L((LP -> P) -> LP)")
+glAxiom = Axiom "GL Axiom" (parse [cond, box] [] "L(LP -> P) -> LP")
 hAxiom :: Axiom -- used in KH logic, slightly weaker than KW
-hAxiom = Axiom "H Axiom" (parse [cond, box] [bicond] "L((LP <> P) -> LP)")
+hAxiom = Axiom "H Axiom" (parse [cond, box] [bicond] "L(LP <> P) -> LP")
 d1Axiom :: Axiom
 d1Axiom = Axiom "D1 Axiom" (parse [cond, box, orOp] [] "L(LP -> Q) v L(LQ -> P)")
 d2Axiom :: Axiom
