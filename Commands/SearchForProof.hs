@@ -22,7 +22,7 @@ doesProofMatchSearchSent searchLogicName searchSent proofName = do
 -- return a list of matching proof names
 searchForProofInLogic :: Sentence -> String -> IO ([String])
 searchForProofInLogic searchSent searchLogicName = do
-    proofFileNames <- listDirectory ("hand_proofs/" ++ searchLogicName)
+    proofFileNames <- listDirectory ("user_proofs/" ++ searchLogicName)
     let proofNames = map (reverse .drop 4 .reverse) proofFileNames in
         filterM (doesProofMatchSearchSent searchLogicName searchSent) proofNames
 

@@ -104,6 +104,6 @@ parseUserProofFile' logic fileContent =
 
 parseUserProofFile :: String -> String -> IO (Sentence, [Sentence], [Line])
 parseUserProofFile logicName proofName = do
-    fileContent <- readFile ("hand_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
+    fileContent <- readFile ("user_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
     createDirectoryIfMissing False ("datalog/datalog_proofs/" ++ logicName ++ "/" ++ proofName)
     pure (parseUserProofFile' (getLogic logicName) fileContent)

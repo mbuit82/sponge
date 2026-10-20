@@ -131,7 +131,7 @@ compileDatalogEngine logicName =
 makeLogicDirectories :: String -> IO ()
 makeLogicDirectories logicName = do
     createDirectoryIfMissing False ("datalog/datalog_proofs/" ++ logicName)
-    createDirectoryIfMissing False ("hand_proofs/" ++ logicName)
+    createDirectoryIfMissing False ("user_proofs/" ++ logicName)
 
 main :: IO ()
 main = do 
