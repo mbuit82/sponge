@@ -6,6 +6,6 @@
 where the colon and {REFSTUFF} is optional (like depends on the justification).
 - For citing/applying proofs, the justification looks like this: "by {VERB} {PROOFNAME} (from {LOGICNAME})" where {VERB} can be any of "citing", "using", or "applying", {PROOFNAME} is the name of the file of the proof you're citing and {LOGICNAME} is the name of the logic that proof is in. If you want to apply a theorem to previous lines (i.e. basically use it as a derived rule), then you add the colon and the line references after the colon
 - currently, you must fully parenthesize, except that you can drop top level parentheses. You can put any amount of space between things, and unary operators don't need parentheses around their argument
-
+- Any line containing the word "IGNORE" in it is completely ignored, and any line after a line with QED in it is also completely ignored. (This way you can add comments with IGNORE, or keep notes under QED.)
 
 see the example proofs to get a better idea. 
