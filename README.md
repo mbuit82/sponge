@@ -1,10 +1,11 @@
 # sponge
 A modular proof checker for propositional axiomatic systems supporting abstractions like deduction, derived rules, and citing other proofs. 
 
-### The project has (at least?) three guiding ideas/goals: 
-- The user should input proofs as close to as they would on paper.
-- The user should be able to abstract parts of a system that they are not focused on away. 
-- The specifications of the logics should reflect their modular nature. 
+### The project has three guiding ideas/goals: 
+- The user should input proofs as close to as they would on paper
+- The user should be able to abstract parts of a system that they are not focused on away
+- The specifications of the logics should reflect their modular nature
+- (I get some practice with Haskell and Datalog)
 
 On the first point, the idea is the tool should be easy to use for anyone who wants to learn axiomatic proofs or practice them or do them for fun, _regardless_ of their programming background. Since axiomatic proofs are usually taught on paper (in math and philosophy from my experience at least), having the input resemble how the user would write proofs on paper makes the learning curve for the tool as smooth as possible. Right now, proofs are fully in .txt files, but specifications and adding derived rules/abstractions involves getting into the Haskell code, which is less optimal. (The reason I've left the specifications in Haskell is that I found myself thinking that the Haskell data structure for specifying logics isn't all that opaque, and any other way of defining them would be only marginally less opaque. See [`Defs/Specs.hs`](Defs/Specs.hs) for the Haskell specifications of logics.)
 
