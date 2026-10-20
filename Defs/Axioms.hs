@@ -70,7 +70,7 @@ elsewhereAxiom :: Axiom
 elsewhereAxiom = Axiom "Elsewhere Axiom" (parse [cond, orOp] [diamond] "M M P -> (P v M P)")
 convergenceAxiom :: Axiom
 convergenceAxiom = Axiom "Convergence Axiom" (parse [cond, box] [diamond] "M L P -> L M P")
-gettierAxiom :: Axiom -- axiom that gets Gettier cases in S4.4 as a logic of belief/knowledge
+gettierAxiom :: Axiom -- axiom that makes Gettier cases in S4.4 as a logic of belief/knowledge
 gettierAxiom = Axiom "Gettier Axiom" (parse [cond, andOp, orOp, box] [diamond] "(P & M L Q) -> L(P v Q)")
 glAxiom :: Axiom
 glAxiom = Axiom "GL Axiom" (parse [cond, box] [] "L(LP -> P) -> LP")
