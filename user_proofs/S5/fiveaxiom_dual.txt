@@ -4,24 +4,24 @@ IGNORE the idea is to do this proof starting from five axiom, to see process of 
 
 
 Proof
-1. |- M ~P -> LM ~P by citing fiveaxiom (from S5)
-2. |- ~LM~P -> ~M~P by applying contrapositive_forward (from minimal): 1
+1. |- M ~P -> LM ~P     by citing fiveaxiom (from S5)
+2. |- ~LM~P -> ~M~P     by applying contrapositive_forward (from minimal): 1
 
 IGNORE get the conditional for the antecedent
-3. |- P -> ~~P by citing double_negation_introduction (from minimal)
-4. |- LP -> L~~P by K reasoning: 3
-5. |- ~L~~P -> ~LP by applying contrapositive_forward (from minimal): 4
-6. |- L~L~~P -> L~LP by K reasoning: 5
-7. |- ~L~LP -> ~L~L~~P by applying contrapositive_forward (from minimal): 6
+3. |- P -> ~~P          by citing double_negation_introduction (from minimal)
+4. |- LP -> L~~P        by K reasoning: 3
+5. |- ~L~~P -> ~LP      by applying contrapositive_forward (from minimal): 4
+6. |- L~L~~P -> L~LP    by K reasoning: 5
+7. |- ~L~LP -> ~L~L~~P  by applying contrapositive_forward (from minimal): 6
 
 IGNORE get the conditional for the consequent
-8. |- ~~P -> P by Excluded Middle
-9. |- L~~P -> LP by K reasoning: 8
-10. |- ~~L~~P -> L~~P by Excluded Middle
-11. |- ~~L~~P -> LP by applying hypothetical_syllogism (from minimal): 10 9
+8. |- ~~P -> P          by Excluded Middle
+9. |- L~~P -> LP        by K reasoning: 8
+10. |- ~~L~~P -> L~~P   by Excluded Middle
+11. |- ~~L~~P -> LP     by applying hypothetical_syllogism (from minimal): 10 9
 
 IGNORE do hypothetical syllogisms
-12. |- MLP -> ~M~P by applying hypothetical_syllogism (from minimal): 7 2
-13. |- MLP -> LP by applying hypothetical_syllogism (from minimal): 12 11
+12. |- MLP -> ~M~P      by applying hypothetical_syllogism (from minimal): 7 2
+13. |- MLP -> LP        by applying hypothetical_syllogism (from minimal): 12 11
 
 QED
