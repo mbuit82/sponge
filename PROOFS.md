@@ -1,4 +1,4 @@
-# Proof rules
+# Syntax for writing proofs
 - first line must be the goal line, and must have "|-" before the goal (note the space there, and in following requirements).
 - The proof is delimited by a header that is a line that only contains the word "Proof" on it
 - You say you want to do deduction by having lines that say "deduction" between the theorem statement and the Proof header; the number of lines with "deduction" is the number of deductions you do
