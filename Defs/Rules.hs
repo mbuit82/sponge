@@ -32,7 +32,7 @@ derivedRules = Map.fromList [
     -- inversionDerivedRule, 
     contrapositionDerivedRule,
     -- switchArgsDerivedRule,
-    adjunctionConsequentDerivedRule, -- from |- P -> Q and |- P -> R infer |- P -> (Q & R)
+    -- adjunctionConsequentDerivedRule, -- from |- P -> Q and |- P -> R infer |- P -> (Q & R)
     strengtheningDerivedRule, -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
     pushingBoxDerivedRule, distributingBoxDerivedRule, kReasoningDerivedRule -- distribute boxes, push boxes through; hope to add diamonds
     ]
@@ -132,31 +132,31 @@ hypSyllDerivedRule = ("Hypothetical Syllogism", hypSyllTransformation)
 modusTollens :: DerivedRule
 modusTollens = ("Modus Tollens", hypSyllTransformation) -- works because modus tollens is a subcase of hypSyll when we don't define neg hehe
 
-adjunctionConsequentTransformation :: Transformation
-adjunctionConsequentTransformation state =
-    [
-        Line n (applySubst "(P -> (Q -> (R -> (Q & R)))) -> ((P -> Q) -> (P -> (R -> (Q & R))))" [("P", p), ("Q", q), ("R", r)]) "Frege" [] Nothing,
-        Line (n+1) (applySubst "(Q -> (R -> (Q & R))) -> (P -> (Q -> (R -> (Q & R))))" [("P", p), ("Q", q), ("R", r)]) "Simp" [] Nothing,
-        Line (n+2) (applySubst "Q -> (R -> (Q & R))" [("P", p), ("Q", q), ("R", r)]) "And-I" [] Nothing,
-        Line (n+3) (applySubst "P -> (Q -> (R -> (Q & R)))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [n+2, n+1] Nothing,
-        Line (n+4) (applySubst "(P -> Q) -> (P -> (R -> (Q & R)))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [n+3, n] Nothing,
-        Line (n+5) (applySubst "P -> (R -> (Q & R))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [i, n+4] Nothing,
-        Line (n+6) (applySubst "(P -> (R -> (Q & R))) -> ((P -> R) -> (P -> (Q & R)))" [("P", p), ("Q", q), ("R", r)]) "Frege" [] Nothing,
-        Line (n+7) (applySubst "(P -> R) -> (P -> (Q & R))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [n+5, n+6] Nothing,
-        Line (n+8) c "Modus Ponens" [j, n+7] Nothing 
-    ]
-    where
-        currLine = fromJust (curr state)
-        c = lineContent currLine
-        n = lineNumber currLine + offset state
-        applySubst = parseWithSubst [cond, andOp] []
-        refdLines = getCurrentRefLines state
-        [i, j] = map lineNumber refdLines
-        [pq, pr] = map lineContent refdLines
-        [p, q] = args pq
-        [_, r] = args pr
-adjunctionConsequentDerivedRule :: DerivedRule
-adjunctionConsequentDerivedRule = ("Adjunction in consequent", adjunctionConsequentTransformation)
+-- adjunctionConsequentTransformation :: Transformation
+-- adjunctionConsequentTransformation state =
+--     [
+--         Line n (applySubst "(P -> (Q -> (R -> (Q & R)))) -> ((P -> Q) -> (P -> (R -> (Q & R))))" [("P", p), ("Q", q), ("R", r)]) "Frege" [] Nothing,
+--         Line (n+1) (applySubst "(Q -> (R -> (Q & R))) -> (P -> (Q -> (R -> (Q & R))))" [("P", p), ("Q", q), ("R", r)]) "Simp" [] Nothing,
+--         Line (n+2) (applySubst "Q -> (R -> (Q & R))" [("P", p), ("Q", q), ("R", r)]) "And-I" [] Nothing,
+--         Line (n+3) (applySubst "P -> (Q -> (R -> (Q & R)))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [n+2, n+1] Nothing,
+--         Line (n+4) (applySubst "(P -> Q) -> (P -> (R -> (Q & R)))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [n+3, n] Nothing,
+--         Line (n+5) (applySubst "P -> (R -> (Q & R))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [i, n+4] Nothing,
+--         Line (n+6) (applySubst "(P -> (R -> (Q & R))) -> ((P -> R) -> (P -> (Q & R)))" [("P", p), ("Q", q), ("R", r)]) "Frege" [] Nothing,
+--         Line (n+7) (applySubst "(P -> R) -> (P -> (Q & R))" [("P", p), ("Q", q), ("R", r)]) "Modus Ponens" [n+5, n+6] Nothing,
+--         Line (n+8) c "Modus Ponens" [j, n+7] Nothing 
+--     ]
+--     where
+--         currLine = fromJust (curr state)
+--         c = lineContent currLine
+--         n = lineNumber currLine + offset state
+--         applySubst = parseWithSubst [cond, andOp] []
+--         refdLines = getCurrentRefLines state
+--         [i, j] = map lineNumber refdLines
+--         [pq, pr] = map lineContent refdLines
+--         [p, q] = args pq
+--         [_, r] = args pr
+-- adjunctionConsequentDerivedRule :: DerivedRule
+-- adjunctionConsequentDerivedRule = ("Adjunction in consequent", adjunctionConsequentTransformation)
 
 -- inversionTransformation :: Transformation
 -- inversionTransformation state = 
@@ -316,8 +316,6 @@ pushingBoxTransformation' 0 state =
         [boxOutLine] = getCurrentRefLines state
         boxOut = lineContent boxOutLine
         boxOutRef = lineNumber boxOutLine
-        -- [boxOutRef] = refLines currLine -- TODO: I think this needs to change. changed to above, leaving in case later have problems
-        -- boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
         [unboxed] = args boxOut
         kInstance = makeKAxiom unboxed
         [_, kConsq] = args kInstance
@@ -334,8 +332,6 @@ pushingBoxTransformation' k state =
         [boxOutLine] = getCurrentRefLines state
         boxOut = lineContent boxOutLine
         boxOutRef = lineNumber boxOutLine
-        -- [boxOutRef] = refLines currLine
-        -- boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
         [unboxed] = args boxOut
         kInstance = makeKAxiom (getNthConsequent cond k unboxed)
         kLine = [Line n kInstance "K Axiom" [] (Just n)]
@@ -353,9 +349,6 @@ pushingBoxTransformation state =
         [boxOutLine] = getCurrentRefLines state
         boxOut = lineContent boxOutLine
         boxOutRef = lineNumber boxOutLine
-        -- [boxOutRef] = getUpdatedCurrentRefs state
-        -- [boxOutRef] = refLines currLine
-        -- boxOut = lineContent (fromJust (findLineWithUserNum state boxOutRef))
         boxesIn = lineContent currLine
 pushingBoxDerivedRule :: DerivedRule
 pushingBoxDerivedRule = ("K reasoning (pushing Box)", pushingBoxTransformation)
@@ -367,7 +360,6 @@ distributingBoxTransformation state =
         currLine = fromJust (curr state)
         [unboxedLine] = getCurrentRefLines state
         unboxedRef = lineNumber unboxedLine
-        -- [unboxedRef] = refLines currLine
         unboxed = lineContent unboxedLine
         necLine = Line n (applySubst "LC" [("C", unboxed)]) "Necessitation" (refLines currLine) (Just n)
         n = lineNumber currLine + offset state
@@ -385,7 +377,5 @@ kReasoningTransformation state =
         [referencedLine] = getCurrentRefLines state
         referencedLineNum = lineNumber referencedLine
         referencedLineContent = lineContent referencedLine
-        -- [referencedLineNum] = refLines (fromJust (curr state))
-        -- referencedLineContent = lineContent (fromJust (findLineWithUserNum state referencedLineNum))
 kReasoningDerivedRule :: DerivedRule
 kReasoningDerivedRule = ("K reasoning", kReasoningTransformation)

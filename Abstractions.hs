@@ -15,6 +15,27 @@ import Data.List
 import Data.Char
 import qualified Data.Map as Map
 
+-- moving up top in case add more stuff at bottom
+getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], [Line])
+getHaskellProofWithoutDeduction logicName proofName = do
+    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
+    let logic = getLogic logicName
+    let afterDerivedRules = applyDerivedRules logic derivedRules userLines -- this way, derived rules can use cited thms
+    afterCitingTheorems <- useCitedTheorems logic afterDerivedRules
+    pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
+
+getHaskellProof :: String -> String -> IO (Sentence, [Line])
+getHaskellProof logicName proofName = do
+    let logic = getLogic logicName
+    (goal, deductionArgs, lns) <- getHaskellProofWithoutDeduction logicName proofName
+    pure (goal, (pruneProofTree . (makeDeductionsFunc logic deductionArgs)) lns)
+
+seeHaskellProof :: String -> String -> IO ()
+seeHaskellProof logicName proofName = do
+    (_, pf) <- getHaskellProof logicName proofName
+    let relevantContents = map (\l -> (lineNumber l, lineContent l, justification l, refLines l)) pf in
+        mapM_ print relevantContents
+
 
 
 -- EXAMPLE: Deduction lemma. 
@@ -100,7 +121,7 @@ applyDerivedRules logic derRulesDict =
 
 
 
--- CITING PROOFS
+-- APPLYING PROOFS
 -- this is going to be redundant. 
 applyIOTransformation :: (Transformant -> IO [Line]) -> Transformant -> IO (Transformant)
 applyIOTransformation ioTransformation oldState = do
@@ -178,26 +199,7 @@ useCitedTheorems :: Logic -> [Line] -> IO [Line]
 useCitedTheorems logic oldProof = do
     (resetUserNumbers . reverse. transformata) <$> (useCitedTheorems' logic (intoTransformant oldProof))
 
-getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], [Line])
-getHaskellProofWithoutDeduction logicName proofName = do
-    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
-    let logic = getLogic logicName
-    afterCitingTheorems <- useCitedTheorems logic userLines -- first, we load in all the cited theorems
-    let afterDerivedRules = applyDerivedRules logic derivedRules afterCitingTheorems
-    pure (goal, deductionArgs, afterDerivedRules) -- this is what we return for the FINAL pass, which is deduction (below)
-
-getHaskellProof :: String -> String -> IO (Sentence, [Line])
-getHaskellProof logicName proofName = do
-    let logic = getLogic logicName
-    (goal, deductionArgs, lns) <- getHaskellProofWithoutDeduction logicName proofName
-    pure (goal, (pruneProofTree . (makeDeductionsFunc logic deductionArgs)) lns)
-
-seeHaskellProof :: String -> String -> IO ()
-seeHaskellProof logicName proofName = do
-    (_, pf) <- getHaskellProof logicName proofName
-    let relevantContents = map (\l -> (lineNumber l, lineContent l, justification l, refLines l)) pf in
-        mapM_ print relevantContents
-
+-- all the new stuff
 -- helper for markTempLines
 makeReplacementPairs :: (Map.Map Sentence Int) -> [Line] -> [(Int, Int)]
 makeReplacementPairs pairs [] = []

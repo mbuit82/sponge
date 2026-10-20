@@ -4,8 +4,8 @@ Theorem: |- L(A & B) -> (LA & LB)
 
 
 Proof
-1. |- (A & B) -> A by And-EL
-2. |- (A & B) -> B by And-ER
-3. |- L(A & B) -> LA by K reasoning: 1
-4. |- L(A & B) -> LB by K reasoning: 2
-5. |- L(A & B) -> (LA & LB) by Adjunction in consequent: 3 4
+1. |- (A & B) -> A              by And-EL
+2. |- (A & B) -> B              by And-ER
+3. |- L(A & B) -> LA            by K reasoning: 1
+4. |- L(A & B) -> LB            by K reasoning: 2
+5. |- L(A & B) -> (LA & LB)     by applying adjunction_in_consequent (from minimal): 3 4
