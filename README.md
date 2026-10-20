@@ -1,5 +1,5 @@
 # sponge
-A modular proof checker for propositional axiomatic systems aimed at allowing the user to work at a high level of abstraction, as they would for proof sketches on paper. 
+A modular proof checker for propositional axiomatic systems aimed at allowing the user to work at a high level of abstraction, so that the user can sketch axiomatic proofs as if on paper and get them automatically checked. 
 
 ### The project has a few guiding ideas/goals: 
 - The user should input proofs as close to as they would on paper
