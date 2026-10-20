@@ -5,17 +5,20 @@ Using deduction
 
 Proof
 1. |- P -> Q                                                by Assumption
-IGNORE 2. |- Q -> (R -> (Q & R))                                   by And-I
-IGNORE 3. |- P -> (R -> (Q & R))                                   by applying hypothetical_syllogism (from minimal): 1 2
-IGNORE 4. |- (P -> (R -> (Q & R))) -> ((P -> R) -> (P -> (Q & R))) by Frege
-IGNORE 5. |- (P -> R) -> (P -> (Q & R))                            by Modus Ponens: 3 4
-
-
-
-
 2. |- P -> R                                                by Assumption
 3. |- Q -> (R -> (Q & R))                                   by And-I
 4. |- P -> (R -> (Q & R))                                   by applying hypothetical_syllogism (from minimal): 1 3
 5. |- (P -> (R -> (Q & R))) -> ((P -> R) -> (P -> (Q & R))) by Frege
 6. |- (P -> R) -> (P -> (Q & R))                            by Modus Ponens: 4 5
 7. |- P -> (Q & R)                                          by Modus Ponens: 2 6
+
+QED
+
+
+
+2. |- Q -> (R -> (Q & R))                                   by And-I
+3. |- P -> (R -> (Q & R))                                   by applying hypothetical_syllogism (from minimal): 1 2
+4. |- (P -> (R -> (Q & R))) -> ((P -> R) -> (P -> (Q & R))) by Frege
+5. |- (P -> R) -> (P -> (Q & R))                            by Modus Ponens: 3 4
+
+

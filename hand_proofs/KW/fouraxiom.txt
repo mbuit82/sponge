@@ -18,3 +18,5 @@ Proof
 11. |- L(LP & P) -> LLP                     by K reasoning: 10
 12. |- LP -> LLP                            by applying hypothetical_syllogism (from minimal): 9 11
 
+QED
+(everything after QED is ignored)

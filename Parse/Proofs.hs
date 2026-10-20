@@ -85,11 +85,19 @@ parseUserProof logic (fl : remFileLines)
     | (all isSpace fl) || "IGNORE" `isInfixOf` fl = parseUserProof logic remFileLines
     | otherwise = getLineFromUser logic fl : parseUserProof logic remFileLines
 
+ignoreAfterQED :: [String] -> [String]
+ignoreAfterQED [] = []
+ignoreAfterQED (ln:lns) =
+    if "QED" `isInfixOf` ln
+        then []
+        else ln : ignoreAfterQED lns
+
 parseUserProofFile' :: Logic -> String -> (Sentence, [Sentence], [Line])
 parseUserProofFile' logic fileContent =
-    let (goalLine, pfLines') = splitByGoalLine (lines fileContent)
+    let (goalLine, pfLines'') = splitByGoalLine (lines fileContent)
         goal = getProofGoal logic [] goalLine
-        (preamble, pfLines) = splitByProofLine [] pfLines'
+        (preamble, pfLines') = splitByProofLine [] pfLines''
+        pfLines = ignoreAfterQED pfLines'
         deductionArgs = getDeductionArgs goal preamble in
             (goal, deductionArgs, parseUserProof logic pfLines)
 
