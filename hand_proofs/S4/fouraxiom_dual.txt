@@ -9,3 +9,6 @@ Proof
 4. |- LL~P -> L~~L~P    by K reasoning: 3
 5. |- ~L~~L~P -> ~LL~P  by applying contrapositive_forward (from minimal): 4
 6. |- ~L~~L~P -> ~L~P   by applying hypothetical_syllogism (from minimal): 5 2
+
+QED
+ideally duals are derived rules
