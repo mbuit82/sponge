@@ -1,4 +1,4 @@
-Theorem : |- M P -> L M P
+Theorem: |- M P -> L M P
 
 
 
