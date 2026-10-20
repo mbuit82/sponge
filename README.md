@@ -1,7 +1,7 @@
 # sponge
 A modular proof checker for propositional axiomatic systems supporting abstractions like deduction, derived rules, and citing other proofs. 
 
-### The project has three guiding ideas/goals: 
+### The project has a few guiding ideas/goals: 
 - The user should input proofs as close to as they would on paper
 - The user should be able to abstract parts of a system that they are not focused on away
 - The specifications of the logics should reflect their modular nature
