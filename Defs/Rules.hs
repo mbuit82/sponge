@@ -34,31 +34,40 @@ derivedRules = Map.fromList [
     -- switchArgsDerivedRule,
     -- adjunctionConsequentDerivedRule, -- from |- P -> Q and |- P -> R infer |- P -> (Q & R)
     strengtheningDerivedRule, -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
-    pushingBoxDerivedRule, distributingBoxDerivedRule, kReasoningDerivedRule -- distribute boxes, push boxes through; hope to add diamonds
+    -- pushingBoxDerivedRule, distributingBoxDerivedRule, 
+    distributingDiamondsDerivedRule, 
+    kReasoningDerivedRule -- distribute boxes, push boxes through; hope to add diamonds
     ]
+
+-- some things need to happen on every transformation. For example, making the last line have the right userNumber reference
+-- why don't we do that at the moment of application? 
+-- And I think transformations in general should only search previous lines by userNumber.
+-- which would mean, when stacking transformations, it's actually good to have the last one have the wrong userNumber reference
+-- so when do we fix them? 
 
 andElimLTransformation :: Transformation
 andElimLTransformation transformant =
     [Line n (applySubst "PandQ -> P" [("PandQ", pandq), ("P", p)]) "And-EL" [] Nothing,
      Line (n + 1) p "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
     where 
-        applySubst = parseWithSubst [cond] []
+        n = lineNumber currLine + offset transformant
         currLine = fromJust (curr transformant)
+        applySubst = parseWithSubst [cond] []
         [pandqLine] = getCurrentRefLines transformant
         (pandq, p) = (lineContent pandqLine, lineContent currLine)
-        n = lineNumber (currLine) + (offset transformant)
 andElimLDerivedRule :: DerivedRule
 andElimLDerivedRule = ("And Elim L", andElimLTransformation)
 
 andElimRTransformation :: Transformation
 andElimRTransformation transformant =
-    [Line n (applySubst "PandQ -> Q" [("PandQ", lineContent pandqLine), ("Q", lineContent currLine)]) "And-ER" [] Nothing,
-     Line (n + 1) (lineContent currLine) "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
+    [Line n (applySubst "PandQ -> Q" [("PandQ", pandq), ("Q", q)]) "And-ER" [] Nothing,
+     Line (n + 1) q "Modus Ponens" [lineNumber pandqLine, n] (userNumber currLine)]
     where 
-        applySubst = parseWithSubst [cond] []
+        n = lineNumber currLine + offset transformant
         currLine = fromJust (curr transformant)
-        n = lineNumber (currLine) + (offset transformant)
+        applySubst = parseWithSubst [cond] []
         [pandqLine] = getCurrentRefLines transformant
+        (pandq, q) = (lineContent pandqLine, lineContent currLine)
 andElimRDerivedRule :: DerivedRule
 andElimRDerivedRule = ("And Elim R", andElimRTransformation)
 
@@ -256,6 +265,8 @@ strengtheningTransformation' [p] state =
         n = lineNumber currLine + offset state
 -- technically wrong bc will have multiple lines with userNumber currLine but I think any resulting searches will find the first one
 -- would matter if we invoke a derived rule on the result of this. so in K! Well no bc I'll avoid that by construction lol
+-- actually wouldn't even matter in that case bc unfolding is strictly increasing in line number
+-- in K you used to have a mapping function that avoided this. removed it and it works
 strengtheningTransformation' (p:rest) state =
     strengthenRest ++ -- the last line looks like chainX -> chainY
     [
@@ -312,10 +323,8 @@ pushingBoxTransformation' 0 state =
     where
         n = lineNumber currLine + offset state
         currLine = fromJust (curr state)
-        c = lineContent currLine
         [boxOutLine] = getCurrentRefLines state
-        boxOut = lineContent boxOutLine
-        boxOutRef = lineNumber boxOutLine
+        (boxOut, boxOutRef) = (lineContent boxOutLine, lineNumber boxOutLine)
         [unboxed] = args boxOut
         kInstance = makeKAxiom unboxed
         [_, kConsq] = args kInstance
@@ -325,7 +334,7 @@ pushingBoxTransformation' k state =
     strengtheningK ++
     [Line (n + 1 + length strengtheningK) (embed kConsq) "Modus Ponens" [n - 1, n + length strengtheningK] (userNumber currLine)]
     where
-        recKRuleCall = map (\(Line ln c j r _) -> Line ln c j r Nothing) (pushingBoxTransformation' (k-1) state)
+        recKRuleCall = (pushingBoxTransformation' (k-1) state)
         n = lineNumber currLine + offset state + length recKRuleCall
         currLine = fromJust (curr state)
         c = lineContent currLine
@@ -334,12 +343,12 @@ pushingBoxTransformation' k state =
         boxOutRef = lineNumber boxOutLine
         [unboxed] = args boxOut
         kInstance = makeKAxiom (getNthConsequent cond k unboxed)
-        kLine = [Line n kInstance "K Axiom" [] (Just n)]
+        kLine = [Line n kInstance "K Axiom" [] (Just 1000)] -- so it can be found in the transformation applied to dummyState
         [kAnt, kConsq] = args kInstance
         embed = makeChain cond (getNEmbeddedAntecedents cond k c)
         strengthenedContent = OpNode cond [embed kAnt, embed kConsq]
-        dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [n] Nothing)) [] 0
-        strengtheningK = map (\(Line ln c j r _) -> Line ln c j r Nothing) (strengtheningTransformation dummyState)
+        dummyState = Transformant kLine (Just (Line (n + 1) strengthenedContent "" [1000] Nothing)) [] 0
+        strengtheningK = (strengtheningTransformation dummyState)
 
 pushingBoxTransformation :: Transformation
 pushingBoxTransformation state =
@@ -355,39 +364,71 @@ pushingBoxDerivedRule = ("K reasoning (pushing Box)", pushingBoxTransformation)
 
 distributingBoxTransformation :: Transformation
 distributingBoxTransformation state =
-    [(\(Line ln c j r _) -> Line ln c j r Nothing) necLine] ++ pushTheBox
+    [necLine] ++ pushTheBox -- seems like I don't need to delete the user num on necLine
     where 
+        n = lineNumber currLine + offset state
+        applySubst = parseWithSubst [cond, box] []
         currLine = fromJust (curr state)
         [unboxedLine] = getCurrentRefLines state
         unboxedRef = lineNumber unboxedLine
         unboxed = lineContent unboxedLine
-        necLine = Line n (applySubst "LC" [("C", unboxed)]) "Necessitation" [unboxedRef] (Just n)
-        n = lineNumber currLine + offset state
-        applySubst = parseWithSubst [cond, box] []
-        pushTheBox = pushingBoxTransformation (Transformant [necLine] (Just (Line (n + 1) (lineContent currLine) "" [n] (userNumber currLine))) [] 0)
+        necLine = Line n (applySubst "LC" [("C", unboxed)]) "Necessitation" [unboxedRef] (Just 1000) -- userNum is that way so can be foudn in pushTheBox transformation
+        -- we could even give the current userNumber to necLine. That would be what chaining would do
+        pushTheBox = pushingBoxTransformation (Transformant [necLine] (Just (Line (n + 1) (lineContent currLine) "" [1000] (userNumber currLine))) [] 0)
 distributingBoxDerivedRule :: DerivedRule
 distributingBoxDerivedRule = ("K reasoning (distributing Box)", distributingBoxTransformation)
 
 kReasoningTransformation :: Transformation
-kReasoningTransformation state =
-    if topOp referencedLineContent == box
-        then pushingBoxTransformation state
-        else distributingBoxTransformation state
+kReasoningTransformation state
+    | isInstance currContent (parse [cond] [diamond] "MP -> MQ") =
+        distributingDiamondsTransformation state
+    | topOp referencedLineContent == box = 
+        pushingBoxTransformation state
+    | otherwise = 
+        distributingBoxTransformation state
     where 
         [referencedLine] = getCurrentRefLines state
-        referencedLineNum = lineNumber referencedLine
         referencedLineContent = lineContent referencedLine
+        currContent = lineContent (fromJust (curr state))
 kReasoningDerivedRule :: DerivedRule
 kReasoningDerivedRule = ("K reasoning", kReasoningTransformation)
 
--- distributingDiamondsTransformation :: Transformation
--- distributingDiamondsTransformation state =
---     [
---         Line n (applySubst "LP -> LQ") ""
---     ]
---     where 
---         currLine = fromJust (curr state)
---         [xyLine] = getCurrentRefLines state
---         [x, y] = args (lineContent xyLine)
---         applySubst = parseWithSubst [cond, box] [diamond, neg]
---         n = lineNumber currLine + offset state
+distributingDiamondsTransformation :: Transformation
+distributingDiamondsTransformation state =
+    [
+        Line n (applySubst "~Q -> ~P" [("P", p), ("Q", q)]) "applying contrapositive_forward (from minimal)" [lineNumber refdLine] Nothing,
+        Line (n + 1) (applySubst "L(~Q -> ~P)" [("P", p), ("Q", q)]) "Necessitation" [n] Nothing,
+        Line (n + 2) (applySubst "L(~Q -> ~P) -> (L~Q -> L~P)" [("P", p), ("Q", q)]) "K Axiom" [] Nothing,
+        Line (n + 3) (applySubst "L~Q -> L~P" [("P", p), ("Q", q)]) "Modus Ponens" [n + 1, n + 2] Nothing,
+        Line (n + 4) (applySubst "MP -> MQ" [("P", p), ("Q", q)]) "applying contrapositive_forward (from minimal)" [n + 3] (userNumber currLine)
+    ]
+    where 
+        n = lineNumber currLine + offset state
+        applySubst = parseWithSubst [cond, box] [diamond, neg]
+        currLine = fromJust (curr state)
+        [refdLine] = getCurrentRefLines state
+        [p, q] = args (lineContent refdLine)
+distributingDiamondsDerivedRule :: DerivedRule
+distributingDiamondsDerivedRule = ("K reasoning (distributing diamonds)", distributingDiamondsTransformation)
+
+
+-- something like this
+chainTransformationsStep :: Transformation -> Transformation -> Transformation
+chainTransformationsStep trans1 trans2 state =
+    trans1Result ++ trans2 (Transformant trans1ResRevRest (Just trans1TopLine) [] 0)
+    where
+        trans1ResRev = reverse (trans1 state)
+        trans1TopLine:trans1ResRevRest = trans1ResRev
+        
+        trans1Result = trans1 state
+    -- undefined
+    -- what do we need to do? We need to:
+        -- zero out the userNumbers of the result of trans1 (we should do that at the end?)
+            -- we actually don't need to do that
+        -- feed the last line of trans1's result to trans2
+    -- hitting a roadblock. Usually, in transformations, you want to end up with the content of the current line. 
+    -- with this way of doing things, you kind of lose the content of the current line, and you need to add
+    -- intermediate contents. (The contents of the line you feed to the dummy transformant)
+    -- Really, what you are doing is syntactic sugar at the proof level. We just need to insert a few lines, that's it
+    -- the problem for the diamond derived rule is that it has a cited theorem and a derived rule. So yeah, we can make it
+    -- so that the derived rule can cite theorems, but we can't make it so that the derived rule cites other derived rules. 

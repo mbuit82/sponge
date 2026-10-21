@@ -8,35 +8,30 @@ Proof
 
 2. |- (LP -> ((LP -> LQ) -> LQ)) by citing assertion (from minimal)
 3. |- (LP & (LP -> LQ)) -> LQ by applying uncurrying (from minimal): 2
-IGNORE again diamond derived rule...
-4. |- ~LQ -> ~(LP & (LP -> LQ)) by applying contrapositive_forward (from minimal): 3
-5. |- L~LQ -> L~(LP & (LP -> LQ)) by K reasoning: 4
-6. |- M(LP & (LP -> LQ)) -> MLQ by applying contrapositive_forward (from minimal): 5
+4. |- M(LP & (LP -> LQ)) -> MLQ by K reasoning: 3
 
-7. |- (LM(LP -> LQ) & MLLP) -> MLQ by applying hypothetical_syllogism (from minimal): 1 6
-8. |- LM(LP -> LQ) -> (MLLP -> MLQ) by applying currying (from minimal): 7
-9. |- ML(LP -> LQ) -> LM(LP -> LQ) by Convergence Axiom
-10. |- ML(LP -> LQ) -> (MLLP -> MLQ) by applying hypothetical_syllogism (from minimal): 9 8
-11. |- MLLP -> (ML(LP -> LQ) -> MLQ) by applying switch_args (from minimal): 10
-12. |- LP -> LLP by 4 Axiom
-IGNORE AGAIN
-13. |- ~LLP -> ~LP by applying contrapositive_forward (from minimal): 12
-14. |- L~LLP -> L~LP by K reasoning: 13
-15. |- MLP -> MLLP by applying contrapositive_forward (from minimal): 14
+5. |- (MLLP & LM(LP -> LQ)) -> MLQ by applying hypothetical_syllogism (from minimal): 1 4
+6. |- MLLP -> (LM(LP -> LQ) -> MLQ) by applying currying (from minimal): 5
 
-16. |- MLP -> (ML(LP -> LQ) -> MLQ) by applying hypothetical_syllogism (from minimal): 15 11
-17. |- ML(LP -> LQ) -> (MLP -> MLQ) by applying switch_args (from minimal): 16
-18. |- L(P -> Q) -> (LP -> LQ) by K Axiom
-19. |- LL(P -> Q) -> L(LP -> LQ) by K reasoning: 18
-20. |- L(P -> Q) -> LL(P -> Q) by 4 Axiom
-21. |- L(P -> Q) -> L(LP -> LQ) by applying hypothetical_syllogism (from minimal): 20 19
-IGNORE AND AGAIN
-22. |- ~L(LP -> LQ) -> ~L(P -> Q) by applying contrapositive_forward (from minimal): 21
-23. |- L~L(LP -> LQ) -> L~L(P -> Q) by K reasoning: 22
-24. |- ML(P -> Q) -> ML(LP -> LQ) by applying contrapositive_forward (from minimal): 23
-25. |- ML(P -> Q) -> (MLP -> MLQ) by applying hypothetical_syllogism (from minimal): 24 17
+7. |- LP -> LLP by 4 Axiom
+8. |- MLP -> MLLP by K reasoning: 7
+
+9. |- MLP -> (LM(LP -> LQ) -> MLQ) by applying hypothetical_syllogism (from minimal): 8 6
+10. |- LM(LP -> LQ) -> (MLP -> MLQ) by applying switch_args (from minimal): 9
+
+11. |- ML(LP -> LQ) -> LM(LP -> LQ) by Convergence Axiom
+12. |- ML(LP -> LQ) -> (MLP -> MLQ) by applying hypothetical_syllogism (from minimal): 11 10
+13. |- L(P -> Q) -> (LP -> LQ) by K Axiom
+14. |- LL(P -> Q) -> L(LP -> LQ) by K reasoning: 13
+15. |- L(P -> Q) -> LL(P -> Q) by 4 Axiom
+16. |- L(P -> Q) -> L(LP -> LQ) by applying hypothetical_syllogism (from minimal): 15 14
+17. |- ML(P -> Q) -> ML(LP -> LQ) by K reasoning: 16
+
+18. |- ML(P -> Q) -> (MLP -> MLQ) by applying hypothetical_syllogism (from minimal): 17 12 
 QED
 
+
 17 lines longer than the paper proof I had for this. Granted 6 lines in this proof can be taken out once I have diamond distribution derived rule, but still would be 11 lines longer. A lot of it is from not being able to substitute classical equivalents
+Now 10 lines longer, with distributing diamonds derived rule
 
 Long as hell, relies on lots of results, and still takes less than a second on my machine. (Without pruning proof tree it's at about 1k lines and takes 1 second, but with it it's at a bit under 500 and takes about half a second.)

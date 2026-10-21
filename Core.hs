@@ -202,25 +202,28 @@ intoTransformant :: [Line] -> Transformant
 intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
 intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
 
+-- function is never used
+-- this is if we want to remove the ability to refer to a sentence... 
 deleteUserNum :: Line -> Line
 deleteUserNum (Line ln c j r _) = Line ln c j r Nothing
 
+-- also never used
 increaseLineNum :: Int -> Line -> Line
 increaseLineNum x (Line ln c j r u) = Line (x+ln) c j r u
 
 -- I think I do need to make a dummy transformation if I want to be able to cite lines from other proofs... 
--- I'm not sure I'll be able to use this as I'm thinking I wanted to
-stackTransformationStep :: Transformation -> Transformation -> Transformation
-stackTransformationStep transf1 transf2 state =
-    transf1Result ++ transf2Result
-    where
-        transf1Result' = transf1 state
-        transf2Result' = transf2 state
-        transf1Result = map deleteUserNum transf1Result'
-        transf2Result = map (increaseLineNum (length transf1Result)) transf2Result'
+-- -- I'm not sure I'll be able to use this as I'm thinking I wanted to
+-- stackTransformationStep :: Transformation -> Transformation -> Transformation
+-- stackTransformationStep transf1 transf2 state =
+--     transf1Result ++ transf2Result
+--     where
+--         transf1Result' = transf1 state
+--         transf2Result' = transf2 state
+--         transf1Result = map deleteUserNum transf1Result'
+--         transf2Result = map (increaseLineNum (length transf1Result)) transf2Result'
 
-stackTransformations :: [Transformation] -> Transformation
-stackTransformations = foldl1' stackTransformationStep
+-- stackTransformations :: [Transformation] -> Transformation
+-- stackTransformations = foldl1' stackTransformationStep
 
 -- finds the first occurrence. This is taken advantage of in the strengthening derived rule
 findLineWithUserNum' :: [Line] -> Int -> Maybe Line
@@ -260,6 +263,7 @@ getCurrentRefLines transformant =
 getUpdatedCurrentRefs :: Transformant -> [Int]
 getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
 
+-- this happens after applying all derived rules, or doing all deduction, or using all cited theorems
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
 

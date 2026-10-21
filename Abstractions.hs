@@ -19,16 +19,14 @@ import qualified Data.Map as Map
 getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], [Line])
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
-    let logic = getLogic logicName
-    let afterDerivedRules = applyDerivedRules logic derivedRules userLines -- this way, derived rules can use cited thms
-    afterCitingTheorems <- useCitedTheorems logic afterDerivedRules
+    let afterDerivedRules = applyDerivedRules derivedRules userLines -- this way, derived rules can use cited thms
+    afterCitingTheorems <- useCitedTheorems afterDerivedRules
     pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
 
 getHaskellProof :: String -> String -> IO (Sentence, [Line])
 getHaskellProof logicName proofName = do
-    let logic = getLogic logicName
     (goal, deductionArgs, lns) <- getHaskellProofWithoutDeduction logicName proofName
-    pure (goal, (pruneProofTree . (makeDeductionsFunc logic deductionArgs)) lns)
+    pure (goal, (pruneProofTree . (makeDeductionsFunc deductionArgs)) lns)
 
 seeHaskellProof :: String -> String -> IO ()
 seeHaskellProof logicName proofName = do
@@ -83,26 +81,31 @@ modusPonensCaseTransformation hyp transformant = -- pLine and pqLine are already
         (hp, hpq, c) = (lineContent pLine, lineContent pqLine, lineContent currLine)
 
 -- deduction should be the last transformation that happens
-useDeduction' :: Logic -> Sentence -> Transformant -> Transformant
-useDeduction' logic hyp state =
+useDeduction' :: Sentence -> Transformant -> Transformant
+useDeduction' hyp state =
     case (curr state) of
         Nothing -> state -- we've reached the end! 
         Just line -> case justification line of
-            "Modus Ponens" -> useDeduction' logic hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
+            "Modus Ponens" -> useDeduction' hyp (applyTransformation (modusPonensCaseTransformation hyp) state)
             "Assumption" -> if lineContent line == hyp 
-                                then useDeduction' logic hyp (applyTransformation hypCaseTransformation state) 
-                                else useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
-            j -> if j `elem` (map axiomName (axioms logic)) || j == "TEMP"
-                        then useDeduction' logic hyp (applyTransformation (axiomCaseTransformation hyp) state)
-                        else error ("unknown justification for deduction" ++ j)
+                                then useDeduction' hyp (applyTransformation hypCaseTransformation state) 
+                                else useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
+            j -> useDeduction' hyp (applyTransformation (axiomCaseTransformation hyp) state)
+            -- by assumption everything else is an axiom. Will result in errors piling up in the datalog. 
+            -- also "unknown justification for deduction" never really appeared so
+            -- also no longer need the "TEMP" case. And that's good bc what the axiom case is really getting at is
+            -- that it's stuff we alr know
+                -- if j `elem` (map axiomName (axioms logic)) || j == "TEMP"
+                --         then 
+                --         else error ("unknown justification for deduction" ++ j)
 
-useDeduction :: Logic -> Sentence -> [Line] -> [Line]
-useDeduction logic hyp = 
-    resetUserNumbers . reverse . transformata . (useDeduction' logic hyp) . intoTransformant
+useDeduction :: Sentence -> [Line] -> [Line]
+useDeduction hyp = 
+    resetUserNumbers . reverse . transformata . (useDeduction' hyp) . intoTransformant
 
-makeDeductionsFunc :: Logic -> [Sentence] -> [Line] -> [Line]
-makeDeductionsFunc logic deductionAntecedents =
-    foldl (.) id (map (useDeduction logic) deductionAntecedents)
+makeDeductionsFunc :: [Sentence] -> [Line] -> [Line]
+makeDeductionsFunc deductionAntecedents =
+    foldl (.) id (map useDeduction deductionAntecedents)
 
 
 
@@ -115,8 +118,8 @@ applyDerivedRules' derRulesDict state =
             Nothing -> applyDerivedRules' derRulesDict (applyTransformation identityTransformation state)
             Just transformation -> applyDerivedRules' derRulesDict (applyTransformation transformation state)
     
-applyDerivedRules :: Logic -> Map.Map String Transformation -> [Line] -> [Line]
-applyDerivedRules logic derRulesDict = 
+applyDerivedRules :: Map.Map String Transformation -> [Line] -> [Line]
+applyDerivedRules derRulesDict = 
     resetUserNumbers . reverse . transformata . (applyDerivedRules' derRulesDict) . intoTransformant
 
 
@@ -172,17 +175,15 @@ stripBrackets ('[':rest)
 stripBrackets subsStr = error ("somthing wrong w the user-inputted substitution: " ++ subsStr)
 
 -- the string here is the justification
-getTheoremInfo :: Logic -> String -> (String, String)
-getTheoremInfo logic jus =
+getTheoremInfo :: String -> (String, String)
+getTheoremInfo jus =
     let jus' = dropWhile (/= ' ') (dropWhile isSpace jus) in
         let ((proofName'), rest) = break (=='(') (dropWhile isSpace jus') in
             let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
-                -- let subsStrWithBrackets = dropWhile isSpace (dropWhile (==')') rest') in
-                    -- (logicName, dropWhileEnd isSpace proofName', getVarMapOLD logic (stripBrackets subsStrWithBrackets))
                     (logicName, dropWhileEnd isSpace proofName')
 
-useCitedTheorems' :: Logic -> Transformant -> IO (Transformant)
-useCitedTheorems' logic state = do
+useCitedTheorems' :: Transformant -> IO (Transformant)
+useCitedTheorems' state = do
     case curr state of
         Nothing -> pure state
         Just line -> 
@@ -190,14 +191,14 @@ useCitedTheorems' logic state = do
                 "using" `isInfixOf` (justification line) || 
                 "citing" `isInfixOf` (justification line)
                 then do 
-                    step <- applyIOTransformation (appliedTheoremIOTransformation logic) state -- CHANGED TO USE APPLYING
-                    useCitedTheorems' logic step
+                    step <- applyIOTransformation citedTheoremIOTransformation state -- CHANGED TO USE APPLYING
+                    useCitedTheorems' step
                 else 
-                    useCitedTheorems' logic (applyTransformation identityTransformation state)
+                    useCitedTheorems' (applyTransformation identityTransformation state)
 
-useCitedTheorems :: Logic -> [Line] -> IO [Line]
-useCitedTheorems logic oldProof = do
-    (resetUserNumbers . reverse. transformata) <$> (useCitedTheorems' logic (intoTransformant oldProof))
+useCitedTheorems :: [Line] -> IO [Line]
+useCitedTheorems oldProof = do
+    (resetUserNumbers . reverse. transformata) <$> (useCitedTheorems' (intoTransformant oldProof))
 
 -- all the new stuff
 -- helper for markTempLines
@@ -285,17 +286,16 @@ makeModusPonensLines' (x:xs) ln =
 makeModusPonensLines :: [Int] -> [Line] -> [Line]
 makeModusPonensLines refs = (makeModusPonensLines' refs) . last
 
-addAppStuff :: Logic -> (Either [Sentence] [Int]) -> [Line] -> [Line]
-addAppStuff logic leftovers lns = 
+addAppStuff :: (Either [Sentence] [Int]) -> [Line] -> [Line]
+addAppStuff leftovers lns = 
     case leftovers of
-        Left deductionArgs -> (makeDeductionsFunc logic deductionArgs) lns 
+        Left deductionArgs -> (makeDeductionsFunc deductionArgs) lns 
         Right refs -> lns ++ makeModusPonensLines refs lns
 
-appliedTheoremIOTransformation :: Logic -> Transformant -> IO [Line]
-appliedTheoremIOTransformation logic state = do
+insertTheoremIOTransformation :: String -> String -> Transformant -> IO [Line]
+insertTheoremIOTransformation thmLogicName thmName state = do
     let currLine = fromJust (curr state) -- get the current state
-    let (logicName, proofName) = getTheoremInfo logic (justification currLine) -- parse the justification
-    (thmGoal, deductionArgs, userLines) <- getHaskellProofWithoutDeduction logicName proofName -- unfold everything but deduction in the cited proof
+    (thmGoal, deductionArgs, userLines) <- getHaskellProofWithoutDeduction thmLogicName thmName -- unfold everything but deduction in the cited proof
     let varMap = getVarMapFromState state thmGoal -- make the varMap from the current and cited lines and cited thm goal
 
     let offsetToApply = (offset state + lineNumber currLine - 1) -- copied from citedTheoremIOTransformation (deprecated)
@@ -307,11 +307,13 @@ appliedTheoremIOTransformation logic state = do
     let (pairs, leftovers) = getSentIntPairs deductionArgsSubstd appRfs
 
     let tempLinesMarked = markTempLines pairs userLinesSubstd
-
-    let postApp = addAppStuff logic leftovers tempLinesMarked
-
+    let postApp = addAppStuff leftovers tempLinesMarked
     let noTempLines = removeTempLines pairs postApp -- also renumbers
-
     let afterEverything = fixFinalUNum (userNumber currLine) noTempLines
-
     pure afterEverything
+
+citedTheoremIOTransformation :: Transformant -> IO [Line]
+citedTheoremIOTransformation state = do
+    let currLine = fromJust (curr state) -- get the current state
+    let (thmLogicName, thmName) = getTheoremInfo (justification currLine) -- parse the justification
+    insertTheoremIOTransformation thmLogicName thmName state
