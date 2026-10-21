@@ -35,6 +35,7 @@ verifyInOrder' n (ln:lns) = if n == lineNumber ln then verifyInOrder' (n + 1) ln
 verifyInOrder :: [Line] -> Bool
 verifyInOrder = verifyInOrder' 1
 
+-- idea is you go backwards through proof
 getSubProofRefs' :: [Line] -> Set.Set Int -> Set.Set Int
 getSubProofRefs' [] dependents = dependents
 getSubProofRefs' (ln:lns) dependents = 
@@ -118,3 +119,29 @@ pruneProofTree :: [Line] -> [Line]
 pruneProofTree lns =
     let noRepeatRefs = removeRepeatRefs lns in
         reNumber (removeUnusedLines (getUsedRefs noRepeatRefs) noRepeatRefs)
+
+-- for seeing how unbalanced a proof tree is
+getSubProofRoots :: [Line] -> Int -> Maybe [Int]
+getSubProofRoots [] rootRef = Nothing
+getSubProofRoots (ln:lns) rootRef
+    | lineNumber ln == rootRef = Just (refLines ln)
+    | otherwise = getSubProofRoots lns rootRef
+
+getSubProofSizes :: [Line] -> Int -> [Int]
+getSubProofSizes lns rootRef = 
+    case getSubProofRoots lns rootRef of
+        Nothing -> error "line not in proof"
+        Just roots -> map (Set.size . getSubProofRefs lns) roots
+
+getSubProofsWithSizes :: [Line] -> Int -> Map.Map Int Int
+getSubProofsWithSizes lns rootRef = 
+    case getSubProofRoots lns rootRef of
+        Nothing -> error "line not in proof"
+        Just roots -> Map.fromList (zip roots (map (Set.size . getSubProofRefs lns) roots))
+
+getSubProofHeight :: [Line] -> Int -> Int
+getSubProofHeight lns rootRef =
+    case getSubProofRoots lns rootRef of
+        Nothing -> error "line not in proof"
+        Just [] -> 1
+        Just roots -> 1 + maximum (map (getSubProofHeight lns) roots)
