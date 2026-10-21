@@ -379,3 +379,15 @@ kReasoningTransformation state =
         referencedLineContent = lineContent referencedLine
 kReasoningDerivedRule :: DerivedRule
 kReasoningDerivedRule = ("K reasoning", kReasoningTransformation)
+
+-- distributingDiamondsTransformation :: Transformation
+-- distributingDiamondsTransformation state =
+--     [
+--         Line n (applySubst "LP -> LQ") ""
+--     ]
+--     where 
+--         currLine = fromJust (curr state)
+--         [xyLine] = getCurrentRefLines state
+--         [x, y] = args (lineContent xyLine)
+--         applySubst = parseWithSubst [cond, box] [diamond, neg]
+--         n = lineNumber currLine + offset state

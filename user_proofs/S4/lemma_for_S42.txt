@@ -1,0 +1,19 @@
+Theorem: |- (MLP & LMQ) -> M(P & Q)
+
+Proof
+1. |- (MLP & LMQ) -> (LMQ & MLP) by citing and_comm_forward (from minimal)
+2. |- (LMQ & MLP) -> M(MQ & LP) by citing diamond_box_and (from K)
+
+3. |- (MQ & LP) -> (LP & MQ) by citing and_comm_forward (from minimal)
+4. |- (LP & MQ) -> M(P & Q) by citing diamond_box_and (from K)
+5. |- (MQ & LP) -> M(P & Q) by applying hypothetical_syllogism (from minimal): 3 4
+
+IGNORE really should make this derived rule
+6. |- ~M(P & Q) -> ~(MQ & LP) by applying contrapositive_forward (from minimal): 5
+7. |- L~M(P & Q) -> L~(MQ & LP) by K reasoning: 6
+8. |- M(MQ & LP) -> MM(P & Q) by applying contrapositive_forward (from minimal): 7
+
+9. |- (LMQ & MLP) -> MM(P & Q) by applying hypothetical_syllogism (from minimal): 2 8
+10. |- MM(P & Q) -> M(P & Q) by citing fouraxiom_dual (from S4)
+11. |- (LMQ & MLP) -> M(P & Q) by applying hypothetical_syllogism (from minimal): 9 10
+QED

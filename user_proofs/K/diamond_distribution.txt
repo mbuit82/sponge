@@ -1,0 +1,10 @@
+Theorem: |- L(P -> Q) -> (MP -> MQ)
+
+Proof
+1. |- (P -> Q) -> (~Q -> ~P) by citing contrapositive_forward (from minimal)
+2. |- L(P -> Q) -> (L~Q -> L~P) by K reasoning: 1
+3. |- (L~Q -> L~P) -> (MP -> MQ) by citing contrapositive_forward (from minimal)
+4. |- L(P -> Q) -> (MP -> MQ) by applying hypothetical_syllogism (from minimal): 2 3
+
+QED
+Ideally a derived rule so can do P -> Q |- MP -> MQ. Want to think about making derived rules nicer before doing that. 
