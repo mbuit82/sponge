@@ -73,7 +73,7 @@ Here comes the problem: for some particular `A`s and `B`s, I have proofs of `|- 
 ------
 |- B
 ```
-For a concrete examples, consider the inference rule
+For a concrete example, consider the inference rule
 ```
 P -> Q   Q -> R
 -------------------
@@ -99,7 +99,7 @@ So the problem is that I'm writing derived rules, which _look_ like `A |- B`, an
 
 Here is a first solution: only write the proof `A |- B`, which then gets translated into `|- A -> B`, add that to your proof, and then since you have `|- A` use modus ponens to get `|- B`. However, this runs into a purely practical problem: the proof of `|- A -> B` from `A |- B` is quite long, and then we have to add another line to do modus ponens. 
 
-We can improve on that solution by taking the inferentialist way of thinking about this seriously. A hypothetical judgement `|- A |- B`, when you replace the supposition with an _actual proof_, becomes a _bone fide_ inference from `|- A` to `|- B`. We only ever pretend to do hypothetical judgements; we basically encode them explicitly in the object language as conditionals `|- A -> B`. However, given we happen to _actually have_ what were the suppositions for the simulated deduction lemma in these derived rule cases, we shouldn't need to _say_ we are supposing them (i.e., unfold deduction) and then apply them, especially since the process of saying that is quite verbose; we should be just use them as they were used in the proof where we supposed them. A bit more concisely, I am looking to be able to do this, in order to avoid unfolding deduction:
+We can improve on that solution by taking the inferentialist way of thinking about this seriously. A hypothetical judgement `A |- B`, when you replace the supposition with an _actual proof_, becomes a _bone fide_ inference from `|- A` to `|- B`. We only ever pretend to do hypothetical judgements; we basically encode them explicitly in the object language as conditionals `|- A -> B`. However, given we happen to _actually have_ what were the suppositions for the simulated deduction lemma in these derived rule cases, we shouldn't need to _say_ we are supposing them (i.e., unfold deduction) and then apply them, especially since the process of saying that is quite verbose; we should be just use them as they were used in the proof where we supposed them. A bit more concisely, I am looking to be able to do this, in order to avoid unfolding deduction:
 ```
 |- A   A |- B
 ----------------
