@@ -89,7 +89,7 @@ and the theorem `|- (P -> Q) -> ((Q -> R) -> (P -> R))`. The (unconditional) jud
 
 [^2]: Though hypothetical syllogism is actually implemented in sponge with a different proof, `|- (Q -> R) -> ((P -> Q) -> (P -> R))`, since it's a bit shorter. 
 
-The way you justify inference rules of that shape is by, from having a proof of `A`, getting one of `B`; since this is for future cases where we _will_ have the proof of `A`, its construction is very similar to the proof of the hypothetical judgement `A |- B`. (In more concrete terms, it's exactly the same as a deduction version of the proof, except we don't have "Assumption" lines and references to "Assumption" lines are replaced by references to cited lines, which have the content `|- A`.) You can _very_ intuitively justify `|- A -> B` by simulating a proof of a hypothetical judgement `A |- B`. In fact, that's the point of the deduction lemma, which we can state as an inference rule: 
+The way you justify inference rules of that shape is by, from having a proof of `A`, getting one of `B`; since this is for future cases where we _will_ have the proof of `A`, its construction is very similar to the proof of the hypothetical judgement `A |- B`. (In more concrete terms, it's exactly the same as a deduction version of the proof, except we don't have "Assumption" lines and references to "Assumption" lines are replaced by references to cited lines, which have the content `|- A`.) You can _very_ intuitively justify `|- A -> B` by simulating a proof of a hypothetical judgement `A |- B`. In fact, that's the point of the deduction lemma, which we can state as an inference rule (relevant later): 
 ```
 A |- B
 ---------
