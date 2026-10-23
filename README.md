@@ -17,7 +17,7 @@ On the second point, if you follow an axiomatic system to the foot of the letter
 
 On the third point, oftentimes with modal logics (and axiomatic systems generally) it's nice to be able to define one system as a simple extension of another. As a result, the logics for this proof checker should be defined modularly to reflect that and make adding logics as easy as possible. For example, K is defined as classical logic + the K axiom and necessitation; classical logic is defined as intuitionistic logic + excluded middle; and intuitionistic logic is defined as minimal logic + explosion. 
 
-For details on the architecture and design choices, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
+For details on the architecture and design choices (and some neat optimizations), see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## Using sponge
 The project needs the following things:
