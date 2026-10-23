@@ -73,3 +73,17 @@ This solution cut down the length of some proofs, and made defining derived rule
 This means that using deduction can actually be advantageous, and usually is if the proof is going to be used as a derived rule a lot. It also arguably takes advantage of what the deduction theorem is saying: in proving things axiomatically, we can _actually suppose_ things that we then _say_ we are supposing in our theorem. If you look at the meaning of the conditional as an expression, a making explicit, of the _act_ of inference, the deduction lemma amounts to taking some meta-level action (supposition) and codifying it in the object-level. We shouldn't need to codify meta-level actions in the object-level if we can replace the meta-level suppositions being codified with object-level assertions, as is done in derived rules. In other words, if we happen to _actually have_ what were the suppositions in the deduction lemma, we shouldn't need to _say_ we are supposing them (i.e., unfold deduction) and then apply them; we should be just use them as they were used in the proof where we supposed them. This also allows the user proofs to operate nearly completely at a higher level of abstraction away from the two (kind of opaque) axioms that get you deduction. 
 
 This solution is currently in [`Abstraction.hs`](`Abstractions.hs`) though may move to its own file if that one gets too big. 
+
+<!-- I had proofs for |- A -> B, and I also wanted to make inference rules of the shape
+|- A
+------
+|- B
+The way you justify the latter is by, from supposing a proof of A, getting one of B, so by the hypothetical judgement A |- B. The way you justify that in an axiomatic setting is purely axiomatically, but thanks to the deduction lemma we have the following derived rule:
+A |- B
+---------
+|- A -> B
+So here is the problem: I'm writing derived rules, which look like A |- B, and I'm also writing proofs, which look like A |- B. Ideally, I write that only once! 
+
+Here is a first solution: only write the proof A |- B, which then gets translated into |- A -> B, add that to your proof, and then since you have |- A use modus ponens to get |- B. However, this runs into a purely practical problem: the proof of |- A -> B from A |- B is quite long, and then we have to add another line to do modus ponens. 
+
+UNFINISHED -->
