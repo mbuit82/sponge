@@ -64,7 +64,7 @@ This optimization can be thought of as a simulation of the cut rule. I say simul
 
 In an inferentialist order of explaining the meaning of logical constants (e.g. Brandom, Martin-Löf), we have _inferences_ (represented with a horizontal line separating premises and conclusions), _hypothetical judgements_ (`A |- B`), and judgements of the truth of object-language conditionals (`|- A -> B`). An object-language conditional _makes explicit_ the _reasoning_ encapsulated in the hypothetical judgement, which, when we have an actual judgement `|- A`, justifies our _doing_ the inference from `|- A` to `|- B` as valid. 
 
-In an axiomatic setting, we have no hypothetical judgements (`A |- B`); we only have absolute judgements (`|- A`). We can, however, (in limited cases, viz. not when we have necessitation) _simulate_ hypothetical judgements, with the deduction proof, that any proof of `B` with an assumed proof `A` can be mechanically turned into a proof of `A -> B`. (I say this is a simulation because our object languages have no notion of hypothetical judgement; we operate with this notion but it then gets compiled away.) This simulation turn the short conditional proof of `A |- B` into a long proof of `|- A -> B` (usually about 3-4 times longer). 
+In an axiomatic setting, we have no hypothetical judgements (`A |- B`); we only have absolute judgements (`|- A`). We can, however, (in limited cases, viz. not when we have necessitation) _simulate_ hypothetical judgements, with the deduction proof, that any proof of `B` with an assumed proof `A` can be mechanically turned into a proof of `A -> B`. (I say this is a simulation because our object languages have no notion of hypothetical judgement; the user operates with this notion but it then gets compiled away.) This simulation turn the short conditional proof of `A |- B` into a long proof of `|- A -> B` (usually about 3-4 times longer). 
 <!-- OLD: In proving things axiomatically, we can _suppose_ things that we then _say_ we are supposing in our theorem. If you look at the meaning of the conditional as an expression, a making explicit, of the _act_ of inference, the deduction lemma amounts to taking some meta-level action (supposition) and codifying it in the object-level. We shouldn't need to codify meta-level actions in the object-level if we can replace the meta-level suppositions being codified with object-level assertions, as is done in derived rules. In other words, if we happen to _actually have_ what were the suppositions in the deduction lemma, we shouldn't need to _say_ we are supposing them (i.e., unfold deduction) and then apply them; we should be just use them as they were used in the proof where we supposed them. -->
 
 Here comes the problem: for some particular `A`s and `B`s, I have proofs of `|- A -> B`, and I also wanted to make derived inference rules of the shape
@@ -73,7 +73,7 @@ Here comes the problem: for some particular `A`s and `B`s, I have proofs of `|- 
 ------
 |- B
 ```
-For a concrete example, consider the inference rule
+For a concrete examples, consider the inference rule
 ```
 P -> Q   Q -> R
 -------------------
@@ -85,11 +85,11 @@ P -> Q
 ---------------------
 (Q -> R) -> (P -> R)
 ```
-and the theorem `|- (P -> Q) -> ((Q -> R) -> (P -> R))`. The (unconditional) judgement gives us a proof of an object-language statement of contraposition (sometimes useful), the first inference rule gives us hypothetical syllogism,[^2] and the second gives us an inference rule for contraposition (usually but not always more useful than the object-language statement—so both are necessary). 
+and the theorem `|- (P -> Q) -> ((Q -> R) -> (P -> R))`. They're all useful: the (unconditional) judgement gives us a proof of an object-language statement of contraposition (sometimes useful), the first inference rule gives us hypothetical syllogism,[^2] and the second gives us an inference rule for contraposition (usually—but not always—more useful than the object-language statement). 
 
 [^2]: Though hypothetical syllogism is actually implemented in sponge with a different proof, `|- (Q -> R) -> ((P -> Q) -> (P -> R))`, since it's a bit shorter. 
 
-The way you justify inference rules of that shape is by, from having a proof of `A`, getting one of `B`; since this is for future cases where we _will_ have the proof of `A`, its construction is very similar to the proof of the hypothetical judgement `A |- B`. (In more concrete terms, it's exactly the same as a deduction version of the proof, except we don't have "Assumption" lines and references to "Assumption" lines are replaced by references to cited lines, which have the content `|- A`.) You can _very_ intuitively justify `|- A -> B` by simulating a proof of a hypothetical judgement `A |- B`. In fact, that's the point of the deduction lemma, which we can state as an inference rule (relevant later): 
+The way you justify inference rules is by (going back to general `A` and `B` now), from having a proof of `A`, getting one of `B`; since this is for future cases where we _will_ have the proof of `A`, its construction is very similar to the proof of the hypothetical judgement `A |- B`. (In more concrete terms, it's exactly the same as a deduction version of the proof, except we don't have "Assumption" lines and references to "Assumption" lines are replaced by references to cited lines, which have the content `|- A`.) You can _very_ intuitively justify `|- A -> B` by simulating a proof of a hypothetical judgement `A |- B`. In fact, that's the point of the deduction lemma, which we can state as an inference rule (relevant later): 
 ```
 A |- B
 ---------
@@ -99,21 +99,29 @@ So the problem is that I'm writing derived rules, which _look_ like `A |- B`, an
 
 Here is a first solution: only write the proof `A |- B`, which then gets translated into `|- A -> B`, add that to your proof, and then since you have `|- A` use modus ponens to get `|- B`. However, this runs into a purely practical problem: the proof of `|- A -> B` from `A |- B` is quite long, and then we have to add another line to do modus ponens. 
 
-We can improve on that solution by taking the inferentialist way of thinking about this (which was implicit above) seriously. Particularly, we are proving that we can _say_ `|- A -> B` by proving that we are justified in taking a hypothetical judgement `|- A |- B`; a hypothetical judgement, when you replace the supposition with an _actual proof_ becomes a _bone fide_ inference from `|- A` to `|- B`. In these derived rule cases, given we have a proof of A and a proof that _if only_ we had a proof of `A` we'd have one of `B`, why can't we _actually take_ that proof of `A` and go to `B`? Expressing this a bit more concisely, I am looking to be able to do this:
+We can improve on that solution by taking the inferentialist way of thinking about this seriously. Particularly, we are proving that we can _say_ `|- A -> B` by proving that we are justified in taking a hypothetical judgement `|- A |- B`; a hypothetical judgement, when you replace the supposition with an _actual proof_ becomes a _bone fide_ inference from `|- A` to `|- B`. In these derived rule cases, given we have a proof of A and a proof that _if only_ we had a proof of `A` we'd have one of `B`, why can't we _actually take_ that proof of `A` and go to `B`? Expressing this a bit more concisely, I am looking to be able to do this:
 ```
 |- A   A |- B
 ----------------
 |- B
 ```
-Which looks like Cut! For logics without necessitation as an inference rule, we are able to do this, since those are the ones in which we can simulate the hypothetical judgement `A |- B`. (I would like to stress that there really never is a place where there is a proper hypothetical judgement in an axiomatic system. There are only absolute judgements, and the deduction construction/proof shows that we can _simulate_ hypothetical judgements.) 
+Which looks like Cut! For logics without necessitation as an inference rule, we are able to do this, since those are the ones in which we can simulate the hypothetical judgement `A |- B`. All that's required is that the simulated hypothetical judgement be in a logic whose axioms and inference rules all have cases under the deduction transformation. 
 
-We can even generalize this. Suppose we've proven a conditional `|- A -> B -> C`, by using deduction, i.e. simulating the hypothetical judgement `A, B |- C`. Given a proof with `|- A`, we'd like to be able to conclude `|- B -> C` similarly to how we deduced `|- B` in the cut above. The following derivation would allow this:
+We can even generalize this. Suppose we've proved a conditional `|- A -> B -> C`, by using deduction, i.e. simulating the hypothetical judgement `A, B |- C`. Given a proof with `|- A`, we'd like to be able to conclude `|- B -> C` similarly to how we deduced `|- B` in the cut above. The following derivation would allow this:
 ```
 |- A    A, B |- C
 -------------------
 B |- C
 ------------
 |- B -> C
+```
+And in case we have `|- B`, too, we'd like to be able to conclude `|- C`, too. In that case we have the following derivation:
+```
+        |- A    A, B |- C
+        -------------------
+|- B    B |- C
+---------------------------
+|- C
 ```
 
 The optimization implements this.[^3] It is currently in [`Abstraction.hs`](`Abstractions.hs`) though may move to its own file if that one gets too big. 
