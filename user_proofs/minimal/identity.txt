@@ -3,6 +3,75 @@ Theorem: |- A -> A
 Proof
 1. |- (A -> ((A -> A) -> A)) -> ((A -> (A -> A)) -> (A -> A)) by Frege
 2. |- A -> ((A -> A) -> A) by Simp
-3. |- (A -> (A -> A)) -> (A -> A) by Modus Ponens: 2 1
-4. |- (A -> (A -> A)) by Simp
-5. |- A -> A by Modus Ponens: 4 3
+3. |- (A -> (A -> A)) by Simp
+4. |- (A -> (A -> A)) -> (A -> A) by Modus Ponens: 2 1
+5. |- A -> A by Modus Ponens: 3 4
+QED
+
+call on 5: feed the combinator in 3 to the combinator in 4
+    call on 3: K
+    call on 4: feed the combinator in 2 to the combinator in 1
+        call on 2: S
+        call on 1: K
+    result of 4: S K
+result of 5: S K K
+
+-- this process, on the other hand, is first line to last line
+-- I think you'd have to do a deep embedding of function applications to check for extensional equality
+-- yeah that way you can evaluate combinators extensionally. Extensional evaluation is where this matters
+1. S x y z
+2. K x
+3. K x
+4. S K y z
+5. S K K z
+
+
+
+S x y z = (x z (y z))
+S (K x) y z = ((K x) z (y z))
+
+
+1. S x y z
+2. K x
+3. K x
+4. S (K x) y z
+5. S (K x) (K x) z
+
+
+
+
+
+1. S x y z
+2. K x
+3. S (K x) y z
+4. K x
+5. S (K x) (K x) z = ((K x) z) ((K x) z)))
+
+
+
+
+
+
+
+
+QED 
+Using deduction to instead prove A |- A
+
+
+
+
+Proof
+1. |- 
+
+K x y = x
+
+S x y z = (x z (y z))
+
+S K K z = (K z (K z)) = z (what about (K z)?)
+
+Could you use combinatory reasoning to simplify proofs? 
+What if you could try to see what the most common sequences of axioms are? Or what common sequences of axioms are? 
+
+What you could do is translate a proof into a set of moves. Like, any instance of (Frege, Simp, Simp, MP, MP) is just to try to make A -> A, so you'd replace those lines by "by identity". 
+
+Are there combinatory logics that correspond to modal logic? 

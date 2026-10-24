@@ -295,3 +295,49 @@ getEmbeddedAntecedentsUpTo op stopSent sent
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
 makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]
+
+-- data Combinator =
+--       K Combinator Combinator
+--     | S Combinator Combinator Combinator
+
+findLineWithLNum :: [Line] -> Int -> Line
+findLineWithLNum [] _ = error "no line with that number"
+findLineWithLNum (ln:lns) lNum
+    | lineNumber ln == lNum = ln
+    | otherwise = findLineWithLNum lns lNum
+
+data Combinator =
+      S
+    | K
+    | I
+    | App Combinator Combinator
+    deriving Eq
+instance Show Combinator where
+    show S = "S"
+    show K = "K"
+    show I = "I"
+    show (App f a) = "(" ++ show f ++ " " ++ show a ++ ")"
+
+-- meant to be applied on a reversed proof
+getCombinator' :: [Line] -> Int -> Combinator
+getCombinator' [] _ = error "empty proof odesn't hvae a combinator"
+getCombinator' revPf lNum =
+    case justification (findLineWithLNum revPf lNum) of
+        "Simp" -> K
+        "Frege" -> S
+        "Modus Ponens" -> 
+            let [arg, func] = refLines (findLineWithLNum revPf lNum) in
+                App (getCombinator' revPf func) (getCombinator' revPf arg)
+
+getCombinator :: [Line] -> Combinator
+getCombinator pf = getCombinator' (reverse pf) (length pf)
+
+partialEval :: Combinator -> Combinator
+partialEval comb = 
+    case comb of
+        App (App S K) K -> I
+        App f a -> App (partialEval f) (partialEval a)
+        S -> S
+        K -> K
+
+-- I want a function that when you run it on S K K, it gives you x. 
