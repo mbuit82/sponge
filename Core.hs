@@ -139,7 +139,6 @@ haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 getVarMap' :: Sentence -> Sentence -> [(String, Sentence)]
 -- the first Sentence is a sentence, second is a schema
 -- need to think about naming for sentences/formulae
--- for now, assume everything is well-formed. 
 getVarMap' sentence (Atom a) = [(a, sentence)]
 getVarMap' sentence (OpNode schemaOp schemaArgs) =
     case sentence of 
@@ -250,7 +249,7 @@ findLineWithContent transformant = findLineWithContent' (transformata transforma
 getCurrentRefLine :: Transformant -> Int -> Line
 getCurrentRefLine state r =
     case findLineWithUserNum state r of
-        Nothing -> error ("ope couldn't find refline " ++ show r ++ " in transformant " ++ show state)
+        Nothing -> error ("ope couldn't find refline " ++ show r ++ " in transformant ")
         Just ln -> ln
 
 getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
@@ -353,6 +352,7 @@ proofTreeToLines' :: Int -> ProofTree -> [Line]
 proofTreeToLines' nextUseableRef (ProofTree pfc pfj spfs) =
     let recs = referencesCase (nextUseableRef + 1) spfs in
         Line nextUseableRef pfc pfj (map (\lns -> lineNumber (lns !! 0)) recs) (Just nextUseableRef) : concat recs
+        -- reversal at the end conserves user line order I think
 
 referencesCase :: Int -> [ProofTree] -> [[Line]]
 referencesCase baseInt [] = []

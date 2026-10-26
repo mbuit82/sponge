@@ -4,7 +4,8 @@ Proof
 1. |- (S -> x) -> (y -> (S -> x)) by Simp
 2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (y -> (S -> x))))) by Strengthening: 1
 
-IGNORE also works. ie, it strengthens the right amount
-IGNORE Theorem: |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (S -> (y -> x)))))
-IGNORE 1. |- x -> (y -> x)                                                         by Simp
-IGNORE 2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (S -> (y -> x))))) by Strengthening: 1
+QED also works. ie, it strengthens the right amount
+Theorem: |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (S -> (y -> x)))))
+Proof
+1. |- x -> (y -> x)                                                         by Simp
+2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (S -> (y -> x))))) by Strengthening: 1

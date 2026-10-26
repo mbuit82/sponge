@@ -1,0 +1,11 @@
+Theorem: |- P -> (P v Q)
+
+using deduction
+
+Proof
+1. |- P by Assumption
+2. |- P -> (P v Q) by Or-IL
+3. |- P v Q by Modus Ponens: 1 2
+
+QED
+This is for the derived rule

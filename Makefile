@@ -7,7 +7,7 @@ datalog-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs Defs/Specs.hs Core.hs
 	@ ghc Commands/SearchForProof.hs -main-is Commands.SearchForProof.main -o exec/search-proof -outputdir build
 	@ ./exec/build-engines
 
-proof-processing: ToDatalog/UserProofs.hs ToDatalog/Utils.hs Abstractions.hs Core.hs
+proof-processing: ToDatalog/UserProofs.hs ToDatalog/Utils.hs ProofTrees.hs Core.hs
 	@ ghc ToDatalog/UserProofs.hs -main-is ToDatalog.UserProofs.main -o exec/build-proof -outputdir build
 	@ ghc Commands/CheckDatalogOutput.hs -main-is Commands.CheckDatalogOutput.main -o exec/check-datalog-output -outputdir build
 

@@ -6,6 +6,7 @@ import Parse.Proofs
 
 import Deduction
 import Defs.Operators
+import Defs.Rules
 -- import Defs.Rules
 import Defs.Specs
 
@@ -20,7 +21,7 @@ getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence],
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
-    let afterDerivedRules = applyDerivedRules derivedRules userProof -- this way, derived rules can use cited thms
+    let afterDerivedRules = applyDerivedRules userProof -- this way, derived rules can use cited thms
     afterCitingTheorems <- useCitedTheorems afterDerivedRules
     pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
 
@@ -40,54 +41,7 @@ seeHaskellProof logicName proofName = do
 
 -- placeholder
 -- really all of this could go to rules tbh. None of the machinery is specific to here. 
-derivedRules :: Map.Map String (ProofTree -> ProofTree)
-derivedRules = Map.empty
 
-applyDerivedRules' :: Map.Map String (ProofTree -> ProofTree) -> ProofTree -> ProofTree
-applyDerivedRules' derRulesDict pfTree =
-    case derRulesDict Map.!? pfJustification pfTree of 
-        Nothing -> pfTree
-        Just func -> func pfTree
-
-applyDerivedRules :: Map.Map String (ProofTree -> ProofTree) -> ProofTree -> ProofTree
-applyDerivedRules derRulesDict = applyOverTree (applyDerivedRules' derRulesDict)
-
--- pandqPf should go first? 
-andElimLDerivedRule :: ProofTree -> ProofTree
-andElimLDerivedRule (ProofTree p pfj spfs) =
-    ProofTree p "Modus Ponens"
-        [pandqPf,
-        ProofTree (applySubst "PandQ -> P" [("PandQ", pandq), ("P", p)]) "And-EL" []]
-    where 
-        applySubst = parseWithSubst [cond] []
-        [pandqPf] = spfs
-        pandq = pfContent pandqPf
-
-andElimRDerivedRule :: ProofTree -> ProofTree
-andElimRDerivedRule (ProofTree q pfj spfs) =
-    ProofTree q "Modus Ponens"
-        [pandqPf,
-        ProofTree (applySubst "PandQ -> Q" [("PandQ", pandq), ("Q", q)]) "And-ER" []]
-    where 
-        applySubst = parseWithSubst [cond] []
-        [pandqPf] = spfs
-        pandq = pfContent pandqPf
-
-adjunctionDerivedRule :: ProofTree -> ProofTree
-adjunctionDerivedRule (ProofTree pandq pfj spfs) =
-    ProofTree pandq "Modus Ponens"
-        [
-            qPf,
-            ProofTree (applySubst "Q -> (P & Q)" [("P", p), ("Q", q)]) "Modus Ponens"
-            [
-                pPf,
-                ProofTree (applySubst "P -> (Q -> (P & Q))" [("P", p), ("Q", q)]) "And-I" []
-            ]
-        ]
-    where
-        applySubst = parseWithSubst [cond, andOp] []
-        [pPf, qPf] = spfs
-        [p, q] = map pfContent spfs
 
 
 
