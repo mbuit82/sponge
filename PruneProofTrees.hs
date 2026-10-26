@@ -92,33 +92,66 @@ removeUnusedLines usedRefs (ln : lns) =
         then removeUnusedLines usedRefs lns
         else ln : (removeUnusedLines usedRefs lns)
 
--- ight now we gotta renumber the proofs. Transformations are overkill I think but have the machinery so
-reNumberTransformation :: Transformation
-reNumberTransformation transformant = 
-    case curr transformant of
-        Nothing -> []
-        Just (Line lNum c j rfs uNum) -> 
-            [Line (offset transformant + 1) c j (getUpdatedCurrentRefs transformant) uNum]
+data Zipper = Zipper {  seen :: [Line], 
+                        curr :: Maybe Line, 
+                        toSee :: [Line] 
+                        } deriving Show
 
--- modified version of applyTransformation
-reNumber' :: Transformant -> Transformant
-reNumber' oldState = 
-    case curr oldState of
-        Nothing -> oldState
-        _ -> reNumber' (Transformant (applied ++ transformata oldState) newCurr newTransformanda (offset oldState + 1))
-    where 
-        applied = reNumberTransformation oldState
-        (newCurr, newTransformanda) = case transformanda oldState of
-            [] -> (Nothing, [])
-            nxt:remLines -> (Just nxt, remLines)
+intoZipper :: [Line] -> Zipper
+intoZipper [] = error "sadfadfdsfdsffdsafds"
+intoZipper (ln:rem) = Zipper [] (Just ln) rem
 
-reNumber :: [Line] -> [Line]
-reNumber = resetUserNumbers.reverse.transformata.reNumber'.intoTransformant
+-- finds the first occurrence. This is taken advantage of in the strengthening derived rule
+findLineWithUserNum :: [Line] -> Int -> Maybe Line
+findLineWithUserNum [] _ = Nothing
+findLineWithUserNum (l : remLines) uNum =
+    case userNumber l of
+        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum remLines uNum
+        _ -> findLineWithUserNum remLines uNum
+
+getCurrentRefLine :: Zipper -> Int -> Line
+getCurrentRefLine zipper r =
+    case findLineWithUserNum (seen zipper) r of
+        Nothing -> error ("ope couldn't find refline " ++ show r ++ " in lines " ++ show (seen zipper))
+        Just ln -> ln
+
+getCurrentRefLines :: Zipper -> Line -> [Line]
+getCurrentRefLines zipper currLine =
+    map (getCurrentRefLine zipper) (refLines currLine)
+
+getUpdatedCurrentRefs :: Zipper -> Line -> [Int]
+getUpdatedCurrentRefs zipper currLine = map lineNumber (getCurrentRefLines zipper currLine)
+
+renumberLine :: Zipper -> Int -> Line -> Line
+renumberLine zipper n currLine =
+    Line 
+        n 
+        (lineContent currLine) 
+        (justification currLine) 
+        (getUpdatedCurrentRefs zipper currLine) 
+        (userNumber currLine)
+
+stepZipper :: (Line -> Line) -> Zipper -> Zipper 
+stepZipper _ (Zipper sn Nothing ts) = error "nothing to step"
+stepZipper f (Zipper sn (Just ln) []) = Zipper ((f ln):sn) Nothing []
+stepZipper f (Zipper sn (Just ln) (nxt:nxts)) = Zipper ((f ln):sn) (Just nxt) nxts
+
+renumber' :: Int -> Zipper -> Zipper
+renumber' n zipper =
+    case curr zipper of
+        Nothing -> zipper
+        Just ln -> renumber' (n+1) (stepZipper (renumberLine zipper n) zipper)
+
+renumber :: [Line] -> [Line]
+renumber = reverse.seen.(renumber' 1).intoZipper
+
+resetUserNumbers :: [Line] -> [Line]
+resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
 
 pruneProofTree :: [Line] -> [Line]
 pruneProofTree lns =
     let noRepeatRefs = removeRepeatRefs lns in
-        reNumber (removeUnusedLines (getUsedRefs noRepeatRefs) noRepeatRefs)
+        renumber (resetUserNumbers (removeUnusedLines (getUsedRefs noRepeatRefs) noRepeatRefs))
 
 -- for seeing how unbalanced a proof tree is
 getSubProofRoots :: [Line] -> Int -> Maybe [Int]

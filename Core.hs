@@ -86,7 +86,6 @@ prettyPrintLine (Line lNum c j rfs uNum) =
 instance Show Line where
     show = prettyPrintLine
 
-
 userNumberHuh :: Maybe Int -> String
 userNumberHuh Nothing = "-"
 userNumberHuh (Just n) = "(" ++ show n ++ ")"
@@ -168,105 +167,6 @@ isSubLogicByAxioms logic1 logic2 =
 
 
 
-
-data Transformant = Transformant {  transformata :: [Line], 
-                                    curr :: Maybe Line, 
-                                    transformanda :: [Line], 
-                                    offset :: Int
-                                    -- transformantLogic :: Logic
-                                    } deriving Show
-
-type Transformation = Transformant -> [Line]
-
-type DerivedRule = (String, Transformation)
-
--- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
-applyTransformation :: Transformation -> Transformant -> Transformant
-applyTransformation transformation oldState =
-    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState)
-    where 
-        applied = reverse (transformation oldState)
-        (newCurr, newTransformanda) = case transformanda oldState of
-            [] -> (Nothing, [])
-            nxt:remLines -> (Just nxt, remLines)
-
-identityTransformation :: Transformation
-identityTransformation transformant = 
-    case curr transformant of
-        Nothing -> []
-        Just (Line lNum c j rfs uNum) -> 
-            [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
-
--- the second arg is supposed to be a proof
-intoTransformant :: [Line] -> Transformant
-intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
-
--- function is never used
--- this is if we want to remove the ability to refer to a sentence... 
-deleteUserNum :: Line -> Line
-deleteUserNum (Line ln c j r _) = Line ln c j r Nothing
-
--- also never used
-increaseLineNum :: Int -> Line -> Line
-increaseLineNum x (Line ln c j r u) = Line (x+ln) c j r u
-
--- I think I do need to make a dummy transformation if I want to be able to cite lines from other proofs... 
--- -- I'm not sure I'll be able to use this as I'm thinking I wanted to
--- stackTransformationStep :: Transformation -> Transformation -> Transformation
--- stackTransformationStep transf1 transf2 state =
---     transf1Result ++ transf2Result
---     where
---         transf1Result' = transf1 state
---         transf2Result' = transf2 state
---         transf1Result = map deleteUserNum transf1Result'
---         transf2Result = map (increaseLineNum (length transf1Result)) transf2Result'
-
--- stackTransformations :: [Transformation] -> Transformation
--- stackTransformations = foldl1' stackTransformationStep
-
--- finds the first occurrence. This is taken advantage of in the strengthening derived rule
-findLineWithUserNum' :: [Line] -> Int -> Maybe Line
-findLineWithUserNum' [] _ = Nothing
-findLineWithUserNum' (l : remLines) uNum =
-    case userNumber l of
-        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum' remLines uNum
-        _ -> findLineWithUserNum' remLines uNum
-    
-findLineWithUserNum :: Transformant -> Int -> Maybe Line
-findLineWithUserNum transformant = findLineWithUserNum' (transformata transformant)
-
-findLineWithContent' :: [Line] -> Sentence -> Maybe Line
-findLineWithContent' [] _ = Nothing
-findLineWithContent' (l : remLines) sent =
-    if lineContent l == sent 
-        then Just l
-        else findLineWithContent' remLines sent
-
-findLineWithContent :: Transformant -> Sentence -> Maybe Line
-findLineWithContent transformant = findLineWithContent' (transformata transformant)
-
-getCurrentRefLine :: Transformant -> Int -> Line
-getCurrentRefLine state r =
-    case findLineWithUserNum state r of
-        Nothing -> error ("ope couldn't find refline " ++ show r ++ " in transformant ")
-        Just ln -> ln
-
-getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
-getCurrentRefLines transformant =
-    case curr transformant of
-        Nothing -> error "why u trying to get reflines when there's no current line"
-        Just currLine -> map (getCurrentRefLine transformant) (refLines currLine)
-    -- let currLine = fromJust (curr transformant) in 
-        -- map (fromJust . findLineWithUserNum transformant) (refLines currLine)
-
-getUpdatedCurrentRefs :: Transformant -> [Int]
-getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
-
--- this happens after applying all derived rules, or doing all deduction, or using all cited theorems
-resetUserNumbers :: [Line] -> [Line]
-resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
-
 -- are used for conditionals in strengthening and K derived rules, but are more general processes so leaving here
 getNEmbeddedAntecedents :: Operator -> Int -> Sentence -> [Sentence]
 getNEmbeddedAntecedents op 0 _ = []
@@ -298,15 +198,7 @@ makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]
 
 
 
-
-
-
-
-
-
-
-
-
+-- PROOFTREES BASICS
 data ProofTree = ProofTree {
     pfContent :: Sentence,
     pfJustification :: String,
@@ -318,9 +210,6 @@ applyOverTreeM func (ProofTree pfc pfj spfs) = do
     spfsUpdated <- mapM (applyOverTreeM func) spfs
     func (ProofTree pfc pfj spfsUpdated)
 
--- applyOverTree :: (ProofTree -> ProofTree) -> ProofTree -> ProofTree
--- applyOverTree func (ProofTree pfc pfj spfs) =
---     func (ProofTree pfc pfj (map (applyOverTree func) spfs))
 applyOverTree :: (ProofTree -> ProofTree) -> ProofTree -> ProofTree
 applyOverTree func = runIdentity . applyOverTreeM (Identity . func)
 

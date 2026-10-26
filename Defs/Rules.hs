@@ -202,16 +202,14 @@ kReasoningDerivedRule pfTree
     where 
         [spf] = subProofs pfTree
 
+-- I think this is what i had in mind
+chainRulesStep :: (ProofTree -> ProofTree) -> (ProofTree -> ProofTree) -> ProofTree -> ProofTree
+chainRulesStep derRule1 derRule2 (ProofTree pfc pfj spfs) =
+    derRule2 (ProofTree pfc pfj [derRule1 (ProofTree pfc pfj spfs)])
 
--- something like this
-chainTransformationsStep :: Transformation -> Transformation -> Transformation
-chainTransformationsStep trans1 trans2 state =
-    trans1Result ++ trans2 (Transformant trans1ResRevRest (Just trans1TopLine) [] 0)
-    where
-        trans1ResRev = reverse (trans1 state)
-        trans1TopLine:trans1ResRevRest = trans1ResRev
-        
-        trans1Result = trans1 state
+chainRules :: [ProofTree -> ProofTree] -> ProofTree -> ProofTree
+chainRules [] = id
+chainRules (rl:remrls) = chainRulesStep rl (chainRules remrls)
     -- undefined
     -- what do we need to do? We need to:
         -- zero out the userNumbers of the result of trans1 (we should do that at the end?)
