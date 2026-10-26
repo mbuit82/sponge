@@ -8,7 +8,7 @@ import Parse.Sentences
 import PruneProofTrees
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof)
-import ProofTrees
+import qualified ProofTrees as PT
 import qualified Data.Map as Map
 
 testEngines :: IO ()

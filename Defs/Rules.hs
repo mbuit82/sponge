@@ -27,14 +27,10 @@ derivedRules = Map.fromList [
     andElimRDerivedRule,  -- from |- A & B infer |- B
     adjunctionDerivedRule, -- from |- A and |- B infer |- A & B
     orElimDerivedRule, -- from |- A -> C and |- B -> C infer |- (A v B) -> C
-    -- hypSyllDerivedRule, -- from |- A -> B and |- B -> C infer |- A -> C
     modusTollens, -- special case of hypothetical syllogism with C=Bot
-    -- inversionDerivedRule, 
+    -- forget about the ones below for now
     contrapositionDerivedRule,
-    -- switchArgsDerivedRule,
-    -- adjunctionConsequentDerivedRule, -- from |- P -> Q and |- P -> R infer |- P -> (Q & R)
     strengtheningDerivedRule, -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
-    -- pushingBoxDerivedRule, distributingBoxDerivedRule, 
     distributingDiamondsDerivedRule, 
     kReasoningDerivedRule -- distribute boxes, push boxes through; hope to add diamonds
     ]

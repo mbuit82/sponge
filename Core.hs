@@ -3,6 +3,7 @@ module Core where
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
+import Data.Functor.Identity
 
 data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
@@ -295,3 +296,78 @@ getEmbeddedAntecedentsUpTo op stopSent sent
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
 makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]
+
+
+
+
+
+
+
+
+
+
+
+
+data ProofTree = ProofTree {
+    pfContent :: Sentence,
+    pfJustification :: String,
+    subProofs :: [ProofTree]
+} deriving Show
+
+applyOverTreeM :: Monad m => (ProofTree -> m ProofTree) -> ProofTree -> m ProofTree
+applyOverTreeM func (ProofTree pfc pfj spfs) = do
+    spfsUpdated <- mapM (applyOverTreeM func) spfs
+    func (ProofTree pfc pfj spfsUpdated)
+
+-- applyOverTree :: (ProofTree -> ProofTree) -> ProofTree -> ProofTree
+-- applyOverTree func (ProofTree pfc pfj spfs) =
+--     func (ProofTree pfc pfj (map (applyOverTree func) spfs))
+applyOverTree :: (ProofTree -> ProofTree) -> ProofTree -> ProofTree
+applyOverTree func = runIdentity . applyOverTreeM (Identity . func)
+
+findLineWithLNum :: [Line] -> Int -> Line
+findLineWithLNum [] _ = error "no line with that number"
+findLineWithLNum (ln:lns) lNum
+    | lineNumber ln == lNum = ln
+    | otherwise = findLineWithLNum lns lNum
+
+linesToProofTree' :: [Line] -> Line -> ProofTree
+linesToProofTree' [] _ = error "empty proof"
+linesToProofTree' lns currLine = 
+    ProofTree 
+        (lineContent currLine) 
+        (justification currLine) 
+        (map ((linesToProofTree' lns) . (findLineWithLNum lns)) (refLines currLine))
+
+linesToProofTree :: [Line] -> ProofTree
+linesToProofTree lns = 
+    case (reverse lns) of
+        [] -> error "empty proof"
+        (lastLn:remLns) ->
+            linesToProofTree' (lastLn:remLns) lastLn
+
+proofTreeToLines' :: Int -> ProofTree -> [Line]
+-- don't believe this commented out is necessary because of Haskell lazy evaluation
+-- proofTreeToLines' nextUseableRef (ProofTree pfc pfj []) =
+--     [Line nextUseableRef pfc pfj [] (Just nextUseableRef)]
+proofTreeToLines' nextUseableRef (ProofTree pfc pfj spfs) =
+    let recs = referencesCase (nextUseableRef + 1) spfs in
+        Line nextUseableRef pfc pfj (map (\lns -> lineNumber (lns !! 0)) recs) (Just nextUseableRef) : concat recs
+
+referencesCase :: Int -> [ProofTree] -> [[Line]]
+referencesCase baseInt [] = []
+referencesCase baseInt (ref1:remRefs) =
+    let firstRefRes = proofTreeToLines' baseInt ref1 in
+    firstRefRes : referencesCase (baseInt + length firstRefRes) remRefs
+
+invertNum :: Int -> Int -> Int
+invertNum lenPf n = lenPf + 1 - n
+
+invertLineNumbers :: Int -> Line -> Line
+invertLineNumbers lenPf (Line lNum c j rfs _) = 
+    Line (invertNum lenPf lNum) c j (map (invertNum lenPf) rfs) (Just (invertNum lenPf lNum))
+
+proofTreeToLines :: ProofTree -> [Line]
+proofTreeToLines pftree = 
+    let revLines' = proofTreeToLines' 1 pftree in
+        reverse (map (invertLineNumbers (length (revLines'))) revLines')

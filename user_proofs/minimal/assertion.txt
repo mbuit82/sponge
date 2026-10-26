@@ -3,13 +3,15 @@ Theorem: |- P -> ((P -> Q) -> Q)
 Proof
 1. |- (P -> Q) -> (P -> Q) by applying identity (from minimal) [(P -> Q)/A]
 2. |- P -> ((P -> Q) -> Q) by applying switch_args (from minimal) [(P -> Q)/P, P/Q, Q/R]: 1
+QED
 
-IGNORE 1. |- ((P -> Q) -> (P -> Q)) -> (((P -> Q) -> P) -> ((P -> Q) -> Q)) by Frege
-IGNORE 2. |- (P -> Q) -> (P -> Q) by citing identity (from minimal) [(P -> Q)/A]
-IGNORE 3. |- ((P -> Q) -> P) -> ((P -> Q) -> Q) by Modus Ponens: 2 1
-IGNORE 4. |- P by Assumption
-IGNORE 5. |- P -> ((P -> Q) -> P) by Simp
-IGNORE 6. |- (P -> Q) -> P by Modus Ponens: 4 5
-IGNORE 7. |- (P -> Q) -> Q by Modus Ponens: 6 3
+
+1. |- ((P -> Q) -> (P -> Q)) -> (((P -> Q) -> P) -> ((P -> Q) -> Q)) by Frege
+2. |- (P -> Q) -> (P -> Q) by citing identity (from minimal) [(P -> Q)/A]
+3. |- ((P -> Q) -> P) -> ((P -> Q) -> Q) by Modus Ponens: 2 1
+4. |- P by Assumption
+5. |- P -> ((P -> Q) -> P) by Simp
+6. |- (P -> Q) -> P by Modus Ponens: 4 5
+7. |- (P -> Q) -> Q by Modus Ponens: 6 3
 IGNORE the old proof used deduction twice. This one uses deduction once (in the obvious way), and it is just as long. No gains. 
 IGNORE derived rules give a faster proof. Now there is a sense in which this reduces to switching the arguments!

@@ -3,7 +3,9 @@ module ToDatalog.UserProofs where
 import Core
 import ToDatalog.Utils
 import Defs.Specs
-import Abstractions
+-- import Abstractions
+import ProofTrees
+import PruneProofTrees
 
 import System.IO
 import Data.List
@@ -47,7 +49,7 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
 userToDatalog' :: String -> String -> IO ()
 userToDatalog' logicName proofName = do
     (goal, haskellProof) <- getHaskellProof logicName proofName
-    compileDatalogProof proofName goal logic (haskellProof)
+    compileDatalogProof proofName goal logic ((pruneProofTree . proofTreeToLines) haskellProof)
     where logic = getLogic logicName
 
 main :: IO ()
