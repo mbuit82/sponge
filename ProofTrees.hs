@@ -17,6 +17,26 @@ import Data.List
 import Data.Char
 import qualified Data.Map as Map
 
+getUserSentencesInOrder :: [Line] -> [Sentence]
+getUserSentencesInOrder userLines =
+    map lineContent userLines
+
+findLNumForContent :: [Line] -> Sentence -> Int
+findLNumForContent [] sent = error ("no line w sentence " ++ (show sent))
+findLNumForContent (ln:lns) sent =
+    if lineContent ln == sent then lineNumber ln else findLNumForContent lns sent
+
+asdf :: String -> String -> IO [Int]
+asdf logicName proofName = do
+    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
+    let userSents = getUserSentencesInOrder userLines
+    (goal, haskellPf) <- getHaskellProof logicName proofName
+    let haskellLines' = proofTreeToLines haskellPf
+    let haskellLines = pruneProofTree haskellLines'
+    pure (map (findLNumForContent haskellLines) userSents)
+
+
+
 getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], ProofTree)
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName

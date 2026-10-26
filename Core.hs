@@ -120,6 +120,7 @@ inferenceRulesWf logic = all (inferenceRuleWf logic) (inferenceRules logic)
 -- END RUNTIME CHECKS
 
 
+
 isInstance :: Sentence -> Sentence -> Bool
 -- the first Sentence is a sentence, second is a schema
 -- need to think about naming for sentences/formulae
