@@ -2,7 +2,6 @@ import Core
 import Defs.Operators
 import Defs.Rules
 import Defs.Specs
-import Abstractions
 import Parse.Proofs
 import Parse.Sentences
 import PruneProofTrees
@@ -37,34 +36,34 @@ testPureProof = compileDatalogProof "axiom1" (OpNode cond [Atom "A", Atom "A"]) 
 -- testOffset :: IO ()
 -- testOffset = compileDatalogProof "axiom1offset" (OpNode cond [Atom "A", Atom "A"]) smallMpc (applyOffsetToLines 10 [l1, l2, l3, l4, l5])
 
-dl1 = Line 1 (OpNode bot []) "Assumption" [] (Just 1)
-dl2 = Line 2 (OpNode cond [OpNode bot [], (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []])]) "Axiom2" [] (Just 2)
-dl3 = Line 3 (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []]) "Modus Ponens" [1, 2] (Just 3)
-dl4 = Line 4 (OpNode cond [OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []], Atom "A"]) "Axiom5" [] (Just 4)
-dl5 = Line 5 (Atom "A") "Modus Ponens" [3, 4] (Just 5)
+-- dl1 = Line 1 (OpNode bot []) "Assumption" [] (Just 1)
+-- dl2 = Line 2 (OpNode cond [OpNode bot [], (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []])]) "Axiom2" [] (Just 2)
+-- dl3 = Line 3 (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []]) "Modus Ponens" [1, 2] (Just 3)
+-- dl4 = Line 4 (OpNode cond [OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode bot []], Atom "A"]) "Axiom5" [] (Just 4)
+-- dl5 = Line 5 (Atom "A") "Modus Ponens" [3, 4] (Just 5)
 
-proofBeforeDeduction = [dl1, dl2, dl3, dl4, dl5]
-proofAfterDeduction = useDeduction (OpNode bot []) proofBeforeDeduction
+-- proofBeforeDeduction = [dl1, dl2, dl3, dl4, dl5]
+-- proofAfterDeduction = useDeduction (OpNode bot []) proofBeforeDeduction
 
-testDeduction :: IO ()
-testDeduction = compileDatalogProof "exfalso_deduction" (OpNode cond [OpNode bot [], Atom "A"]) smallCpc proofAfterDeduction
+-- testDeduction :: IO ()
+-- testDeduction = compileDatalogProof "exfalso_deduction" (OpNode cond [OpNode bot [], Atom "A"]) smallCpc proofAfterDeduction
 
 
--- TEST: deduction twice
-ddll1 = Line 1 (Atom "A") "Assumption" [] (Just 1)
-ddll2 = Line 2 (OpNode cond [Atom "A", OpNode bot []]) "Assumption" [] (Just 2)
-ddll3 = Line 3 (OpNode bot []) "Modus Ponens" [1, 2] (Just 3)
-ddll4 = Line 4 (OpNode cond [OpNode bot [], (OpNode cond [OpNode cond [Atom "B", OpNode bot []], OpNode bot []])]) "Axiom2" [] (Just 4)
-ddll5 = Line 5 (OpNode cond [OpNode cond [Atom "B", OpNode bot []], OpNode bot []]) "Modus Ponens" [3, 4] (Just 5)
-ddll6 = Line 6 (OpNode cond [(OpNode cond [OpNode cond [Atom "B", OpNode bot []], OpNode bot []]), Atom "B"]) "Axiom5" [] (Just 6)
-ddll7 = Line 7 (Atom "B") "Modus Ponens" [5, 6] (Just 7)
+-- -- TEST: deduction twice
+-- ddll1 = Line 1 (Atom "A") "Assumption" [] (Just 1)
+-- ddll2 = Line 2 (OpNode cond [Atom "A", OpNode bot []]) "Assumption" [] (Just 2)
+-- ddll3 = Line 3 (OpNode bot []) "Modus Ponens" [1, 2] (Just 3)
+-- ddll4 = Line 4 (OpNode cond [OpNode bot [], (OpNode cond [OpNode cond [Atom "B", OpNode bot []], OpNode bot []])]) "Axiom2" [] (Just 4)
+-- ddll5 = Line 5 (OpNode cond [OpNode cond [Atom "B", OpNode bot []], OpNode bot []]) "Modus Ponens" [3, 4] (Just 5)
+-- ddll6 = Line 6 (OpNode cond [(OpNode cond [OpNode cond [Atom "B", OpNode bot []], OpNode bot []]), Atom "B"]) "Axiom5" [] (Just 6)
+-- ddll7 = Line 7 (Atom "B") "Modus Ponens" [5, 6] (Just 7)
 
-firstDeduction = (useDeduction (Atom "A") [ddll1, ddll2, ddll3, ddll4, ddll5, ddll6, ddll7])
+-- firstDeduction = (useDeduction (Atom "A") [ddll1, ddll2, ddll3, ddll4, ddll5, ddll6, ddll7])
 
-proofAfterDeductionTwice = useDeduction (OpNode cond [Atom "A", OpNode bot []]) firstDeduction
+-- proofAfterDeductionTwice = useDeduction (OpNode cond [Atom "A", OpNode bot []]) firstDeduction
 
-testDeductionTwice :: IO ()
-testDeductionTwice = compileDatalogProof "axiom4_deductiontwice" (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode cond [Atom "A", Atom "B"]]) smallCpc proofAfterDeductionTwice
+-- testDeductionTwice :: IO ()
+-- testDeductionTwice = compileDatalogProof "axiom4_deductiontwice" (OpNode cond [OpNode cond [Atom "A", OpNode bot []], OpNode cond [Atom "A", Atom "B"]]) smallCpc proofAfterDeductionTwice
 
 
 testOps = [bot, box, cond]
@@ -118,8 +117,8 @@ htd5 = getLineFromUser smallCpc "5. |- A                                     by 
 
 -- proofAfterDeduction = useDeduction smallCpc (OpNode bot []) [htd1, htd2, htd3, htd4, htd5]
 
-testParserWithDeduction :: IO ()
-testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parse testOps testDefOps "(Bot -> A)") smallCpc (useDeduction (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
+-- testParserWithDeduction :: IO ()
+-- testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parse testOps testDefOps "(Bot -> A)") smallCpc (useDeduction (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
 
 asdf = parse testOps testDefOps "(Bot -> ((A -> Bot) -> Bot) -> Bot)"
 
@@ -131,9 +130,9 @@ htdd5 = getLineFromUser smallCpc "5. |- ((B -> Bot) -> Bot)           by Modus P
 htdd6 = getLineFromUser smallCpc "6. |- (((B -> Bot) -> Bot) -> B)    by Axiom5"
 htdd7 = getLineFromUser smallCpc "7. |- B                             by Modus Ponens, 5 6"
 
-deductionOnceLineParser = useDeduction (parse testOps testDefOps "A") [htdd1, htdd2, htdd3, htdd4, htdd5, htdd6, htdd7]
-deductionTwiceLineParser = useDeduction (parse testOps testDefOps "(A -> Bot)") deductionOnceLineParser
-testParserWithTwoDeductions = compileDatalogProof "axiom4_deductiontwice" (parse testOps testDefOps "((A -> Bot) -> (A -> B))") smallCpc deductionTwiceLineParser
+-- deductionOnceLineParser = useDeduction (parse testOps testDefOps "A") [htdd1, htdd2, htdd3, htdd4, htdd5, htdd6, htdd7]
+-- deductionTwiceLineParser = useDeduction (parse testOps testDefOps "(A -> Bot)") deductionOnceLineParser
+-- testParserWithTwoDeductions = compileDatalogProof "axiom4_deductiontwice" (parse testOps testDefOps "((A -> Bot) -> (A -> B))") smallCpc deductionTwiceLineParser
 
 
 
