@@ -1,12 +1,33 @@
-Theorem: |- (MLP & LMQ) -> M(P & Q)
+Theorem: |- MLP -> (LMQ -> M(P & Q))
 
 Proof
-1. |- (MLP & LMQ) -> M(MQ & LP) by citing diamond_box_and (from K)
+1. |- MLP -> (LMQ -> M(MQ & LP)) by citing diamond_box_and (from K)
 
-2. |- (MQ & LP) -> M(P & Q) by citing diamond_box_and (from K)
-3. |- M(MQ & LP) -> MM(P & Q) by K reasoning: 2
+
+
+2. |- MQ -> (LP -> M(P & Q)) by citing diamond_box_and (from K)
+
+3. |- (MQ & LP) -> M(P & Q) by applying uncurrying (from minimal): 2
+4. |- M(MQ & LP) -> MM(P & Q) by K reasoning: 3
+5. |- MM(P & Q) -> M(P & Q) by citing fouraxiom_dual (from S4)
+6. |- M(MQ & LP) -> M(P & Q) by applying hypothetical_syllogism (from minimal): 4 5
+
+7. |- (LMQ ->(M(MQ & LP) -> M(P & Q))) -> ((LMQ -> M(MQ & LP)) -> (LMQ -> M(P & Q))) by Frege
+8. |- (M(MQ & LP) -> M(P & Q)) -> (LMQ ->(M(MQ & LP) -> M(P & Q))) by Simp
+9. |- LMQ ->(M(MQ & LP) -> M(P & Q)) by Modus Ponens: 6 8
+10. |- (LMQ -> M(MQ & LP)) -> (LMQ -> M(P & Q)) by Modus Ponens: 9 7
+11. |- (MLP -> ((LMQ -> M(MQ & LP)) -> (LMQ -> M(P & Q)))) -> ((MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q)))) by Frege
+12. |- ((LMQ -> M(MQ & LP)) -> (LMQ -> M(P & Q)))-> (MLP -> ((LMQ -> M(MQ & LP)) -> (LMQ -> M(P & Q)))) by Simp
+13. |- MLP -> ((LMQ -> M(MQ & LP)) -> (LMQ -> M(P & Q))) by Modus Ponens: 10 12
+14. |- (MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q))) by Modus Ponens: 13 11
+15. |- MLP -> (LMQ -> M(P & Q)) by Modus Ponens: 1 14
+QED
+
+
+7. |- (MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q))) by Strengthening: 3
+8. |- MLP -> (LMQ -> M(P & Q)) by Modus Ponens: 1 6
+
 
 4. |- (MLP & LMQ) -> MM(P & Q) by applying hypothetical_syllogism (from minimal): 1 3
 5. |- MM(P & Q) -> M(P & Q) by citing fouraxiom_dual (from S4)
 6. |- (MLP & LMQ) -> M(P & Q) by applying hypothetical_syllogism (from minimal): 4 5
-QED

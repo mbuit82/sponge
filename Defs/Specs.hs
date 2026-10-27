@@ -88,7 +88,7 @@ specIntuitionistic :: Spec
 specIntuitionistic = extendWithAxioms specMinimal [explosion] "intuitionistic"
 
 specClassical :: Spec
-specClassical = extendWithAxioms specIntuitionistic [lem] "classical"
+specClassical = extendWithAxioms specIntuitionistic [lem_bot] "classical"
 
 specK :: Spec
 specK = Spec {

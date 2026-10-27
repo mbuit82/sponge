@@ -2,9 +2,9 @@ Theorem: |- ML(P -> Q) -> (MLP -> MLQ)
 
 
 
-
+NOTE: WILL NOT WORK RIGHT NOW
 Proof
-1. |- (MLLP & LM(LP -> LQ)) -> M(LP & (LP -> LQ)) by citing lemma_for_S42 (from S4)
+1. |- MLLP -> (LM(LP -> LQ) -> M(LP & (LP -> LQ))) by citing lemma_for_S42 (from S4)
 
 2. |- (LP -> ((LP -> LQ) -> LQ)) by citing assertion (from minimal)
 3. |- (LP & (LP -> LQ)) -> LQ by applying uncurrying (from minimal): 2
@@ -21,6 +21,7 @@ Proof
 
 11. |- ML(LP -> LQ) -> LM(LP -> LQ) by Convergence Axiom
 12. |- ML(LP -> LQ) -> (MLP -> MLQ) by applying hypothetical_syllogism (from minimal): 11 10
+
 13. |- L(P -> Q) -> (LP -> LQ) by K Axiom
 14. |- LL(P -> Q) -> L(LP -> LQ) by K reasoning: 13
 15. |- L(P -> Q) -> LL(P -> Q) by 4 Axiom
@@ -35,3 +36,31 @@ QED
 Now 10 lines longer, with distributing diamonds derived rule
 
 Long as hell, relies on lots of results, and still takes less than a second on my machine. (Without pruning proof tree it's at about 1k lines and takes 1 second, but with it it's at a bit under 500 and takes about half a second.)
+
+
+
+
+LM(P -> Q) -> (MLP -> MLQ) this is a 4 theorem. I don't quite see how. (without the big detour above)
+L(P -> Q) -> (LMP -> LMQ) is an S4 theorem. 
+
+
+MP -> (ML(P -> Q) -> MQ)
+LMP -> (LML(P -> Q) -> LMQ)
+
+
+
+
+(P -> Q) -> (~Q -> ~P)
+L(P -> Q) -> (L~Q -> L~P)
+L(P -> Q) -> (MP -> MQ)
+LL(P -> Q) -> (LMP -> LMQ)
+L(P -> Q) -> (LMP -> LMQ)
+LM(LP -> LQ) -> (LMP -> LMQ)
+LML(P -> Q) -> LM(LP -> LQ)
+LMP -> LMLP
+
+LML(P -> Q) -> (MLP -> MLQ)
+MLL(P -> Q) -> (MLP -> MLQ)
+L(LP -> LQ) -> (MLP -> MLQ)
+11. |- M(LP -> LQ) -> M(LP -> LQ)
+12. |- 

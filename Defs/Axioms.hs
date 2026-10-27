@@ -49,8 +49,13 @@ orE :: Axiom
 orE = Axiom "Or-E" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")
 explosion :: Axiom
 explosion = Axiom "Explosion" (parse [cond, bot] [] "Bot -> P")
+lem_bot :: Axiom
+lem_bot = Axiom "Excluded Middle" (parse [cond] [neg] "~ ~ P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
+
+
 lem :: Axiom
-lem = Axiom "Excluded Middle" (parse [cond] [neg] "~ ~ P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
+lem = Axiom "Excluded Middle" (parse [cond, negOp] [] "~ ~ P -> P")
+
 
 -- modal axioms
 -- In lieu of ability to type a box and a diamond, going with Cresswell's 'L' and 'M' for box and diamond respectively

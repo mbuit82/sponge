@@ -192,6 +192,7 @@ getEmbeddedAntecedentsUpTo op stopSent sent
             if op' == op
                 then arg1 : getEmbeddedAntecedentsUpTo op stopSent arg2
                 else error "can only get all antecedents on a chain of conditionals"
+        _ -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
 
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
