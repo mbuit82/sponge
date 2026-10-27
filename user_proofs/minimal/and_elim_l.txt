@@ -1,4 +1,0 @@
-Theorem: |- (A & B) -> A
-
-Proof
-1. |- (A & B) -> A by And-EL

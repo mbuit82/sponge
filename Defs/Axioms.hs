@@ -55,17 +55,17 @@ orE = Axiom "Or Elim" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((
 explosion :: Axiom
 explosion = Axiom "Explosion" (parse [cond, bot] [] "Bot -> P")
 lem_bot :: Axiom
-lem_bot = Axiom "Excluded Middle" (parse [cond] [neg] "~ ~ P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
+lem_bot = Axiom "Excluded Middle" (parse [cond] [neg] "~~P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
 
 -- this axiomatization uses a negation operator. Easier to work with for strengthening with modal operators. 
 contrapos :: Axiom
-contrapos = Axiom "Contraposition" (parse [cond, negOp] [] "(P -> Q) -> (~Q -> ~P)")
+contrapos = Axiom "Contrapositive" (parse [cond, negOp] [] "(P -> Q) -> (~Q -> ~P)")
 dni :: Axiom
 dni = Axiom "Double Negation Intro" (parse [cond, negOp] [] "P -> ~~P")
 exfalso :: Axiom
 exfalso = Axiom "Ex Falso Quodlibet" (parse [cond, negOp] [] "~P -> (P -> Q)")
 lem :: Axiom
-lem = Axiom "Excluded Middle" (parse [cond, negOp] [] "~ ~ P -> P")
+lem = Axiom "Excluded Middle" (parse [cond, negOp] [] "~~P -> P")
 
 
 -- modal axioms

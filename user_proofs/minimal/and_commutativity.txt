@@ -5,4 +5,4 @@ Theorem: |- (A & B) <> (B & A)
 Proof
 1. |- (A & B) -> (B & A) by citing and_comm_forward (from minimal) [A/A, B/B]
 2. |- (B & A) -> (A & B) by citing and_comm_forward (from minimal) [B/A, A/B]
-3. |- (A & B) <> (B & A) by Adjunction: 1 2
+3. |- (A & B) <> (B & A) by And Intro: 1 2

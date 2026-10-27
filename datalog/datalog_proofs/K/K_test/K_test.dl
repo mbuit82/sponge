@@ -2,13 +2,13 @@
 
 Goal($Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A"))))).
 
-Line(1, $Conditional($Atom("A"), $Conditional($Atom("B"), $Atom("A"))), "Simp", 0, 0).
-Line(2, $Box($Conditional($Atom("A"), $Conditional($Atom("B"), $Atom("A")))), "Necessitation", 1, 0).
-Line(3, $Conditional($Box($Conditional($Atom("A"), $Conditional($Atom("B"), $Atom("A")))), $Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A"))))), "K Axiom", 0, 0).
-Line(4, $Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A")))), "Modus Ponens", 2, 3).
-Line(5, $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A")))), "K Axiom", 0, 0).
-Line(6, $Conditional($Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A")))), $Conditional($Box($Atom("A")), $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A")))))), "Simp", 0, 0).
-Line(7, $Conditional($Box($Atom("A")), $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A"))))), "Modus Ponens", 5, 6).
-Line(8, $Conditional($Conditional($Box($Atom("A")), $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A"))))), $Conditional($Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A")))), $Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A")))))), "Frege", 0, 0).
-Line(9, $Conditional($Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A")))), $Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A"))))), "Modus Ponens", 7, 8).
-Line(10, $Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A")))), "Modus Ponens", 4, 9).
+Line(1, $Conditional($Conditional($Box($Atom("A")), $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A"))))), $Conditional($Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A")))), $Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A")))))), "Frege", 0, 0).
+Line(2, $Conditional($Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A")))), $Conditional($Box($Atom("A")), $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A")))))), "Simp", 0, 0).
+Line(3, $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A")))), "K Axiom", 0, 0).
+Line(4, $Conditional($Box($Atom("A")), $Conditional($Box($Conditional($Atom("B"), $Atom("A"))), $Conditional($Box($Atom("B")), $Box($Atom("A"))))), "Modus Ponens", 3, 2).
+Line(5, $Conditional($Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A")))), $Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A"))))), "Modus Ponens", 4, 1).
+Line(6, $Conditional($Box($Conditional($Atom("A"), $Conditional($Atom("B"), $Atom("A")))), $Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A"))))), "K Axiom", 0, 0).
+Line(7, $Conditional($Atom("A"), $Conditional($Atom("B"), $Atom("A"))), "Simp", 0, 0).
+Line(8, $Box($Conditional($Atom("A"), $Conditional($Atom("B"), $Atom("A")))), "Necessitation", 7, 0).
+Line(9, $Conditional($Box($Atom("A")), $Box($Conditional($Atom("B"), $Atom("A")))), "Modus Ponens", 8, 6).
+Line(10, $Conditional($Box($Atom("A")), $Conditional($Box($Atom("B")), $Box($Atom("A")))), "Modus Ponens", 9, 5).

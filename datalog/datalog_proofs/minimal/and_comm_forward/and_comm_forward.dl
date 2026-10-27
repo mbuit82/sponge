@@ -5,11 +5,11 @@ Goal($Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A")))).
 Line(1, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))), $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), $Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))))), "Frege", 0, 0).
 Line(2, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("B"), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A"))))), $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Atom("B")), $Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))))), "Frege", 0, 0).
 Line(3, $Conditional($Conditional($Atom("B"), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))), $Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("B"), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))))), "Simp", 0, 0).
-Line(4, $Conditional($Atom("B"), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))), "And-I", 0, 0).
+Line(4, $Conditional($Atom("B"), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))), "And Intro", 0, 0).
 Line(5, $Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("B"), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A"))))), "Modus Ponens", 4, 3).
 Line(6, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Atom("B")), $Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A"))))), "Modus Ponens", 5, 2).
-Line(7, $Conditional($And($Atom("A"), $Atom("B")), $Atom("B")), "And-ER", 0, 0).
+Line(7, $Conditional($And($Atom("A"), $Atom("B")), $Atom("B")), "And Elim R", 0, 0).
 Line(8, $Conditional($And($Atom("A"), $Atom("B")), $Conditional($Atom("A"), $And($Atom("B"), $Atom("A")))), "Modus Ponens", 7, 6).
 Line(9, $Conditional($Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), $Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A")))), "Modus Ponens", 8, 1).
-Line(10, $Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), "And-EL", 0, 0).
+Line(10, $Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), "And Elim L", 0, 0).
 Line(11, $Conditional($And($Atom("A"), $Atom("B")), $And($Atom("B"), $Atom("A"))), "Modus Ponens", 10, 9).

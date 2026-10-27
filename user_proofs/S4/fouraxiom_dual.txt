@@ -3,11 +3,11 @@ Theorem: |- MMP -> MP
 
 Proof
 1. |- L~P -> LL~P       by 4 Axiom
-2. |- ~LL~P -> ~L~P     by applying contrapositive_forward (from minimal): 1
+2. |- ~LL~P -> ~L~P     by Contrapositive: 1
 
-3. |- L~P -> ~~L~P      by citing double_negation_introduction (from minimal)
+3. |- L~P -> ~~L~P      by Double Negation Intro
 4. |- LL~P -> L~~L~P    by K reasoning: 3
-5. |- ~L~~L~P -> ~LL~P  by applying contrapositive_forward (from minimal): 4
+5. |- ~L~~L~P -> ~LL~P  by Contrapositive: 4
 6. |- ~L~~L~P -> ~L~P   by applying hypothetical_syllogism (from minimal): 5 2
 
 QED

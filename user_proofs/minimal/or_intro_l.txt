@@ -1,7 +1,0 @@
-Theorem: |- P -> (P v Q)
-
-Proof
-1. |- P -> (P v Q) by Or-IL
-
-QED
-This is for the derived rule

@@ -2,8 +2,8 @@
 
 Goal($And($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Not($Not($Atom("P"))), $Atom("P")))).
 
-Line(1, $Conditional($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Conditional($Not($Not($Atom("P"))), $Atom("P")), $And($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Not($Not($Atom("P"))), $Atom("P"))))), "And-I", 0, 0).
-Line(2, $Conditional($Atom("P"), $Not($Not($Atom("P")))), "Double Negation Introduction", 0, 0).
+Line(1, $Conditional($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Conditional($Not($Not($Atom("P"))), $Atom("P")), $And($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Not($Not($Atom("P"))), $Atom("P"))))), "And Intro", 0, 0).
+Line(2, $Conditional($Atom("P"), $Not($Not($Atom("P")))), "Double Negation Intro", 0, 0).
 Line(3, $Conditional($Conditional($Not($Not($Atom("P"))), $Atom("P")), $And($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Not($Not($Atom("P"))), $Atom("P")))), "Modus Ponens", 2, 1).
 Line(4, $Conditional($Not($Not($Atom("P"))), $Atom("P")), "Excluded Middle", 0, 0).
 Line(5, $And($Conditional($Atom("P"), $Not($Not($Atom("P")))), $Conditional($Not($Not($Atom("P"))), $Atom("P"))), "Modus Ponens", 4, 3).

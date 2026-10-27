@@ -41,9 +41,10 @@ getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence],
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
-    afterCitingAxioms <- useCitedAxioms (getLogic logicName) userProof
-    let afterDerivedRules = applyDerivedRules afterCitingAxioms -- this way, derived rules can use cited thms
-    afterCitingTheorems <- useCitedTheorems afterDerivedRules
+    let afterDerivedRules = applyDerivedRules userProof -- this way, derived rules can use cited thms
+    afterCitingAxioms <- useCitedAxioms (getLogic logicName) afterDerivedRules
+    
+    afterCitingTheorems <- useCitedTheorems afterCitingAxioms
     pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
 
 getHaskellProof :: String -> String -> IO (Sentence, ProofTree)
@@ -178,15 +179,17 @@ insertAxiomDerivedRule axiom pfTree = do
     let axc = axiomContent axiom
     insertDerivedRule axc [] (ProofTree axc (axiomName axiom) []) pfTree
 
-citedAxiomDerivedRule :: ProofTree -> IO ProofTree
-citedAxiomDerivedRule pfTree = do
-    let (thmLogicName, thmName) = getTheoremInfo (pfJustification pfTree)
-    insertTheoremDerivedRule thmLogicName thmName pfTree
+axiomsDict :: Logic -> Map.Map String Axiom
+axiomsDict logic = Map.fromList (map (\a -> (axiomName a, a)) (axioms logic))
+
+citedAxiomDerivedRule :: Logic -> ProofTree -> IO ProofTree
+citedAxiomDerivedRule logic pfTree = do
+    insertAxiomDerivedRule (axiomsDict logic Map.! (pfJustification pfTree)) pfTree
 
 useCitedAxioms' :: Logic -> ProofTree -> IO ProofTree
 useCitedAxioms' logic pfTree =
     if (pfJustification pfTree) `elem` (map axiomName (axioms logic)) && (subProofs pfTree /= [])
-        then do citedTheoremDerivedRule pfTree
+        then do citedAxiomDerivedRule logic pfTree
         else do pure pfTree
 
 useCitedAxioms :: Logic -> ProofTree -> IO ProofTree

@@ -10,8 +10,8 @@ Proof
 3. |- (LP & (LP -> LQ)) -> LQ by applying uncurrying (from minimal): 2
 4. |- M(LP & (LP -> LQ)) -> MLQ by K reasoning: 3
 
-5. |- (MLLP & LM(LP -> LQ)) -> MLQ by applying hypothetical_syllogism (from minimal): 1 4
-6. |- MLLP -> (LM(LP -> LQ) -> MLQ) by applying currying (from minimal): 5
+5. |- (MLLP -> (LM(LP -> LQ) -> M(LP & (LP -> LQ)))) -> (MLLP -> (LM(LP -> LQ) -> MLQ)) by Strengthening: 4
+6. |- MLLP -> (LM(LP -> LQ) -> MLQ) by Modus Ponens: 1 5
 
 7. |- LP -> LLP by 4 Axiom
 8. |- MLP -> MLLP by K reasoning: 7

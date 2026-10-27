@@ -180,15 +180,15 @@ distributingBoxDerivedRule pfTree =
 
 distributingDiamondsDerivedRule :: ProofTree -> ProofTree
 distributingDiamondsDerivedRule pfTree =
-    ProofTree (applySubst "MP -> MQ" [("P", p), ("Q", q)]) "applying contrapositive_forward (from minimal)"
+    ProofTree (applySubst "MP -> MQ" [("P", p), ("Q", q)]) "Contrapositive"
         [ProofTree (applySubst "L~Q -> L~P" [("P", p), ("Q", q)]) "Modus Ponens" 
             [ProofTree (applySubst "L(~Q -> ~P)" [("P", p), ("Q", q)]) "Necessitation" 
-                [ProofTree (applySubst "~Q -> ~P" [("P", p), ("Q", q)]) "applying contrapositive_forward (from minimal)" 
+                [ProofTree (applySubst "~Q -> ~P" [("P", p), ("Q", q)]) "Contrapositive" 
                     [spf]],
             ProofTree (applySubst "L(~Q -> ~P) -> (L~Q -> L~P)" [("P", p), ("Q", q)]) "K Axiom" []]]
     where
         [spf] = subProofs pfTree
-        applySubst = parseWithSubst [cond, box] [diamond, neg]
+        applySubst = parseWithSubst [cond, box, negOp] [diamond]
         [p, q] = args (pfContent spf)
 
 kReasoningDerivedRule :: ProofTree -> ProofTree

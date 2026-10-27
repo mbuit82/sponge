@@ -36,7 +36,7 @@ box :: Operator
 box = Operator "Box" "L" 1
 
 diamondDef :: [Sentence] -> Sentence
-diamondDef = \singleA -> negDef [OpNode box [negDef singleA]]
+diamondDef = \[singleA] -> parseWithSubst [box, negOp] [] "~L~A" [("A", singleA)]
 diamond :: DefinedOperator
 diamond = DefinedOperator "Diamond" "M" 1 diamondDef
 

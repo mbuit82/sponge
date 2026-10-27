@@ -1,9 +1,17 @@
 Theorem: |- ~A -> (A -> B)
 
 
-Using deduction
-
 Proof
+1. |- (~B -> ~A) -> (A -> B) by citing contrapositive_backward (from classical)
+2. |- ~A -> (~B -> ~A) by Simp
+3. |- ~A -> (A -> B) by applying hypothetical_syllogism (from minimal): 2 1
+QED
+
+
+1. |- (~B -> ~A) -> (A -> ~~B) by applying other_negation_axiom (from minimal)
+2. |- ~~B -> B by Excluded Middle
+3. |- ((~B -> ~A) -> (A -> ~~B)) -> ((~B -> ~A) -> (A -> B)) by Strengthening: 2
+4. |- (~B -> ~A) -> (A -> B) 
 1. |- Bot                           by Assumption
 2. |- Bot -> ((A -> Bot) -> Bot)    by Simp
 3. |- ((A -> Bot) -> Bot)           by Modus Ponens: 1 2
