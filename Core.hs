@@ -205,7 +205,7 @@ data ProofTree = ProofTree {
     pfContent :: Sentence,
     pfJustification :: String,
     subProofs :: [ProofTree]
-} deriving Show
+} deriving (Show, Eq)
 
 applyOverTreeM :: Monad m => (ProofTree -> m ProofTree) -> ProofTree -> m ProofTree
 applyOverTreeM func (ProofTree pfc pfj spfs) = do

@@ -23,10 +23,10 @@ necessitation = InferenceRule "Necessitation" (parse [] [] "P", Nothing) (parse 
 -- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required operators or axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
 derivedRules :: Map.Map String (ProofTree -> ProofTree)
 derivedRules = Map.fromList [ 
-    ("And Elim L", andElimLDerivedRule), -- from |- A & B infer |- A
-    ("And Elim R", andElimRDerivedRule),  -- from |- A & B infer |- B
-    ("Adjunction", adjunctionDerivedRule), -- from |- A and |- B infer |- A & B
-    ("Or Elim", orElimDerivedRule), -- from |- A -> C and |- B -> C infer |- (A v B) -> C
+    -- ("And Elim L", andElimLDerivedRule), -- from |- A & B infer |- A
+    -- ("And Elim R", andElimRDerivedRule),  -- from |- A & B infer |- B
+    -- ("Adjunction", adjunctionDerivedRule), -- from |- A and |- B infer |- A & B
+    -- ("Or Elim", orElimDerivedRule), -- from |- A -> C and |- B -> C infer |- (A v B) -> C
     -- forget about the ones below for now
     -- contrapositionDerivedRule,
     ("Strengthening", strengtheningDerivedRule), -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)

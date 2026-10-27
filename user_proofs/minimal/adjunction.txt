@@ -1,0 +1,4 @@
+Theorem: |- A -> (B -> (A & B))
+
+Proof
+1. |- A -> (B -> (A & B)) by And-I

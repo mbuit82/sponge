@@ -36,17 +36,17 @@ simp = Axiom "Simp" (parse [cond] [] "P -> (Q -> P)")
 frege :: Axiom
 frege = Axiom "Frege" (parse [cond] [] "(P -> (Q -> R)) -> ((P -> Q) -> (P -> R))")
 andEL :: Axiom
-andEL = Axiom "And-EL" (parse [cond, andOp, orOp] [] "(P & Q) -> P")
+andEL = Axiom "And Elim L" (parse [cond, andOp, orOp] [] "(P & Q) -> P")
 andER :: Axiom
-andER = Axiom "And-ER" (parse [cond, andOp, orOp] [] "(P & Q) -> Q")
+andER = Axiom "And Elim R" (parse [cond, andOp, orOp] [] "(P & Q) -> Q")
 andI :: Axiom
-andI = Axiom "And-I" (parse [cond, andOp, orOp] [] "P -> (Q -> (P & Q))")
+andI = Axiom "And Intro" (parse [cond, andOp, orOp] [] "P -> (Q -> (P & Q))")
 orIL :: Axiom
-orIL = Axiom "Or-IL" (parse [cond, andOp, orOp] [] "P -> (P v Q)")
+orIL = Axiom "Or Intro L" (parse [cond, andOp, orOp] [] "P -> (P v Q)")
 orIR :: Axiom
-orIR = Axiom "Or-IR" (parse [cond, andOp, orOp] [] "Q -> (P v Q)")
+orIR = Axiom "Or Intro R" (parse [cond, andOp, orOp] [] "Q -> (P v Q)")
 orE :: Axiom
-orE = Axiom "Or-E" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")
+orE = Axiom "Or Elim" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")
 
 -- this axiomatization uses bot. hard to work with for strengthening in modal operators. 
 -- would require formalizing a notion of positive and negative environments in Haskell, 
