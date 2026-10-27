@@ -7,6 +7,8 @@ IGNORE No. This adds more lines because we're not actually applying the theorem.
 IGNORE what you're looking for is in fact tested with the use of contrapositive_forward in contrapositive_backward
 
 Proof
+1. |- P -> ~~P by Double Negation Introduction
+QED
 IGNORE 1. |- P by Assumption
 IGNORE 2. |- ~ ~ P by applying assertion (from minimal) [P/P, Bot/Q]: 1
 1. |- P -> ~~P by applying assertion (from minimal) [P/P, Bot/Q]

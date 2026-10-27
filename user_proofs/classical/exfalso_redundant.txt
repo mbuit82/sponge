@@ -1,4 +1,5 @@
-Theorem: |- Bot -> A
+Theorem: |- ~A -> (A -> B)
+
 
 Using deduction
 

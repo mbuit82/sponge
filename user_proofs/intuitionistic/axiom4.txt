@@ -1,6 +1,6 @@
 Theorem: |- (A -> Bot) -> (A -> B)
 
-
+IGNORE this proof is from the Bot days
 Proof
 1. |- (A -> (Bot -> B)) -> ((A -> Bot) -> (A -> B)) by Frege
 2. |- Bot -> B by Explosion

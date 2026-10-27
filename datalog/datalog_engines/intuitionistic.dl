@@ -1,4 +1,4 @@
-.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence} | Bot {}
+.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence} | Not {s1: Sentence}
 
 .decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
 .decl Justified(n: unsigned)
@@ -26,7 +26,9 @@ Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And-I", _
 Justified(n) :- Line(n, $Conditional(P, $Or(P, _)), "Or-IL", _, _).
 Justified(n) :- Line(n, $Conditional(Q, $Or(_, Q)), "Or-IR", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or-E", _, _).
-Justified(n) :- Line(n, $Conditional($Bot(), _), "Explosion", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Not(Q), $Not(P))), "Contraposition", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Not($Not(P))), "Double Negation Intro", _, _).
+Justified(n) :- Line(n, $Conditional($Not(P), $Conditional(P, _)), "Ex Falso Quodlibet", _, _).
 Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
 	i < n,
 	Justified(i),
