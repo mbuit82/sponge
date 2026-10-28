@@ -1,6 +1,6 @@
 # Derived Rules
 
-Here are a list of derived rules currently supported by sponge. They are currently in [`Rules.hs`](Defs/Rules.hs), except for deduction which is in its own file. Reading the code for these is a bit opaque I think, but once you get the hang of it I think it is definitely possible to define your own derived rules. 
+Here are a list of derived rules currently supported by sponge. They are currently across files in the [`DerivedRules`](DerivedRules) directory. Reading the code for these is a bit opaque I think, but once you get the hang of it I think it is definitely possible to define your own derived rules. 
 
 ## Applying theorems/proofs
 Given we are working in an axiomatic system, it would be awfully nice to have derived rules of the shape for, e.g. conjunction introduction `A -> B -> (A & B)`, 

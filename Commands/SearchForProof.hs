@@ -5,7 +5,6 @@ import Parse.Sentences
 import Defs.Specs
 
 import Control.Monad
--- import Abstractions
 import DerivedRules.UseDerivedRules
 import System.Environment (getArgs)
 import System.Directory 
