@@ -17,6 +17,7 @@ You can do this with theorems, too. A particularly common example of this with t
 
 ## Derived rules supported
 The names are kind of arbitrary and just reflect how I think of them. Please do let me know if there are more accepted names. 
+
 Deduction:
 ```
 P |- Q
