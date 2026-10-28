@@ -1,41 +1,40 @@
-module ProofTrees where
+module DerivedRules.UseDerivedRules where
 
 import Core
-import Parse.Sentences
 import Parse.Proofs
 
-import Deduction
 import Defs.Operators
-import Defs.Rules 
--- import Defs.Rules
 import Defs.Specs
 
-import PruneProofTrees
+import DerivedRules.Utils
+import DerivedRules.Classical
+import DerivedRules.KReasoning
+import DerivedRules.Deduction
 
 import Data.Maybe
 import Data.List
 import Data.Char
 import qualified Data.Map as Map
 
-getUserSentencesInOrder :: [Line] -> [Sentence]
-getUserSentencesInOrder userLines =
-    map lineContent userLines
+-- DERIVED RULES
+-- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required operators or axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
+derivedRules :: Map.Map String (ProofTree -> ProofTree)
+derivedRules = Map.fromList [ 
+    -- contrapositionDerivedRule,
+    ("strengthening", strengtheningDerivedRule), -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
+    ("weakening", weakeningDerivedRule),
+    ("embedding", embeddingDerivedRule),
+    ("K reasoning", kReasoningDerivedRule) -- distribute boxes, push boxes through; hope to add diamonds
+    ]
 
-findLNumForContent :: [Line] -> Sentence -> Int
-findLNumForContent [] sent = error ("no line w sentence " ++ (show sent))
-findLNumForContent (ln:lns) sent =
-    if lineContent ln == sent then lineNumber ln else findLNumForContent lns sent
+applyDerivedRules' :: Map.Map String (ProofTree -> ProofTree) -> ProofTree -> ProofTree
+applyDerivedRules' derRulesDict pfTree =
+    case derRulesDict Map.!? pfJustification pfTree of 
+        Nothing -> pfTree
+        Just func -> func pfTree
 
-asdf :: String -> String -> IO [Int]
-asdf logicName proofName = do
-    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
-    let userSents = getUserSentencesInOrder userLines
-    (goal, haskellPf) <- getHaskellProof logicName proofName
-    let haskellLines' = proofTreeToLines haskellPf
-    let haskellLines = pruneProofTree haskellLines'
-    pure (map (findLNumForContent haskellLines) userSents)
-
-
+applyDerivedRules :: ProofTree -> ProofTree
+applyDerivedRules = applyOverTree (applyDerivedRules' derivedRules)
 
 getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], ProofTree)
 getHaskellProofWithoutDeduction logicName proofName = do
@@ -52,19 +51,13 @@ getHaskellProof logicName proofName = do
     (goal, deductionArgs, pf) <- getHaskellProofWithoutDeduction logicName proofName
     pure (goal, (makeDeductionsFunc deductionArgs) pf)
 
--- not quite what you want bc don't avoid repetitions
+-- not quite what you want bc don't u avoid repetitions here
 seeHaskellProof :: String -> String -> IO ()
 seeHaskellProof logicName proofName = do
     (_, pf) <- getHaskellProof logicName proofName
     let lns = proofTreeToLines pf
     let relevantContents = map (\l -> (lineNumber l, lineContent l, justification l, refLines l)) lns
     mapM_ print relevantContents
-
-
--- placeholder
--- really all of this could go to rules tbh. None of the machinery is specific to here. 
-
-
 
 
 
@@ -175,3 +168,24 @@ useCitedAxioms' logic pfTree =
 
 useCitedAxioms :: Logic -> ProofTree -> ProofTree
 useCitedAxioms logic = applyOverTree (useCitedAxioms' logic)
+
+
+
+-- don't really have a palce for these right now, they're toys
+getUserSentencesInOrder :: [Line] -> [Sentence]
+getUserSentencesInOrder userLines =
+    map lineContent userLines
+
+findLNumForContent :: [Line] -> Sentence -> Int
+findLNumForContent [] sent = error ("no line w sentence " ++ (show sent))
+findLNumForContent (ln:lns) sent =
+    if lineContent ln == sent then lineNumber ln else findLNumForContent lns sent
+
+asdf :: String -> String -> IO [Int]
+asdf logicName proofName = do
+    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
+    let userSents = getUserSentencesInOrder userLines
+    (goal, haskellPf) <- getHaskellProof logicName proofName
+    let haskellLines' = proofTreeToLines haskellPf
+    -- let haskellLines = pruneProofTree haskellLines'
+    pure (map (findLNumForContent haskellLines') userSents)

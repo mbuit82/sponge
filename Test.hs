@@ -4,10 +4,8 @@ import Defs.Rules
 import Defs.Specs
 import Parse.Proofs
 import Parse.Sentences
-import PruneProofTrees
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof)
-import qualified ProofTrees as PT
 import qualified Data.Map as Map
 
 testEngines :: IO ()
@@ -120,7 +118,7 @@ htd5 = getLineFromUser smallCpc "5. |- A                                     by 
 -- testParserWithDeduction :: IO ()
 -- testParserWithDeduction = compileDatalogProof "exfalso_deduction" (parse testOps testDefOps "(Bot -> A)") smallCpc (useDeduction (OpNode bot []) [htd1, htd2, htd3, htd4, htd5])
 
-asdf = parse testOps testDefOps "(Bot -> ((A -> Bot) -> Bot) -> Bot)"
+-- asdf = parse testOps testDefOps "(Bot -> ((A -> Bot) -> Bot) -> Bot)"
 
 htdd1 = getLineFromUser smallCpc "1. |- A                             by Assumption"
 htdd2 = getLineFromUser smallCpc "2. |- (A -> Bot)                    by Assumption"
@@ -172,4 +170,6 @@ strength1' = "1. |- (S -> x) -> (y -> (S -> x))            by Simp"
 strength2' = "2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (y -> (S -> x))))) by Strengthening: 1"
 
 strengthpf' = parseUserProof (getLogic "minimal") [strength1', strength2']
+
+
 

@@ -1,4 +1,4 @@
-module PruneProofTrees where
+module ToDatalog.PruneProofTrees where
 
 import Core
 

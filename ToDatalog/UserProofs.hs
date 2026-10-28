@@ -3,9 +3,8 @@ module ToDatalog.UserProofs where
 import Core
 import ToDatalog.Utils
 import Defs.Specs
--- import Abstractions
-import ProofTrees
-import PruneProofTrees
+import ToDatalog.PruneProofTrees
+import DerivedRules.UseDerivedRules
 
 import System.IO
 import Data.List

@@ -1,9 +1,11 @@
-module Deduction where
+module DerivedRules.Deduction where
 
 import Core
 import Parse.Sentences
 
 import Defs.Operators
+
+import DerivedRules.Utils
 
 import qualified Data.Map as Map
 

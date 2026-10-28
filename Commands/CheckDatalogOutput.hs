@@ -25,15 +25,6 @@ checkDatalogOutputWithMsg logicName proofName = do
                         unjustifiedContent <- readFile (getCsvFileName logicName proofName "Unjustified")
                         putStrLn "The following lines of the datalog proof are not proven: "
                         putStrLn unjustifiedContent
-        -- case result of
-        --         True -> do 
-        --                 putStrLn "Proof is not yet proven."
-        --                 unjustifiedContent <- readFile (getCsvFileName logicName proofName "Unjustified")
-        --                 putStrLn "The following lines of the datalog proof are not proven: "
-        --                 putStrLn unjustifiedContent
-        --         False -> do putStrLn (proofName ++" has been proved!")
-
-
 
 main :: IO ()
 main = do

@@ -16,7 +16,7 @@ prettyPrintRule :: InferenceRule -> String
 prettyPrintRule rule =
     ruleName rule ++ ": " ++ 
     "from " ++ prettyPrintPremises (premises rule) ++
-    " conclude |- " ++ prettyPrintSentence (conclusion rule)
+    " infer |- " ++ prettyPrintSentence (conclusion rule)
 
 prettyPrintLogic :: Logic -> String
 prettyPrintLogic logic =
