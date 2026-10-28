@@ -118,7 +118,7 @@ And in case we have `|- B`, too, we'd like to be able to conclude `|- C`, too. I
 |- C
 ```
 
-The optimization implements this.[^3] It is currently in [`UseDerivedRules.hs`](`DerivedRules/UseDerivedRules.hs`) though may move to its own file if that one gets too big. 
+The optimization implements this.[^3] It is currently in [`UseDerivedRules.hs`](DerivedRules/UseDerivedRules.hs). 
 
 [^3]: More specifically, when a user wants to cite a theorem that uses deduction in its proof and apply it to previous lines, sponge checks to see if the user proof uses deduction. If it does, then it won't expand the user proof for the derived rule, instead replacing the `Assumption` lines in that proof with references to the lines the user wants to apply the theorem to. The result is then added to the user's proof. Thus, for a theorem that has a related derived rule, the user only needs to write one thing, the proof, and using derived rules similar to it result in an extension of the user's proof by the number of lines in the user's proof (minus assumption lines). For example, using hypothetical syllogism becomes a 5 line addition to the user's proof, instead of the 30 line addition in the `hypothetical_syllogism.dl` file, or a 5 line addition based on a derived rule defined in `Defs/Rules.hs` (now commented out or deleted). 
 
