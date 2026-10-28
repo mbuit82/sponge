@@ -2,26 +2,10 @@
 
 Goal($Conditional($Atom("A"), $Atom("A"))).
 
-Line(1, $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Bot()), $Atom("A")), "Excluded Middle", 0, 0).
-Line(2, $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Atom("A"), $Bot()))), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())))), "Frege", 0, 0).
-Line(3, $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Atom("A"), $Bot()))), "Simp", 0, 0).
-Line(4, $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), "Modus Ponens", 3, 2).
-Line(5, $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), "Simp", 0, 0).
-Line(6, $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), "Modus Ponens", 5, 4).
-Line(7, $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())))), "Simp", 0, 0).
-Line(8, $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), "Modus Ponens", 6, 7).
-Line(9, $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Atom("A"))), "Simp", 0, 0).
-Line(10, $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))), "Frege", 0, 0).
-Line(11, $Conditional($Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))), $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))))), "Simp", 0, 0).
-Line(12, $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())))), "Modus Ponens", 10, 11).
-Line(13, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot())), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())))), $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))))), "Frege", 0, 0).
-Line(14, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Bot()))), $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())))), "Modus Ponens", 12, 13).
-Line(15, $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))), "Modus Ponens", 8, 14).
-Line(16, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Atom("A")), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))), $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Atom("A"))), $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())))), "Frege", 0, 0).
-Line(17, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Atom("A"))), $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Bot()))), "Modus Ponens", 15, 16).
-Line(18, $Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())), "Modus Ponens", 9, 17).
-Line(19, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Bot()), $Atom("A"))), $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())), $Conditional($Atom("A"), $Atom("A")))), "Frege", 0, 0).
-Line(20, $Conditional($Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Bot()), $Atom("A")), $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Bot()), $Atom("A")))), "Simp", 0, 0).
-Line(21, $Conditional($Atom("A"), $Conditional($Conditional($Conditional($Atom("A"), $Bot()), $Bot()), $Atom("A"))), "Modus Ponens", 1, 20).
-Line(22, $Conditional($Conditional($Atom("A"), $Conditional($Conditional($Atom("A"), $Bot()), $Bot())), $Conditional($Atom("A"), $Atom("A"))), "Modus Ponens", 21, 19).
-Line(23, $Conditional($Atom("A"), $Atom("A")), "Modus Ponens", 18, 22).
+Line(1, $Conditional($Conditional($Atom("A"), $Conditional($Not($Not($Atom("A"))), $Atom("A"))), $Conditional($Conditional($Atom("A"), $Not($Not($Atom("A")))), $Conditional($Atom("A"), $Atom("A")))), "Frege", 0, 0).
+Line(2, $Conditional($Conditional($Not($Not($Atom("A"))), $Atom("A")), $Conditional($Atom("A"), $Conditional($Not($Not($Atom("A"))), $Atom("A")))), "Simp", 0, 0).
+Line(3, $Conditional($Not($Not($Atom("A"))), $Atom("A")), "Excluded Middle", 0, 0).
+Line(4, $Conditional($Atom("A"), $Conditional($Not($Not($Atom("A"))), $Atom("A"))), "Modus Ponens", 3, 2).
+Line(5, $Conditional($Conditional($Atom("A"), $Not($Not($Atom("A")))), $Conditional($Atom("A"), $Atom("A"))), "Modus Ponens", 4, 1).
+Line(6, $Conditional($Atom("A"), $Not($Not($Atom("A")))), "Double Negation Intro", 0, 0).
+Line(7, $Conditional($Atom("A"), $Atom("A")), "Modus Ponens", 6, 5).

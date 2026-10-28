@@ -1,0 +1,5 @@
+#include "../../../datalog_engines/minimal.dl"
+
+Goal($Conditional($And($Atom("A"), $Atom("B")), $Atom("A"))).
+
+Line(1, $Conditional($And($Atom("A"), $Atom("B")), $Atom("A")), "And-EL", 0, 0).

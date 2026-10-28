@@ -3,6 +3,7 @@ module Core where
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
+import Data.Functor.Identity
 
 data Operator = Operator {
     operatorName :: String,  -- what datalog will call the operator. what we actually care about form here on out. ideally user optionally picks this name out
@@ -74,8 +75,7 @@ data Line = Line {
     justification :: String,
     refLines :: [Int],
     userNumber :: Maybe Int -- the original line number the user used (NOTE: actually this is not that lol it's like an old pointer type thing lol)
-} deriving Eq -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
--- keeping this here in case it's ever relevant
+} deriving Eq
 prettyPrintLine :: Line -> String
 prettyPrintLine (Line lNum c j rfs uNum) = 
     show lNum ++ " " ++
@@ -84,7 +84,6 @@ prettyPrintLine (Line lNum c j rfs uNum) =
     "by " ++ j ++ show rfs
 instance Show Line where
     show = prettyPrintLine
-
 
 userNumberHuh :: Maybe Int -> String
 userNumberHuh Nothing = "-"
@@ -120,6 +119,7 @@ inferenceRulesWf logic = all (inferenceRuleWf logic) (inferenceRules logic)
 -- END RUNTIME CHECKS
 
 
+
 isInstance :: Sentence -> Sentence -> Bool
 -- the first Sentence is a sentence, second is a schema
 -- need to think about naming for sentences/formulae
@@ -138,7 +138,6 @@ haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 getVarMap' :: Sentence -> Sentence -> [(String, Sentence)]
 -- the first Sentence is a sentence, second is a schema
 -- need to think about naming for sentences/formulae
--- for now, assume everything is well-formed. 
 getVarMap' sentence (Atom a) = [(a, sentence)]
 getVarMap' sentence (OpNode schemaOp schemaArgs) =
     case sentence of 
@@ -168,105 +167,6 @@ isSubLogicByAxioms logic1 logic2 =
 
 
 
-
-data Transformant = Transformant {  transformata :: [Line], 
-                                    curr :: Maybe Line, 
-                                    transformanda :: [Line], 
-                                    offset :: Int
-                                    -- transformantLogic :: Logic
-                                    } deriving Show
-
-type Transformation = Transformant -> [Line]
-
-type DerivedRule = (String, Transformation)
-
--- when we run a transformation on a _proof state_, we want to return the result ++ old transformata, and then take the next element and make that the next current. 
-applyTransformation :: Transformation -> Transformant -> Transformant
-applyTransformation transformation oldState =
-    Transformant (applied ++ transformata oldState) newCurr newTransformanda ((length applied) - 1 + offset oldState)
-    where 
-        applied = reverse (transformation oldState)
-        (newCurr, newTransformanda) = case transformanda oldState of
-            [] -> (Nothing, [])
-            nxt:remLines -> (Just nxt, remLines)
-
-identityTransformation :: Transformation
-identityTransformation transformant = 
-    case curr transformant of
-        Nothing -> []
-        Just (Line lNum c j rfs uNum) -> 
-            [Line (lNum + offset transformant) c j (getUpdatedCurrentRefs transformant) uNum]
-
--- the second arg is supposed to be a proof
-intoTransformant :: [Line] -> Transformant
-intoTransformant [] = error "can't transformation a proof with no steps!" -- not really sure what should happen here either
-intoTransformant (fstLine:remLines) = Transformant [] (Just fstLine) remLines 0
-
--- function is never used
--- this is if we want to remove the ability to refer to a sentence... 
-deleteUserNum :: Line -> Line
-deleteUserNum (Line ln c j r _) = Line ln c j r Nothing
-
--- also never used
-increaseLineNum :: Int -> Line -> Line
-increaseLineNum x (Line ln c j r u) = Line (x+ln) c j r u
-
--- I think I do need to make a dummy transformation if I want to be able to cite lines from other proofs... 
--- -- I'm not sure I'll be able to use this as I'm thinking I wanted to
--- stackTransformationStep :: Transformation -> Transformation -> Transformation
--- stackTransformationStep transf1 transf2 state =
---     transf1Result ++ transf2Result
---     where
---         transf1Result' = transf1 state
---         transf2Result' = transf2 state
---         transf1Result = map deleteUserNum transf1Result'
---         transf2Result = map (increaseLineNum (length transf1Result)) transf2Result'
-
--- stackTransformations :: [Transformation] -> Transformation
--- stackTransformations = foldl1' stackTransformationStep
-
--- finds the first occurrence. This is taken advantage of in the strengthening derived rule
-findLineWithUserNum' :: [Line] -> Int -> Maybe Line
-findLineWithUserNum' [] _ = Nothing
-findLineWithUserNum' (l : remLines) uNum =
-    case userNumber l of
-        Just luNum -> if luNum == uNum then (Just l) else findLineWithUserNum' remLines uNum
-        _ -> findLineWithUserNum' remLines uNum
-    
-findLineWithUserNum :: Transformant -> Int -> Maybe Line
-findLineWithUserNum transformant = findLineWithUserNum' (transformata transformant)
-
-findLineWithContent' :: [Line] -> Sentence -> Maybe Line
-findLineWithContent' [] _ = Nothing
-findLineWithContent' (l : remLines) sent =
-    if lineContent l == sent 
-        then Just l
-        else findLineWithContent' remLines sent
-
-findLineWithContent :: Transformant -> Sentence -> Maybe Line
-findLineWithContent transformant = findLineWithContent' (transformata transformant)
-
-getCurrentRefLine :: Transformant -> Int -> Line
-getCurrentRefLine state r =
-    case findLineWithUserNum state r of
-        Nothing -> error ("ope couldn't find refline " ++ show r ++ " in transformant " ++ show state)
-        Just ln -> ln
-
-getCurrentRefLines :: Transformant -> [Line] -- NOT A TRANSFORMATION!!!
-getCurrentRefLines transformant =
-    case curr transformant of
-        Nothing -> error "why u trying to get reflines when there's no current line"
-        Just currLine -> map (getCurrentRefLine transformant) (refLines currLine)
-    -- let currLine = fromJust (curr transformant) in 
-        -- map (fromJust . findLineWithUserNum transformant) (refLines currLine)
-
-getUpdatedCurrentRefs :: Transformant -> [Int]
-getUpdatedCurrentRefs = (map lineNumber) . getCurrentRefLines
-
--- this happens after applying all derived rules, or doing all deduction, or using all cited theorems
-resetUserNumbers :: [Line] -> [Line]
-resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns
-
 -- are used for conditionals in strengthening and K derived rules, but are more general processes so leaving here
 getNEmbeddedAntecedents :: Operator -> Int -> Sentence -> [Sentence]
 getNEmbeddedAntecedents op 0 _ = []
@@ -290,8 +190,89 @@ getEmbeddedAntecedentsUpTo op stopSent sent
         (OpNode op' [arg1, arg2]) -> 
             if op' == op
                 then arg1 : getEmbeddedAntecedentsUpTo op stopSent arg2
-                else error "can only get all antecedents on a chain of conditionals"
+                else error ("can only get all antecedents on a chain of conditionals (sent, stopSent)=" ++ show (sent, stopSent))
+        _ -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
+
+-- the last element of the returned list is the stuff you need for weakening
+getEmbeddedConsequentAfter :: Operator -> Sentence -> Sentence -> Sentence
+getEmbeddedConsequentAfter op stopSent (Atom a) = error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
+getEmbeddedConsequentAfter op stopSent (OpNode op' [arg1, arg2])
+    | arg1 == stopSent = arg2
+    | op' == op = getEmbeddedConsequentAfter op stopSent arg2
+    | otherwise = error "can only get all antecedents on a chain of conditionals"
 
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
 makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]
+
+getChainLength :: Operator -> Sentence -> Int
+getChainLength op (OpNode op' [arg1, arg2])
+    | op == op' = 1 + getChainLength op arg2
+    | otherwise = 0
+getChainLength op _ = 0
+
+
+
+
+-- PROOFTREES BASICS
+data ProofTree = ProofTree {
+    pfContent :: Sentence,
+    pfJustification :: String,
+    subProofs :: [ProofTree]
+} deriving (Show, Eq)
+
+applyOverTreeM :: Monad m => (ProofTree -> m ProofTree) -> ProofTree -> m ProofTree
+applyOverTreeM func (ProofTree pfc pfj spfs) = do
+    spfsUpdated <- mapM (applyOverTreeM func) spfs
+    func (ProofTree pfc pfj spfsUpdated)
+
+applyOverTree :: (ProofTree -> ProofTree) -> ProofTree -> ProofTree
+applyOverTree func = runIdentity . applyOverTreeM (Identity . func)
+
+findLineWithLNum :: [Line] -> Int -> Line
+findLineWithLNum [] _ = error "no line with that number"
+findLineWithLNum (ln:lns) lNum
+    | lineNumber ln == lNum = ln
+    | otherwise = findLineWithLNum lns lNum
+
+linesToProofTree' :: [Line] -> Line -> ProofTree
+linesToProofTree' [] _ = error "empty proof"
+linesToProofTree' lns currLine = 
+    ProofTree 
+        (lineContent currLine) 
+        (justification currLine) 
+        (map ((linesToProofTree' lns) . (findLineWithLNum lns)) (refLines currLine))
+
+linesToProofTree :: [Line] -> ProofTree
+linesToProofTree lns = 
+    case (reverse lns) of
+        [] -> error "empty proof"
+        (lastLn:remLns) ->
+            linesToProofTree' (lastLn:remLns) lastLn
+
+proofTreeToLines' :: Int -> ProofTree -> [Line]
+-- don't believe this commented out is necessary because of Haskell lazy evaluation
+-- proofTreeToLines' nextUseableRef (ProofTree pfc pfj []) =
+--     [Line nextUseableRef pfc pfj [] (Just nextUseableRef)]
+proofTreeToLines' nextUseableRef (ProofTree pfc pfj spfs) =
+    let recs = referencesCase (nextUseableRef + 1) spfs in
+        Line nextUseableRef pfc pfj (map (\lns -> lineNumber (lns !! 0)) recs) (Just nextUseableRef) : concat recs
+        -- reversal at the end conserves user line order I think
+
+referencesCase :: Int -> [ProofTree] -> [[Line]]
+referencesCase baseInt [] = []
+referencesCase baseInt (ref1:remRefs) =
+    let firstRefRes = proofTreeToLines' baseInt ref1 in
+    firstRefRes : referencesCase (baseInt + length firstRefRes) remRefs
+
+invertNum :: Int -> Int -> Int
+invertNum lenPf n = lenPf + 1 - n
+
+invertLineNumbers :: Int -> Line -> Line
+invertLineNumbers lenPf (Line lNum c j rfs _) = 
+    Line (invertNum lenPf lNum) c j (map (invertNum lenPf) rfs) (Just (invertNum lenPf lNum))
+
+proofTreeToLines :: ProofTree -> [Line]
+proofTreeToLines pftree = 
+    let revLines' = proofTreeToLines' 1 pftree in
+        reverse (map (invertLineNumbers (length (revLines'))) revLines')

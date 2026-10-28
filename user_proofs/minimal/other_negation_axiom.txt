@@ -1,0 +1,10 @@
+Theorem: |- (P -> ~Q) -> (Q -> ~P)
+
+Using deduction
+
+Proof
+1. |- P -> ~Q by Assumption
+2. |- ~~Q -> ~P by Contrapositive: 1
+3. |- Q -> ~~Q by Double Negation Intro
+4. |- Q -> ~P by applying hypothetical_syllogism (from minimal): 3 2
+QED

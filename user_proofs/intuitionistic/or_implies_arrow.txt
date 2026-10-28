@@ -4,6 +4,6 @@ Theorem: |- (~A v B) -> (A -> B)
 
 Proof
 1. |- ~~A -> ((~A v B) -> B)    by applying disjunctive_syllogism (from intuitionistic) [~A/A, B/B, C/C]
-2. |- A -> ~~A                  by applying double_negation_introduction (from minimal) [A/P]
+2. |- A -> ~~A                  by Double Negation Intro
 3. |- A -> ((~A v B) -> B)      by applying hypothetical_syllogism (from minimal) [A/P, ~~A/Q, ((~A v B) -> B)/R]: 2 1
 4. |- (~A v B) -> (A -> B)      by applying switch_args (from minimal) [A/P, (~A v B)/Q, B/R]: 3

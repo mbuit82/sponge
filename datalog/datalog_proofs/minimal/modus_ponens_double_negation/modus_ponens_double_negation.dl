@@ -1,0 +1,11 @@
+#include "../../../datalog_engines/minimal.dl"
+
+Goal($Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q")))))).
+
+Line(1, $Conditional($Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Conditional($Not($Atom("Q")), $Not($Atom("P"))), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q")))))), $Conditional($Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P")))), $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q"))))))), "Frege", 0, 0).
+Line(2, $Conditional($Conditional($Conditional($Not($Atom("Q")), $Not($Atom("P"))), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q"))))), $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Conditional($Not($Atom("Q")), $Not($Atom("P"))), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q"))))))), "Simp", 0, 0).
+Line(3, $Conditional($Conditional($Not($Atom("Q")), $Not($Atom("P"))), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q"))))), "Contrapositive", 0, 0).
+Line(4, $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Conditional($Not($Atom("Q")), $Not($Atom("P"))), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q")))))), "Modus Ponens", 3, 2).
+Line(5, $Conditional($Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P")))), $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q")))))), "Modus Ponens", 4, 1).
+Line(6, $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P")))), "Contrapositive", 0, 0).
+Line(7, $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Not($Atom("P"))), $Not($Not($Atom("Q"))))), "Modus Ponens", 6, 5).

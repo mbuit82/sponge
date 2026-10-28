@@ -5,7 +5,8 @@ import Parse.Sentences
 import Defs.Specs
 
 import Control.Monad
-import Abstractions
+-- import Abstractions
+import ProofTrees
 import System.Environment (getArgs)
 import System.Directory 
 

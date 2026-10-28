@@ -1,15 +1,13 @@
-Theorem: |- (MP & LQ) -> M(Q & P)
+Theorem: |- MP -> (LQ -> M(Q & P))
 
 
 
 Proof
-1. |- Q -> (P -> (Q & P))                           by And-I
-2. |- (P -> (Q & P)) -> (~(Q & P) -> ~P)            by citing contrapositive_forward (from minimal)
+1. |- Q -> (P -> (Q & P))                           by And Intro
+2. |- (P -> (Q & P)) -> (~(Q & P) -> ~P)            by Contrapositive
 3. |- Q -> (~(Q & P) -> ~P)                         by applying hypothetical_syllogism (from minimal): 1 2
 4. |- LQ -> (L~(Q & P) -> L~P)                      by K reasoning: 3
-5. |- (L~(Q & P) -> L~P) -> (~L~P -> ~L~(Q & P))    by citing contrapositive_forward (from minimal)
+5. |- (L~(Q & P) -> L~P) -> (~L~P -> ~L~(Q & P))    by Contrapositive
 6. |- LQ -> (MP -> M(Q & P))                        by applying hypothetical_syllogism (from minimal): 4 5
-7. |- (LQ & MP) -> M(Q & P)                         by applying uncurrying (from minimal): 6
-8. |- (MP & LQ) -> (LQ & MP)                        by citing and_comm_forward (from minimal)
-9. |- (MP & LQ) -> M(Q & P)                         by applying hypothetical_syllogism (from minimal): 8 7
+7. |- MP -> (LQ -> M(Q & P))                        by applying switch_args (from minimal): 6
 QED

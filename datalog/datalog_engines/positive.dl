@@ -1,0 +1,35 @@
+.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence}
+
+.decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
+.decl Justified(n: unsigned)
+.decl Unjustified(n: unsigned)
+.decl UnjustifiedCount(c: number)
+.decl Goal(goal: Sentence)
+.decl Proven(f: Sentence)
+
+Unjustified(n) :- Line(n, _, _, _, _), !Justified(n).
+UnjustifiedCount(c) :- c = count : { Unjustified(_) }.
+Proven(f) :- Goal(f),
+	Line(n, f, _, _, _),
+	Justified(n),
+	UnjustifiedCount(0).
+
+.output Unjustified
+.output Justified
+.output Proven
+
+Justified(n) :- Line(n, $Conditional(P, $Conditional(_, P)), "Simp", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional($Conditional(P, Q), $Conditional(P, R))), "Frege", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, _), P), "And Elim L", _, _).
+Justified(n) :- Line(n, $Conditional($And(_, Q), Q), "And Elim R", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And Intro", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Or(P, _)), "Or Intro L", _, _).
+Justified(n) :- Line(n, $Conditional(Q, $Or(_, Q)), "Or Intro R", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or Elim", _, _).
+Justified(n) :- Line(n, Q, "Modus Ponens", i, j),
+	i < n,
+	Justified(i),
+	Line(i, P, _, _, _),
+	j < n,
+	Justified(j),
+	Line(j, $Conditional(P, Q), _, _, _).

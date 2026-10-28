@@ -1,4 +1,4 @@
-.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence} | Bot {} | Box {s1: Sentence}
+.type Sentence = Atom {name: symbol} | Conditional {s1: Sentence, s2: Sentence} | And {s1: Sentence, s2: Sentence} | Or {s1: Sentence, s2: Sentence} | Not {s1: Sentence} | Box {s1: Sentence}
 
 .decl Line(line_num: unsigned, line_content: Sentence, line_just: symbol, i: unsigned, j: unsigned)
 .decl Justified(n: unsigned)
@@ -20,14 +20,16 @@ Proven(f) :- Goal(f),
 
 Justified(n) :- Line(n, $Conditional(P, $Conditional(_, P)), "Simp", _, _).
 Justified(n) :- Line(n, $Conditional($Conditional(P, $Conditional(Q, R)), $Conditional($Conditional(P, Q), $Conditional(P, R))), "Frege", _, _).
-Justified(n) :- Line(n, $Conditional($And(P, _), P), "And-EL", _, _).
-Justified(n) :- Line(n, $Conditional($And(_, Q), Q), "And-ER", _, _).
-Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And-I", _, _).
-Justified(n) :- Line(n, $Conditional(P, $Or(P, _)), "Or-IL", _, _).
-Justified(n) :- Line(n, $Conditional(Q, $Or(_, Q)), "Or-IR", _, _).
-Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or-E", _, _).
-Justified(n) :- Line(n, $Conditional($Bot(), _), "Explosion", _, _).
-Justified(n) :- Line(n, $Conditional($Conditional($Conditional(P, $Bot()), $Bot()), P), "Excluded Middle", _, _).
+Justified(n) :- Line(n, $Conditional($And(P, _), P), "And Elim L", _, _).
+Justified(n) :- Line(n, $Conditional($And(_, Q), Q), "And Elim R", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Conditional(Q, $And(P, Q))), "And Intro", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Or(P, _)), "Or Intro L", _, _).
+Justified(n) :- Line(n, $Conditional(Q, $Or(_, Q)), "Or Intro R", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, R), $Conditional($Conditional(Q, R), $Conditional($Or(P, Q), R))), "Or Elim", _, _).
+Justified(n) :- Line(n, $Conditional($Conditional(P, Q), $Conditional($Not(Q), $Not(P))), "Contrapositive", _, _).
+Justified(n) :- Line(n, $Conditional(P, $Not($Not(P))), "Double Negation Intro", _, _).
+Justified(n) :- Line(n, $Conditional($Not(P), $Conditional(P, _)), "Ex Falso Quodlibet", _, _).
+Justified(n) :- Line(n, $Conditional($Not($Not(P)), P), "Excluded Middle", _, _).
 Justified(n) :- Line(n, $Conditional($Box($Conditional(P, Q)), $Conditional($Box(P), $Box(Q))), "K Axiom", _, _).
 Justified(n) :- Line(n, $Conditional($Box(P), $Box($Box(P))), "4 Axiom", _, _).
 Justified(n) :- Line(n, $Or($Box($Conditional($And(P, $Box(P)), Q)), $Box($Conditional($And(Q, $Box(Q)), P))), "D2 Axiom", _, _).

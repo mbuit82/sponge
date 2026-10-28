@@ -43,7 +43,7 @@ extendWithAxioms baseSpec newAxs newName =
 specsList :: [Spec]
 specsList = [   
     specMinimalSmall, -- specIntuitionisticSmall, specClassicalSmall, 
-    specMinimal, specIntuitionistic, specClassical,
+    specPositive, specMinimal, specIntuitionistic, specClassical,
     specK, 
     specD, specKT, specKB, 
     specS4, specS5,
@@ -74,18 +74,28 @@ specIntuitionisticSmall = extendWithAxioms specMinimalSmall [axiom4] "intuitioni
 specClassicalSmall :: Spec
 specClassicalSmall = extendWithAxioms specIntuitionisticSmall [axiom5] "classical_small"
 
-specMinimal :: Spec
-specMinimal = Spec {
-    specName = "minimal",
+specPositive :: Spec
+specPositive = Spec {
+    specName = "positive",
     baseSystem = Nothing,
-    newOperators = [cond, andOp, orOp, bot],
-    newDefinedOperators = [bicond, neg],
+    newOperators = [cond, andOp, orOp],
+    newDefinedOperators = [bicond],
     newAxioms = [simp, frege, andEL, andER, andI, orIL, orIR, orE],
     newInferenceRules = [modusPonens]
 }
 
+specMinimal :: Spec
+specMinimal = Spec {
+    specName = "minimal",
+    baseSystem = Just specPositive,
+    newOperators = [negOp],
+    newDefinedOperators = [],
+    newAxioms = [contrapos, dni],
+    newInferenceRules = []
+}
+
 specIntuitionistic :: Spec
-specIntuitionistic = extendWithAxioms specMinimal [explosion] "intuitionistic"
+specIntuitionistic = extendWithAxioms specMinimal [exfalso] "intuitionistic"
 
 specClassical :: Spec
 specClassical = extendWithAxioms specIntuitionistic [lem] "classical"

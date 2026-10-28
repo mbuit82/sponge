@@ -3,6 +3,6 @@ Theorem: |- (LA & LB) -> L(A & B)
 
 
 Proof
-1. |- A -> (B -> (A & B))       by And-I
+1. |- A -> (B -> (A & B))       by And Intro
 2. |- LA -> (LB -> L(A & B))    by K reasoning: 1
 3. |- (LA & LB) -> L(A & B)     by applying uncurrying (from minimal): 2

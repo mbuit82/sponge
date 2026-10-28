@@ -36,21 +36,37 @@ simp = Axiom "Simp" (parse [cond] [] "P -> (Q -> P)")
 frege :: Axiom
 frege = Axiom "Frege" (parse [cond] [] "(P -> (Q -> R)) -> ((P -> Q) -> (P -> R))")
 andEL :: Axiom
-andEL = Axiom "And-EL" (parse [cond, andOp, orOp] [] "(P & Q) -> P")
+andEL = Axiom "And Elim L" (parse [cond, andOp, orOp] [] "(P & Q) -> P")
 andER :: Axiom
-andER = Axiom "And-ER" (parse [cond, andOp, orOp] [] "(P & Q) -> Q")
+andER = Axiom "And Elim R" (parse [cond, andOp, orOp] [] "(P & Q) -> Q")
 andI :: Axiom
-andI = Axiom "And-I" (parse [cond, andOp, orOp] [] "P -> (Q -> (P & Q))")
+andI = Axiom "And Intro" (parse [cond, andOp, orOp] [] "P -> (Q -> (P & Q))")
 orIL :: Axiom
-orIL = Axiom "Or-IL" (parse [cond, andOp, orOp] [] "P -> (P v Q)")
+orIL = Axiom "Or Intro L" (parse [cond, andOp, orOp] [] "P -> (P v Q)")
 orIR :: Axiom
-orIR = Axiom "Or-IR" (parse [cond, andOp, orOp] [] "Q -> (P v Q)")
+orIR = Axiom "Or Intro R" (parse [cond, andOp, orOp] [] "Q -> (P v Q)")
 orE :: Axiom
-orE = Axiom "Or-E" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")
+orE = Axiom "Or Elim" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((P v Q) -> R))")
+
+-- this axiomatization uses bot. hard to work with for strengthening in modal operators. 
+-- would require formalizing a notion of positive and negative environments in Haskell, 
+-- which I think is possible, but I think this solution is easier (also makes printed stuff easier to read)
+-- and the argument for including bot is about the same as the argument for including 
 explosion :: Axiom
 explosion = Axiom "Explosion" (parse [cond, bot] [] "Bot -> P")
+lem_bot :: Axiom
+lem_bot = Axiom "Excluded Middle" (parse [cond] [neg] "~~P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
+
+-- this axiomatization uses a negation operator. Easier to work with for strengthening with modal operators. 
+contrapos :: Axiom
+contrapos = Axiom "Contrapositive" (parse [cond, negOp] [] "(P -> Q) -> (~Q -> ~P)")
+dni :: Axiom
+dni = Axiom "Double Negation Intro" (parse [cond, negOp] [] "P -> ~~P")
+exfalso :: Axiom
+exfalso = Axiom "Ex Falso Quodlibet" (parse [cond, negOp] [] "~P -> (P -> Q)")
 lem :: Axiom
-lem = Axiom "Excluded Middle" (parse [cond] [neg] "~ ~ P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
+lem = Axiom "Excluded Middle" (parse [cond, negOp] [] "~~P -> P")
+
 
 -- modal axioms
 -- In lieu of ability to type a box and a diamond, going with Cresswell's 'L' and 'M' for box and diamond respectively

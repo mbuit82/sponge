@@ -5,8 +5,8 @@ Theorem: |- LP -> LLP
 
 
 Proof
-1. |- LP -> (P -> (LP & P))                 by And-I
-2. |- (LLP & LP) -> LP                      by And-ER
+1. |- LP -> (P -> (LP & P))                 by And Intro
+2. |- (LLP & LP) -> LP                      by And Elim R
 3. |- (LLP & LP) -> (P -> (LP & P))         by applying hypothetical_syllogism (from minimal): 2 1
 4. |- L(LP & P) -> (LLP & LP)               by citing box_over_and (from K)
 5. |- L(LP & P) -> (P -> (LP & P))          by applying hypothetical_syllogism (from minimal): 4 3
@@ -14,7 +14,7 @@ Proof
 7. |- LP -> L(L(LP & P) -> (LP & P))        by K reasoning: 6
 8. |- L(L(LP & P) -> (LP & P)) -> L(LP & P) by GL Axiom
 9. |- LP -> L(LP & P)                       by applying hypothetical_syllogism (from minimal): 7 8
-10. |- (LP & P) -> LP                       by And-EL
+10. |- (LP & P) -> LP                       by And Elim L
 11. |- L(LP & P) -> LLP                     by K reasoning: 10
 12. |- LP -> LLP                            by applying hypothetical_syllogism (from minimal): 9 11
 

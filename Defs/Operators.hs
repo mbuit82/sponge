@@ -8,7 +8,7 @@ cond :: Operator
 cond = Operator "Conditional" "->" 2
 
 bot :: Operator
-bot = Operator { operatorName = "Bot", operatorSymbol = "Bot", arity = 0}
+bot = Operator {operatorName = "Bot", operatorSymbol = "Bot", arity = 0}
 
 andOp :: Operator
 andOp = Operator {operatorName = "And", operatorSymbol = "&", arity = 2}
@@ -20,6 +20,9 @@ negDef :: [Sentence] -> Sentence
 negDef = \[a] -> (OpNode cond [a, OpNode bot []])
 neg :: DefinedOperator
 neg = DefinedOperator "Not" "~" 1 negDef
+
+negOp :: Operator
+negOp = Operator "Not" "~" 1
 
 bicondDef :: [Sentence] -> Sentence
 bicondDef = \[a, b] -> parseWithSubst [cond, andOp] [] "(A -> B) & (B -> A)" [("A", a), ("B", b)]
@@ -33,7 +36,7 @@ box :: Operator
 box = Operator "Box" "L" 1
 
 diamondDef :: [Sentence] -> Sentence
-diamondDef = \singleA -> negDef [OpNode box [negDef singleA]]
+diamondDef = \[singleA] -> parseWithSubst [box, negOp] [] "~L~A" [("A", singleA)]
 diamond :: DefinedOperator
 diamond = DefinedOperator "Diamond" "M" 1 diamondDef
 

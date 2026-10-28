@@ -5,11 +5,13 @@ Using deduction
 Proof
 IGNORE one deduction, 115 lines
 1. |- ~Q -> ~P by Assumption
-2. |- ~~P -> ~~Q by applying contrapositive_forward (from minimal) [~Q/P, ~P/Q, Bot/R]: 1
+2. |- ~~P -> ~~Q by Contrapositive: 1
 3. |- ~~Q -> Q by Excluded Middle
 4. |- ~~P -> Q by applying hypothetical_syllogism (from minimal) [~~P/P, ~~Q/Q, Q/R]: 2 3
-5. |- P -> ~~P by applying double_negation_introduction (from minimal) [P/P, Bot/Q]
+5. |- P -> ~~P by Double Negation Intro
 6. |- P -> Q by applying hypothetical_syllogism (from minimal) [P/P, ~~P/Q, Q/R]: 5 4
+QED
+
 
 IGNORE one deduction, 204 lines in old way of doing things (with citing proofs)
 IGNORE the reason it's longer is that I've changed the DNI proof. 
