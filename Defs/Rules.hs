@@ -23,14 +23,10 @@ necessitation = InferenceRule "Necessitation" (parse [] [] "P", Nothing) (parse 
 -- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required operators or axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
 derivedRules :: Map.Map String (ProofTree -> ProofTree)
 derivedRules = Map.fromList [ 
-    -- ("And Elim L", andElimLDerivedRule), -- from |- A & B infer |- A
-    -- ("And Elim R", andElimRDerivedRule),  -- from |- A & B infer |- B
-    -- ("Adjunction", adjunctionDerivedRule), -- from |- A and |- B infer |- A & B
-    -- ("Or Elim", orElimDerivedRule), -- from |- A -> C and |- B -> C infer |- (A v B) -> C
-    -- forget about the ones below for now
     -- contrapositionDerivedRule,
     ("strengthening", strengtheningDerivedRule), -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
     ("weakening", weakeningDerivedRule),
+    ("embedding", embeddingDerivedRule),
     ("K reasoning", kReasoningDerivedRule) -- distribute boxes, push boxes through; hope to add diamonds
     ]
 
@@ -43,51 +39,6 @@ applyDerivedRules' derRulesDict pfTree =
 applyDerivedRules :: ProofTree -> ProofTree
 applyDerivedRules = applyOverTree (applyDerivedRules' derivedRules)
 
-
-
--- andElimLDerivedRule :: ProofTree -> ProofTree
--- andElimLDerivedRule (ProofTree p pfj spfs) =
---     ProofTree p "Modus Ponens"
---         [pandqPf,
---         ProofTree (applySubst "PandQ -> P" [("PandQ", pandq), ("P", p)]) "And-EL" []]
---     where 
---         applySubst = parseWithSubst [cond] []
---         [pandqPf] = spfs
---         pandq = pfContent pandqPf
-
--- andElimRDerivedRule :: ProofTree -> ProofTree
--- andElimRDerivedRule (ProofTree q pfj spfs) =
---     ProofTree q "Modus Ponens"
---         [pandqPf,
---         ProofTree (applySubst "PandQ -> Q" [("PandQ", pandq), ("Q", q)]) "And-ER" []]
---     where 
---         applySubst = parseWithSubst [cond] []
---         [pandqPf] = spfs
---         pandq = pfContent pandqPf
-
--- adjunctionDerivedRule :: ProofTree -> ProofTree
--- adjunctionDerivedRule (ProofTree pandq pfj spfs) =
---     ProofTree pandq "Modus Ponens"
---         [qPf,
---         ProofTree (applySubst "Q -> (P & Q)" [("P", p), ("Q", q)]) "Modus Ponens"
---             [pPf,
---             ProofTree (applySubst "P -> (Q -> (P & Q))" [("P", p), ("Q", q)]) "And-I" []]]
---     where
---         applySubst = parseWithSubst [cond, andOp] []
---         [pPf, qPf] = spfs
---         [p, q] = map pfContent spfs
-
--- orElimDerivedRule :: ProofTree -> ProofTree
--- orElimDerivedRule (ProofTree porqr pfj spfs) =
---     ProofTree porqr "Modus Ponens"
---         [qrPf,
---         ProofTree (applySubst "QR -> PorQR" [("QR", qr), ("PorQR", porqr)]) "Modus Ponens"
---             [prPf,
---             ProofTree (applySubst "PR -> (QR -> PorQR)" [("PR", pr), ("QR", qr), ("PorQR", porqr)]) "Or-E" []]]
---     where 
---         applySubst = parseWithSubst [cond] []
---         [prPf, qrPf] = spfs
---         [pr, qr] = map pfContent spfs
 
 contrapositionDerivedRule :: ProofTree -> ProofTree
 contrapositionDerivedRule = undefined
@@ -104,7 +55,7 @@ makeModusPonensLines (spf:rem) pfTree =
 
 
 
--- STRENGTHENING
+-- strengthen
 strengtheningDerivedRule' :: [Sentence] -> ProofTree -> ProofTree
 strengtheningDerivedRule' [] (ProofTree pfc pfj [spf]) = spf
 strengtheningDerivedRule' [] _ = error "trick for strengthening doesn't work"
@@ -131,6 +82,65 @@ strengtheningDerivedRule pfTree =
         strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)
         [arg1, _] = args strengthenCond
         [x, _] = args (pfContent xyPf)
+
+
+
+-- weaken
+weakeningDerivedRule :: ProofTree -> ProofTree
+weakeningDerivedRule pfTree =
+    makeModusPonensLines 
+        mpSubPfs
+        (strengtheningDerivedRule 
+            (ProofTree strengthenCond "strengthening" 
+                [ProofTree 
+                    (applySubst "(Y -> Q) -> (X -> Q)" [("Y", y), ("X", x), ("Q", forHypSyll)]) 
+                    "applying hypothetical_syllogism (from minimal)"
+                    [xyPf]]))
+    where
+        xyPf:mpSubPfs = subProofs pfTree
+        strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)
+        applySubst = parseWithSubst [cond] []
+        [x, y] = args (pfContent xyPf)
+        [weakenedCond1, _] = args strengthenCond
+        forHypSyll = getEmbeddedConsequentAfter cond y weakenedCond1
+
+
+
+-- embed
+embeddingDerivedRule' :: Int -> ProofTree -> ProofTree
+embeddingDerivedRule' 0 pfTree = error "don't expect this case to be triggered"
+embeddingDerivedRule' 1 pfTree = strengtheningDerivedRule pfTree
+embeddingDerivedRule' n pfTree = 
+    strengtheningDerivedRule
+        (ProofTree (pfContent pfTree) "" 
+            [ProofTree (applySubst "(X -> (Y -> Z)) -> ((X -> Y) -> (X -> Z))" [("X", x), ("Y", y), ("Z", z)]) "Frege" [],
+            embeddingDerivedRule' (n-1) pfTree])
+    where
+        recCall = embeddingDerivedRule' (n-1) pfTree
+        applySubst = parseWithSubst [cond] []
+        fregeAntecedent = getNthConsequent cond (n-1) (pfContent recCall)
+        [x, yz] = args fregeAntecedent
+        [y, z] = args yz
+
+embeddingDerivedRule :: ProofTree -> ProofTree
+embeddingDerivedRule pfTree =
+    embeddingDerivedRule' (getChainLength cond (pfContent spf)) pfTree
+    where
+        [spf] = subProofs pfTree
+
+-- Case 0: nothing
+
+-- Case 1: |- P -> Q => |- (X -> P) -> (X -> Q)
+-- This is just strengthening? ye
+
+-- Case 2: |- P -> Q -> R => |- (X -> P) -> (X -> Q) -> (X -> R)
+-- i. (X -> P) -> (X -> (Q -> R)) from recursive call
+-- i+1. (X -> (Q -> R)) -> ((X -> Q) -> (X -> R)) by Frege
+-- i+2. strengthening: i+1 i
+
+-- Case 3: |- P -> Q -> R -> S |- (X -> P) -> (X -> Q) -> (X -> R) -> (X -> S)
+-- (X -> P) -> (X -> Q) -> (X -> (R -> S)) from recursive call
+-- Frege based on guy at end, then strengthen on the Frege, and then MP
 
 
 
@@ -216,30 +226,6 @@ kReasoningDerivedRule pfTree
         distributingBoxDerivedRule pfTree
     where 
         [spf] = subProofs pfTree
-
-
--- embed
-
--- weaken
-weakeningDerivedRule :: ProofTree -> ProofTree
-weakeningDerivedRule pfTree =
-    makeModusPonensLines 
-        mpSubPfs
-        (strengtheningDerivedRule 
-            (ProofTree strengthenCond "strengthening" 
-                [ProofTree 
-                    (applySubst "(Y -> Q) -> (X -> Q)" [("Y", y), ("X", x), ("Q", forHypSyll)]) 
-                    "applying hypothetical_syllogism (from minimal)"
-                    [xyPf]]))
-    where
-        xyPf:mpSubPfs = subProofs pfTree
-        strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)
-        applySubst = parseWithSubst [cond] []
-        [x, y] = args (pfContent xyPf)
-        [weakenedCond1, _] = args strengthenCond
-        forHypSyll = getEmbeddedConsequentAfter cond y weakenedCond1
-
-
 
 
 

@@ -75,8 +75,7 @@ data Line = Line {
     justification :: String,
     refLines :: [Int],
     userNumber :: Maybe Int -- the original line number the user used (NOTE: actually this is not that lol it's like an old pointer type thing lol)
-} deriving Eq -- a proof, inside haskell, is just a list of lines. That's all Haskell knows about proofs. (I used to have a proof type)
--- keeping this here in case it's ever relevant
+} deriving Eq
 prettyPrintLine :: Line -> String
 prettyPrintLine (Line lNum c j rfs uNum) = 
     show lNum ++ " " ++
@@ -191,7 +190,7 @@ getEmbeddedAntecedentsUpTo op stopSent sent
         (OpNode op' [arg1, arg2]) -> 
             if op' == op
                 then arg1 : getEmbeddedAntecedentsUpTo op stopSent arg2
-                else error "can only get all antecedents on a chain of conditionals"
+                else error ("can only get all antecedents on a chain of conditionals (sent, stopSent)=" ++ show (sent, stopSent))
         _ -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
 
 -- the last element of the returned list is the stuff you need for weakening
@@ -205,6 +204,13 @@ getEmbeddedConsequentAfter op stopSent (OpNode op' [arg1, arg2])
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
 makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]
+
+getChainLength :: Operator -> Sentence -> Int
+getChainLength op (OpNode op' [arg1, arg2])
+    | op == op' = 1 + getChainLength op arg2
+    | otherwise = 0
+getChainLength op _ = 0
+
 
 
 

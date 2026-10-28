@@ -22,5 +22,4 @@ Proof
 16. |- ML(P -> Q) -> (MLP -> MLQ)                   by applying hypothetical_syllogism (from minimal): 15 10
 QED
 
-
-Long as hell, relies on lots of results, and still takes less than a second on my machine. (Without pruning proof tree it's at about 1k lines and takes 1 second, but with it it's at a bit under 500 and takes about half a second.)
+think this proof has a pretty good show of what sponge can do now

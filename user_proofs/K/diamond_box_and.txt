@@ -11,7 +11,3 @@ Proof
 6. |- LQ -> (MP -> M(Q & P))                        by applying hypothetical_syllogism (from minimal): 4 5
 7. |- MP -> (LQ -> M(Q & P))                        by applying switch_args (from minimal): 6
 QED
-7. |- (LQ & MP) -> M(Q & P)                         by applying uncurrying (from minimal): 6
-8. |- (MP & LQ) -> (LQ & MP)                        by citing and_comm_forward (from minimal)
-9. |- (MP & LQ) -> M(Q & P)                         by applying hypothetical_syllogism (from minimal): 8 7
-QED
