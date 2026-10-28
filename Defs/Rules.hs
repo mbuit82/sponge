@@ -29,8 +29,8 @@ derivedRules = Map.fromList [
     -- ("Or Elim", orElimDerivedRule), -- from |- A -> C and |- B -> C infer |- (A v B) -> C
     -- forget about the ones below for now
     -- contrapositionDerivedRule,
-    ("Strengthening", strengtheningDerivedRule), -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
-    -- distributingDiamondsDerivedRule, 
+    ("strengthening", strengtheningDerivedRule), -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
+    ("weakening", weakeningDerivedRule),
     ("K reasoning", kReasoningDerivedRule) -- distribute boxes, push boxes through; hope to add diamonds
     ]
 
@@ -45,52 +45,62 @@ applyDerivedRules = applyOverTree (applyDerivedRules' derivedRules)
 
 
 
-andElimLDerivedRule :: ProofTree -> ProofTree
-andElimLDerivedRule (ProofTree p pfj spfs) =
-    ProofTree p "Modus Ponens"
-        [pandqPf,
-        ProofTree (applySubst "PandQ -> P" [("PandQ", pandq), ("P", p)]) "And-EL" []]
-    where 
-        applySubst = parseWithSubst [cond] []
-        [pandqPf] = spfs
-        pandq = pfContent pandqPf
+-- andElimLDerivedRule :: ProofTree -> ProofTree
+-- andElimLDerivedRule (ProofTree p pfj spfs) =
+--     ProofTree p "Modus Ponens"
+--         [pandqPf,
+--         ProofTree (applySubst "PandQ -> P" [("PandQ", pandq), ("P", p)]) "And-EL" []]
+--     where 
+--         applySubst = parseWithSubst [cond] []
+--         [pandqPf] = spfs
+--         pandq = pfContent pandqPf
 
-andElimRDerivedRule :: ProofTree -> ProofTree
-andElimRDerivedRule (ProofTree q pfj spfs) =
-    ProofTree q "Modus Ponens"
-        [pandqPf,
-        ProofTree (applySubst "PandQ -> Q" [("PandQ", pandq), ("Q", q)]) "And-ER" []]
-    where 
-        applySubst = parseWithSubst [cond] []
-        [pandqPf] = spfs
-        pandq = pfContent pandqPf
+-- andElimRDerivedRule :: ProofTree -> ProofTree
+-- andElimRDerivedRule (ProofTree q pfj spfs) =
+--     ProofTree q "Modus Ponens"
+--         [pandqPf,
+--         ProofTree (applySubst "PandQ -> Q" [("PandQ", pandq), ("Q", q)]) "And-ER" []]
+--     where 
+--         applySubst = parseWithSubst [cond] []
+--         [pandqPf] = spfs
+--         pandq = pfContent pandqPf
 
-adjunctionDerivedRule :: ProofTree -> ProofTree
-adjunctionDerivedRule (ProofTree pandq pfj spfs) =
-    ProofTree pandq "Modus Ponens"
-        [qPf,
-        ProofTree (applySubst "Q -> (P & Q)" [("P", p), ("Q", q)]) "Modus Ponens"
-            [pPf,
-            ProofTree (applySubst "P -> (Q -> (P & Q))" [("P", p), ("Q", q)]) "And-I" []]]
-    where
-        applySubst = parseWithSubst [cond, andOp] []
-        [pPf, qPf] = spfs
-        [p, q] = map pfContent spfs
+-- adjunctionDerivedRule :: ProofTree -> ProofTree
+-- adjunctionDerivedRule (ProofTree pandq pfj spfs) =
+--     ProofTree pandq "Modus Ponens"
+--         [qPf,
+--         ProofTree (applySubst "Q -> (P & Q)" [("P", p), ("Q", q)]) "Modus Ponens"
+--             [pPf,
+--             ProofTree (applySubst "P -> (Q -> (P & Q))" [("P", p), ("Q", q)]) "And-I" []]]
+--     where
+--         applySubst = parseWithSubst [cond, andOp] []
+--         [pPf, qPf] = spfs
+--         [p, q] = map pfContent spfs
 
-orElimDerivedRule :: ProofTree -> ProofTree
-orElimDerivedRule (ProofTree porqr pfj spfs) =
-    ProofTree porqr "Modus Ponens"
-        [qrPf,
-        ProofTree (applySubst "QR -> PorQR" [("QR", qr), ("PorQR", porqr)]) "Modus Ponens"
-            [prPf,
-            ProofTree (applySubst "PR -> (QR -> PorQR)" [("PR", pr), ("QR", qr), ("PorQR", porqr)]) "Or-E" []]]
-    where 
-        applySubst = parseWithSubst [cond] []
-        [prPf, qrPf] = spfs
-        [pr, qr] = map pfContent spfs
+-- orElimDerivedRule :: ProofTree -> ProofTree
+-- orElimDerivedRule (ProofTree porqr pfj spfs) =
+--     ProofTree porqr "Modus Ponens"
+--         [qrPf,
+--         ProofTree (applySubst "QR -> PorQR" [("QR", qr), ("PorQR", porqr)]) "Modus Ponens"
+--             [prPf,
+--             ProofTree (applySubst "PR -> (QR -> PorQR)" [("PR", pr), ("QR", qr), ("PorQR", porqr)]) "Or-E" []]]
+--     where 
+--         applySubst = parseWithSubst [cond] []
+--         [prPf, qrPf] = spfs
+--         [pr, qr] = map pfContent spfs
 
 contrapositionDerivedRule :: ProofTree -> ProofTree
 contrapositionDerivedRule = undefined
+
+
+
+
+makeModusPonensLines :: [ProofTree] -> ProofTree -> ProofTree
+makeModusPonensLines [] pfTree = pfTree
+makeModusPonensLines (spf:rem) pfTree = 
+    makeModusPonensLines rem (ProofTree consq "Modus Ponens" [spf, pfTree])
+    where 
+        [_, consq] = args (pfContent pfTree)
 
 
 
@@ -111,10 +121,15 @@ strengtheningDerivedRule' (p:rest) (ProofTree pfc pfj spfs) =
 
 strengtheningDerivedRule :: ProofTree -> ProofTree
 strengtheningDerivedRule pfTree = 
-    strengtheningDerivedRule' (getEmbeddedAntecedentsUpTo cond x arg1) pfTree
+    makeModusPonensLines
+        mpSubPfs
+        (strengtheningDerivedRule' 
+            (getEmbeddedAntecedentsUpTo cond x arg1) 
+            (ProofTree (strengthenCond) (pfJustification pfTree) [xyPf]))
     where 
-        [arg1, _] = args (pfContent pfTree)
-        [xyPf] = subProofs pfTree
+        xyPf:mpSubPfs = subProofs pfTree
+        strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)
+        [arg1, _] = args strengthenCond
         [x, _] = args (pfContent xyPf)
 
 
@@ -152,7 +167,7 @@ pushingBoxDerivedRule' 0 pfTree =
 pushingBoxDerivedRule' k pfTree =
     ProofTree (embed kConsq) "Modus Ponens"
         [pushingBoxDerivedRule' (k - 1) pfTree,
-        strengtheningDerivedRule (ProofTree strengthenedContent "Strengthening" [ProofTree kInstance "K Axiom" []])]
+        strengtheningDerivedRule (ProofTree strengthenedContent "strengthening" [ProofTree kInstance "K Axiom" []])]
     where
         [boxOutPf] = subProofs pfTree
         boxOut = pfContent boxOutPf
@@ -202,7 +217,37 @@ kReasoningDerivedRule pfTree
     where 
         [spf] = subProofs pfTree
 
+
+-- embed
+
+-- weaken
+weakeningDerivedRule :: ProofTree -> ProofTree
+weakeningDerivedRule pfTree =
+    makeModusPonensLines 
+        mpSubPfs
+        (strengtheningDerivedRule 
+            (ProofTree strengthenCond "strengthening" 
+                [ProofTree 
+                    (applySubst "(Y -> Q) -> (X -> Q)" [("Y", y), ("X", x), ("Q", forHypSyll)]) 
+                    "applying hypothetical_syllogism (from minimal)"
+                    [xyPf]]))
+    where
+        xyPf:mpSubPfs = subProofs pfTree
+        strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)
+        applySubst = parseWithSubst [cond] []
+        [x, y] = args (pfContent xyPf)
+        [weakenedCond1, _] = args strengthenCond
+        forHypSyll = getEmbeddedConsequentAfter cond y weakenedCond1
+
+
+
+
+
+
+
 -- I think this is what i had in mind
+-- won't work bc pfc is repeated. idk if there's an easy way to do this
+-- because derived rules don't just grow leaves; they grow branches. We need to know what the branches look like before
 chainRulesStep :: (ProofTree -> ProofTree) -> (ProofTree -> ProofTree) -> ProofTree -> ProofTree
 chainRulesStep derRule1 derRule2 (ProofTree pfc pfj spfs) =
     derRule2 (ProofTree pfc pfj [derRule1 (ProofTree pfc pfj spfs)])
@@ -222,3 +267,6 @@ chainRules (rl:remrls) = chainRulesStep rl (chainRules remrls)
     -- the problem for the diamond derived rule is that it has a cited theorem and a derived rule. So yeah, we can make it
     -- so that the derived rule can cite theorems, but we can't make it so that the derived rule cites other derived rules. 
     -- not at the object level. But at the action level yeah. To do tht at the object level is odd
+
+
+

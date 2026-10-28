@@ -194,6 +194,14 @@ getEmbeddedAntecedentsUpTo op stopSent sent
                 else error "can only get all antecedents on a chain of conditionals"
         _ -> error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
 
+-- the last element of the returned list is the stuff you need for weakening
+getEmbeddedConsequentAfter :: Operator -> Sentence -> Sentence -> Sentence
+getEmbeddedConsequentAfter op stopSent (Atom a) = error ("supposed to have reached stopSent " ++ show stopSent ++ " but never did?")
+getEmbeddedConsequentAfter op stopSent (OpNode op' [arg1, arg2])
+    | arg1 == stopSent = arg2
+    | op' == op = getEmbeddedConsequentAfter op stopSent arg2
+    | otherwise = error "can only get all antecedents on a chain of conditionals"
+
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
 makeChain op (p:rem) consq = OpNode op [p, makeChain op rem consq]

@@ -6,7 +6,7 @@ import Parse.Proofs
 
 import Deduction
 import Defs.Operators
-import Defs.Rules
+import Defs.Rules 
 -- import Defs.Rules
 import Defs.Specs
 
@@ -42,7 +42,7 @@ getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
     let afterDerivedRules = applyDerivedRules userProof -- this way, derived rules can use cited thms
-    afterCitingAxioms <- useCitedAxioms (getLogic logicName) afterDerivedRules
+    let afterCitingAxioms = useCitedAxioms (getLogic logicName) afterDerivedRules
     
     afterCitingTheorems <- useCitedTheorems afterCitingAxioms
     pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
@@ -107,13 +107,6 @@ getInfoForCut (dArg:remArgs) (newRef:remRefs) =
     let (remPairs, leftovers) = getInfoForCut remArgs remRefs in
         ((dArg, newRef) : remPairs, leftovers)
 
-makeModusPonensLines :: [ProofTree] -> ProofTree -> ProofTree
-makeModusPonensLines [] pfTree = pfTree
-makeModusPonensLines (spf:rem) pfTree = 
-    makeModusPonensLines rem (ProofTree consq "Modus Ponens" [spf, pfTree])
-    where 
-        [_, consq] = args (pfContent pfTree)
-
 instantiateAssumedPfs :: Map.Map Sentence ProofTree -> ProofTree -> ProofTree
 instantiateAssumedPfs pairsDict (ProofTree pfc pfj spfs) =
     if pfj == "Assumption" 
@@ -126,36 +119,24 @@ simulateCut pairsDict leftovers pfTree = -- you want to turn the pfTree into som
         Left deductionArgs -> instantiateAssumedPfs pairsDict ((makeDeductionsFunc deductionArgs) pfTree)
         Right spfs -> makeModusPonensLines spfs pfTree
 
-insertDerivedRule :: Sentence -> [Sentence] -> ProofTree -> ProofTree -> IO ProofTree
+insertDerivedRule :: Sentence -> [Sentence] -> ProofTree -> ProofTree -> ProofTree
 insertDerivedRule citedGoal deductionArgs citedPf pfTree = do
     -- make the varMap from the current and cited lines and cited thm goal
     let varMap = getVarMapFromState pfTree citedGoal 
 
-    -- apply substitutions to the theorem and proof schemata that you got
+    -- apply substitutions to the theorem schema and proof schema that you got
     let citedPfSubstd = applySubstToProof varMap citedPf 
     let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs
 
     -- simulate cut
     let (pairs, leftovers) = getInfoForCut deductionArgsSubstd (subProofs pfTree)
     let postApp = simulateCut (Map.fromList pairs) leftovers citedPfSubstd
-    pure postApp
+    postApp
 
 insertTheoremDerivedRule :: String -> String -> ProofTree -> IO ProofTree
 insertTheoremDerivedRule thmLogicName thmName pfTree = do
-    -- unfold everything but deduction in the cited proof
     (thmGoal, deductionArgs, citedPf) <- getHaskellProofWithoutDeduction thmLogicName thmName
-    insertDerivedRule thmGoal deductionArgs citedPf pfTree
-    -- -- make the varMap from the current and cited lines and cited thm goal
-    -- let varMap = getVarMapFromState pfTree thmGoal 
-
-    -- -- apply substitutions to the theorem and proof schemata that you got
-    -- let citedPfSubstd = applySubstToProof varMap citedPf 
-    -- let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs
-
-    -- -- simulate cut
-    -- let (pairs, leftovers) = getInfoForCut deductionArgsSubstd (subProofs pfTree)
-    -- let postApp = simulateCut (Map.fromList pairs) leftovers citedPfSubstd
-    -- pure postApp
+    pure (insertDerivedRule thmGoal deductionArgs citedPf pfTree)
 
 citedTheoremDerivedRule :: ProofTree -> IO ProofTree
 citedTheoremDerivedRule pfTree = do
@@ -174,7 +155,7 @@ useCitedTheorems' pfTree =
 useCitedTheorems :: ProofTree -> IO ProofTree
 useCitedTheorems = applyOverTreeM useCitedTheorems'
 
-insertAxiomDerivedRule :: Axiom -> ProofTree -> IO ProofTree
+insertAxiomDerivedRule :: Axiom -> ProofTree -> ProofTree
 insertAxiomDerivedRule axiom pfTree = do
     let axc = axiomContent axiom
     insertDerivedRule axc [] (ProofTree axc (axiomName axiom) []) pfTree
@@ -182,15 +163,15 @@ insertAxiomDerivedRule axiom pfTree = do
 axiomsDict :: Logic -> Map.Map String Axiom
 axiomsDict logic = Map.fromList (map (\a -> (axiomName a, a)) (axioms logic))
 
-citedAxiomDerivedRule :: Logic -> ProofTree -> IO ProofTree
+citedAxiomDerivedRule :: Logic -> ProofTree -> ProofTree
 citedAxiomDerivedRule logic pfTree = do
     insertAxiomDerivedRule (axiomsDict logic Map.! (pfJustification pfTree)) pfTree
 
-useCitedAxioms' :: Logic -> ProofTree -> IO ProofTree
+useCitedAxioms' :: Logic -> ProofTree -> ProofTree
 useCitedAxioms' logic pfTree =
     if (pfJustification pfTree) `elem` (map axiomName (axioms logic)) && (subProofs pfTree /= [])
-        then do citedAxiomDerivedRule logic pfTree
-        else do pure pfTree
+        then citedAxiomDerivedRule logic pfTree
+        else pfTree
 
-useCitedAxioms :: Logic -> ProofTree -> IO ProofTree
-useCitedAxioms logic = applyOverTreeM (useCitedAxioms' logic)
+useCitedAxioms :: Logic -> ProofTree -> ProofTree
+useCitedAxioms logic = applyOverTree (useCitedAxioms' logic)

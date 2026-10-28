@@ -1,66 +1,26 @@
 Theorem: |- ML(P -> Q) -> (MLP -> MLQ)
 
 
-
-NOTE: WILL NOT WORK RIGHT NOW
 Proof
-1. |- MLLP -> (LM(LP -> LQ) -> M(LP & (LP -> LQ))) by citing lemma_for_S42 (from S4)
+1. |- ML(LP -> LQ) -> (LMLP -> M((LP -> LQ) & LP))  by citing lemma_for_S42 (from S4)
+2. |- ((LP -> LQ) -> (LP -> LQ))                    by citing identity (from minimal)
+3. |- ((LP -> LQ) & LP) -> LQ                       by applying uncurrying (from minimal): 2
+4. |- M((LP -> LQ) & LP) -> MLQ                     by K reasoning: 3
+5. |- ML(LP -> LQ) -> (LMLP -> MLQ)                 by strengthening: 4 1
 
-2. |- (LP -> ((LP -> LQ) -> LQ)) by citing assertion (from minimal)
-3. |- (LP & (LP -> LQ)) -> LQ by applying uncurrying (from minimal): 2
-4. |- M(LP & (LP -> LQ)) -> MLQ by K reasoning: 3
+6. |- LP -> LLP                                     by 4 Axiom
+7. |- MLP -> MLLP                                   by K reasoning: 6
+8. |- MLLP -> LMLP                                  by Convergence Axiom
+9. |- MLP -> LMLP                                   by applying hypothetical_syllogism (from minimal): 7 8
+10. |- ML(LP -> LQ) -> (MLP -> MLQ)                 by weakening: 9 5
 
-5. |- (MLLP -> (LM(LP -> LQ) -> M(LP & (LP -> LQ)))) -> (MLLP -> (LM(LP -> LQ) -> MLQ)) by Strengthening: 4
-6. |- MLLP -> (LM(LP -> LQ) -> MLQ) by Modus Ponens: 1 5
-
-7. |- LP -> LLP by 4 Axiom
-8. |- MLP -> MLLP by K reasoning: 7
-
-9. |- MLP -> (LM(LP -> LQ) -> MLQ) by applying hypothetical_syllogism (from minimal): 8 6
-10. |- LM(LP -> LQ) -> (MLP -> MLQ) by applying switch_args (from minimal): 9
-
-11. |- ML(LP -> LQ) -> LM(LP -> LQ) by Convergence Axiom
-12. |- ML(LP -> LQ) -> (MLP -> MLQ) by applying hypothetical_syllogism (from minimal): 11 10
-
-13. |- L(P -> Q) -> (LP -> LQ) by K Axiom
-14. |- LL(P -> Q) -> L(LP -> LQ) by K reasoning: 13
-15. |- L(P -> Q) -> LL(P -> Q) by 4 Axiom
-16. |- L(P -> Q) -> L(LP -> LQ) by applying hypothetical_syllogism (from minimal): 15 14
-17. |- ML(P -> Q) -> ML(LP -> LQ) by K reasoning: 16
-
-18. |- ML(P -> Q) -> (MLP -> MLQ) by applying hypothetical_syllogism (from minimal): 17 12 
+11. |- L(P -> Q) -> (LP -> LQ)                      by K Axiom
+12. |- LL(P -> Q) -> L(LP -> LQ)                    by K reasoning: 11
+13. |- L(P -> Q) -> LL(P -> Q)                      by 4 Axiom
+14. |- L(P -> Q) -> L(LP -> LQ)                     by applying hypothetical_syllogism (from minimal): 13 12
+15. |- ML(P -> Q) -> ML(LP -> LQ)                   by K reasoning: 14
+16. |- ML(P -> Q) -> (MLP -> MLQ)                   by applying hypothetical_syllogism (from minimal): 15 10
 QED
 
 
-17 lines longer than the paper proof I had for this. Granted 6 lines in this proof can be taken out once I have diamond distribution derived rule, but still would be 11 lines longer. A lot of it is from not being able to substitute classical equivalents
-Now 10 lines longer, with distributing diamonds derived rule
-
 Long as hell, relies on lots of results, and still takes less than a second on my machine. (Without pruning proof tree it's at about 1k lines and takes 1 second, but with it it's at a bit under 500 and takes about half a second.)
-
-
-
-
-LM(P -> Q) -> (MLP -> MLQ) this is a 4 theorem. I don't quite see how. (without the big detour above)
-L(P -> Q) -> (LMP -> LMQ) is an S4 theorem. 
-
-
-MP -> (ML(P -> Q) -> MQ)
-LMP -> (LML(P -> Q) -> LMQ)
-
-
-
-
-(P -> Q) -> (~Q -> ~P)
-L(P -> Q) -> (L~Q -> L~P)
-L(P -> Q) -> (MP -> MQ)
-LL(P -> Q) -> (LMP -> LMQ)
-L(P -> Q) -> (LMP -> LMQ)
-LM(LP -> LQ) -> (LMP -> LMQ)
-LML(P -> Q) -> LM(LP -> LQ)
-LMP -> LMLP
-
-LML(P -> Q) -> (MLP -> MLQ)
-MLL(P -> Q) -> (MLP -> MLQ)
-L(LP -> LQ) -> (MLP -> MLQ)
-11. |- M(LP -> LQ) -> M(LP -> LQ)
-12. |- 

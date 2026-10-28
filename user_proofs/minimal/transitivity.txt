@@ -4,4 +4,4 @@ Using deduction
 
 Proof
 1. |- Q -> R by Assumption
-2. |- (P -> Q) -> (P -> R) by Strengthening: 1
+2. |- (P -> Q) -> (P -> R) by strengthening: 1

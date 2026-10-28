@@ -11,7 +11,7 @@ Proof
 4. |- M(MQ & LP) -> MM(P & Q) by K reasoning: 3
 5. |- MM(P & Q) -> M(P & Q) by citing fouraxiom_dual (from S4)
 6. |- M(MQ & LP) -> M(P & Q) by applying hypothetical_syllogism (from minimal): 4 5
-7. |- (MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q))) by Strengthening: 6
+7. |- (MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q))) by strengthening: 6
 8. |- MLP -> (LMQ -> M(P & Q)) by Modus Ponens: 1 7
 QED
 
@@ -27,7 +27,7 @@ QED
 QED
 
 
-7. |- (MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q))) by Strengthening: 3
+7. |- (MLP -> (LMQ -> M(MQ & LP))) -> (MLP -> (LMQ -> M(P & Q))) by strengthening: 3
 8. |- MLP -> (LMQ -> M(P & Q)) by Modus Ponens: 1 6
 
 
