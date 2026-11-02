@@ -1,7 +1,0 @@
-#include "../../../datalog_engines/minimal.dl"
-
-Goal($Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P"))))).
-
-Line(1, $Conditional($Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P")))), $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P")))))), "Simp", 0, 0).
-Line(2, $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P")))), "Contraposition", 0, 0).
-Line(3, $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Conditional($Atom("P"), $Atom("Q")), $Conditional($Not($Atom("Q")), $Not($Atom("P"))))), "Modus Ponens", 2, 1).

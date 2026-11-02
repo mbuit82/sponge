@@ -1,5 +1,7 @@
 module Commands.CheckDatalogOutput where
 
+import ToDatalog.Utils
+
 import Data.List
 import System.Environment (getArgs)
 import Data.Binary (encodeFile, decodeFile)
@@ -17,6 +19,7 @@ checkDatalogOutput' logicName proofName = do
 
 checkDatalogOutputWithMsg :: String -> String -> IO ()
 checkDatalogOutputWithMsg logicName proofName = do
+        -- putStrLn ("CHECKING " ++ proofName ++ " (from " ++ logicName ++ ")")
         result <- checkDatalogOutput' logicName proofName
         if result
                 then do putStrLn (proofName ++" has been proved!")
@@ -25,8 +28,7 @@ checkDatalogOutputWithMsg logicName proofName = do
                         unjustifiedContent <- readFile (getCsvFileName logicName proofName "Unjustified")
                         putStrLn "The following lines of the datalog proof are not proven: "
                         putStrLn unjustifiedContent
+        putStrLn ""
 
 main :: IO ()
-main = do
-        [a, b] <- getArgs
-        checkDatalogOutputWithMsg a b
+main = doFunc checkDatalogOutputWithMsg

@@ -8,7 +8,7 @@ Line(3, $Conditional($Conditional($Conditional($Atom("A"), $Atom("B")), $Conditi
 Line(4, $Conditional($Conditional($Atom("A"), $Atom("B")), $Conditional($Conditional($Atom("B"), $Atom("B")), $Conditional($Or($Atom("A"), $Atom("B")), $Atom("B")))), "Or Elim", 0, 0).
 Line(5, $Conditional($Not($Atom("A")), $Conditional($Conditional($Atom("A"), $Atom("B")), $Conditional($Conditional($Atom("B"), $Atom("B")), $Conditional($Or($Atom("A"), $Atom("B")), $Atom("B"))))), "Modus Ponens", 4, 3).
 Line(6, $Conditional($Conditional($Not($Atom("A")), $Conditional($Atom("A"), $Atom("B"))), $Conditional($Not($Atom("A")), $Conditional($Conditional($Atom("B"), $Atom("B")), $Conditional($Or($Atom("A"), $Atom("B")), $Atom("B"))))), "Modus Ponens", 5, 2).
-Line(7, $Conditional($Not($Atom("A")), $Conditional($Atom("A"), $Atom("B"))), "Ex Falso Quodlibet", 0, 0).
+Line(7, $Conditional($Not($Atom("A")), $Conditional($Atom("A"), $Atom("B"))), "Negation Elim", 0, 0).
 Line(8, $Conditional($Not($Atom("A")), $Conditional($Conditional($Atom("B"), $Atom("B")), $Conditional($Or($Atom("A"), $Atom("B")), $Atom("B")))), "Modus Ponens", 7, 6).
 Line(9, $Conditional($Conditional($Not($Atom("A")), $Conditional($Atom("B"), $Atom("B"))), $Conditional($Not($Atom("A")), $Conditional($Or($Atom("A"), $Atom("B")), $Atom("B")))), "Modus Ponens", 8, 1).
 Line(10, $Conditional($Conditional($Not($Atom("A")), $Conditional($Conditional($Atom("B"), $Conditional($Atom("B"), $Atom("B"))), $Conditional($Atom("B"), $Atom("B")))), $Conditional($Conditional($Not($Atom("A")), $Conditional($Atom("B"), $Conditional($Atom("B"), $Atom("B")))), $Conditional($Not($Atom("A")), $Conditional($Atom("B"), $Atom("B"))))), "Frege", 0, 0).

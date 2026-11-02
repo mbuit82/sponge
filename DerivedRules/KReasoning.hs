@@ -71,10 +71,10 @@ distributingBoxDerivedRule pfTree =
 
 distributingDiamondsDerivedRule :: ProofTree -> ProofTree
 distributingDiamondsDerivedRule pfTree =
-    ProofTree (applySubst "MP -> MQ" [("P", p), ("Q", q)]) "Contrapositive"
+    ProofTree (applySubst "MP -> MQ" [("P", p), ("Q", q)]) "applying contrapositive_forward (from intuitionistic)"
         [ProofTree (applySubst "L~Q -> L~P" [("P", p), ("Q", q)]) "Modus Ponens" 
             [ProofTree (applySubst "L(~Q -> ~P)" [("P", p), ("Q", q)]) "Necessitation" 
-                [ProofTree (applySubst "~Q -> ~P" [("P", p), ("Q", q)]) "Contrapositive" 
+                [ProofTree (applySubst "~Q -> ~P" [("P", p), ("Q", q)]) "applying contrapositive_forward (from intuitionistic)" 
                     [spf]],
             ProofTree (applySubst "L(~Q -> ~P) -> (L~Q -> L~P)" [("P", p), ("Q", q)]) "K Axiom" []]]
     where

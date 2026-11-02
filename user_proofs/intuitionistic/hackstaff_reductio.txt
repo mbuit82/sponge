@@ -1,0 +1,7 @@
+Theorem: |- (P -> ~P) -> ~P
+
+Proof
+1. |- (P -> P) -> ((P -> ~P) -> ~P) by Negation Intro
+2. |- P -> P by citing identity (from minimal)
+3. |- (P -> ~P) -> ~P by Modus Ponens: 2 1
+QED

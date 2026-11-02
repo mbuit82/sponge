@@ -1,0 +1,12 @@
+Theorem: |- P -> ~~P
+
+Proof
+1. |- P -> (~P -> P) by Simp
+2. |- (~P -> ~P) -> (P -> (~P -> ~P)) by Simp
+3. |- ~P -> ~P by citing identity (from minimal)
+4. |- P -> (~P -> ~P) by Modus Ponens: 3 2
+5. |- (~P -> P) -> ((~P -> ~P) -> ~~P) by Negation Intro
+6. |- (P -> (~P -> P)) -> ((P -> (~P -> ~P)) -> (P -> ~~P)) by embedding: 5
+7. |- (P -> (~P -> ~P)) -> (P -> ~~P) by Modus Ponens: 1 6
+8. |- P -> ~~P by Modus Ponens: 4 7
+QED

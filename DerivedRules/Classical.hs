@@ -10,7 +10,7 @@ import DerivedRules.Utils
 import qualified Data.Map as Map
 
 
-
+-- haven't had a need to define this yet
 contrapositionDerivedRule :: ProofTree -> ProofTree
 contrapositionDerivedRule = undefined
 

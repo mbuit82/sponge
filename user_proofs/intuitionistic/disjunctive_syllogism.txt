@@ -7,7 +7,7 @@ Proof
 
 1. |- ~A by Assumption
 2. |- B -> B by applying identity (from minimal) [B/A]
-3. |- ~A -> (A -> B) by Ex Falso Quodlibet
+3. |- ~A -> (A -> B) by Negation Elim
 4. |- A -> B by Modus Ponens: 1 3
 5. |- (A v B) -> B by Or Elim: 4 2
 

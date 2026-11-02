@@ -54,18 +54,28 @@ orE = Axiom "Or Elim" (parse [cond, andOp, orOp] [] "(P -> R) -> ((Q -> R) -> ((
 -- and the argument for including bot is about the same as the argument for including 
 explosion :: Axiom
 explosion = Axiom "Explosion" (parse [cond, bot] [] "Bot -> P")
-lem_bot :: Axiom
-lem_bot = Axiom "Excluded Middle" (parse [cond] [neg] "~~P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
+dne_bot :: Axiom
+dne_bot = Axiom "DNE" (parse [cond] [neg] "~~P -> P") -- note that Bot gets in there even though it's not passed to the parsing function
 
 -- this axiomatization uses a negation operator. Easier to work with for strengthening with modal operators. 
+-- Another choice would be to use rules that mirror intro and elim rules in NJ, following the pattern above
+-- I have the elim rule (exfalso), but the intro rule just wouldn't really be useful in an axiomatic setting, or at least these other two rules are much, much more useful
+-- however I am not convinced that we can actually derived the negation intro rule, or the hackstaff axiom
 contrapos :: Axiom
 contrapos = Axiom "Contrapositive" (parse [cond, negOp] [] "(P -> Q) -> (~Q -> ~P)")
 dni :: Axiom
-dni = Axiom "Double Negation Intro" (parse [cond, negOp] [] "P -> ~~P")
-exfalso :: Axiom
-exfalso = Axiom "Ex Falso Quodlibet" (parse [cond, negOp] [] "~P -> (P -> Q)")
-lem :: Axiom
-lem = Axiom "Excluded Middle" (parse [cond, negOp] [] "~~P -> P")
+dni = Axiom "DNI" (parse [cond, negOp] [] "P -> ~~P")
+wiki :: Axiom
+wiki = Axiom "Wiki" (parse [cond, negOp] [] "(P -> ~Q) -> (Q -> ~P)")
+reductio :: Axiom -- from hackstaff book
+reductio = Axiom "Reductio" (parse [cond, negOp] [] "(P -> ~P) -> ~P")
+negE :: Axiom
+negE = Axiom "Negation Elim" (parse [cond, negOp] [] "~P -> (P -> Q)")
+negI :: Axiom
+negI = Axiom "Negation Intro" (parse [cond, negOp] [] "(P -> Q) -> ((P -> ~Q) -> ~P)")
+
+dne :: Axiom
+dne = Axiom "DNE" (parse [cond, negOp] [] "~~P -> P")
 
 
 -- modal axioms

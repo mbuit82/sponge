@@ -1,15 +1,15 @@
 module ToDatalog.UserProofs where
 
 import Core
-import ToDatalog.Utils
 import Defs.Specs
 import ToDatalog.PruneProofTrees
+import ToDatalog.Utils
 import DerivedRules.UseDerivedRules
 
-import System.IO
 import Data.List
+import System.IO
 import System.Environment (getArgs)
-import System.Directory (createDirectoryIfMissing)
+
 
 sentenceToDatalog :: Sentence -> String
 sentenceToDatalog = formulaToDatalog False
@@ -26,10 +26,6 @@ lineToDatalog line =
                     [i,j] -> [i,j]
                     _ -> error "too many references for a Line! "
 
-    -- case refLines line of
-    --     [] -> 
-    -- let rfs = if refLines line == [] then [0, 0] else refLines line in
-        
 proofToDatalog :: Sentence -> [Line] -> String
 proofToDatalog proofGoal proofLines =
     "Goal(" ++ 
@@ -45,13 +41,11 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
         hPutStr h (proofToDatalog proofGoal proofLines)
 
 -- complete function to compile user input to Datalog
-userToDatalog' :: String -> String -> IO ()
-userToDatalog' logicName proofName = do
+userToDatalog :: String -> String -> IO ()
+userToDatalog logicName proofName = do
     (goal, haskellProof) <- getHaskellProof logicName proofName
     compileDatalogProof proofName goal logic ((pruneProofTree . proofTreeToLines) haskellProof)
     where logic = getLogic logicName
 
 main :: IO ()
-main = do 
-    [logicName, proofName] <- getArgs
-    userToDatalog' logicName proofName
+main = doFunc userToDatalog

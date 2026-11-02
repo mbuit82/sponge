@@ -1,0 +1,7 @@
+Theorem: |- ~(P & ~P)
+
+Proof
+1. |- (P & ~P) -> P by And Elim L
+2. |- (P & ~P) -> ~P by And Elim R
+3. |- ~(P & ~P) by Negation Intro: 1 2
+QED

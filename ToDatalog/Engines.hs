@@ -114,7 +114,6 @@ compileDatalogEngine :: String -> IO ()
 compileDatalogEngine logicName =
     -- I want to check that all axioms and inference rules are well-formed. 
     -- use the all function and the isWff function.
-    -- Also here check that all inference rules have max 2 premises
     -- I think this ideally happens not here, but like in a check function. 
     -- for now I can run that check function here
     -- well like I want it to happen _before_ I apply all the transformations on proofs. Like it should be the _first_ thing that happens. 
@@ -135,5 +134,5 @@ makeLogicDirectories logicName = do
 
 main :: IO ()
 main = do 
-        mapM_ compileDatalogEngine logicNames
-        mapM_ makeLogicDirectories logicNames
+    mapM_ compileDatalogEngine logicNames
+    mapM_ makeLogicDirectories logicNames

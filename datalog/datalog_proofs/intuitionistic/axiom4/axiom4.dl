@@ -1,9 +1,0 @@
-#include "../../../datalog_engines/intuitionistic.dl"
-
-Goal($Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Atom("B")))).
-
-Line(1, $Conditional($Conditional($Atom("A"), $Conditional($Bot(), $Atom("B"))), $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Atom("B")))), "Frege", 0, 0).
-Line(2, $Conditional($Bot(), $Atom("B")), "Explosion", 0, 0).
-Line(3, $Conditional($Conditional($Bot(), $Atom("B")), $Conditional($Atom("A"), $Conditional($Bot(), $Atom("B")))), "Simp", 0, 0).
-Line(4, $Conditional($Atom("A"), $Conditional($Bot(), $Atom("B"))), "Modus Ponens", 2, 3).
-Line(5, $Conditional($Conditional($Atom("A"), $Bot()), $Conditional($Atom("A"), $Atom("B"))), "Modus Ponens", 4, 1).

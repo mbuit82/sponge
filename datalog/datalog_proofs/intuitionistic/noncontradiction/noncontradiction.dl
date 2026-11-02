@@ -1,0 +1,9 @@
+#include "../../../datalog_engines/intuitionistic.dl"
+
+Goal($Not($And($Atom("P"), $Not($Atom("P"))))).
+
+Line(1, $Conditional($Conditional($And($Atom("P"), $Not($Atom("P"))), $Atom("P")), $Conditional($Conditional($And($Atom("P"), $Not($Atom("P"))), $Not($Atom("P"))), $Not($And($Atom("P"), $Not($Atom("P")))))), "Negation Intro", 0, 0).
+Line(2, $Conditional($And($Atom("P"), $Not($Atom("P"))), $Atom("P")), "And Elim L", 0, 0).
+Line(3, $Conditional($Conditional($And($Atom("P"), $Not($Atom("P"))), $Not($Atom("P"))), $Not($And($Atom("P"), $Not($Atom("P"))))), "Modus Ponens", 2, 1).
+Line(4, $Conditional($And($Atom("P"), $Not($Atom("P"))), $Not($Atom("P"))), "And Elim R", 0, 0).
+Line(5, $Not($And($Atom("P"), $Not($Atom("P")))), "Modus Ponens", 4, 3).

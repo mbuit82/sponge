@@ -54,6 +54,7 @@ getEmbeddedConsequentAfter op stopSent (OpNode op' [arg1, arg2])
     | arg1 == stopSent = arg2
     | op' == op = getEmbeddedConsequentAfter op stopSent arg2
     | otherwise = error "can only get all antecedents on a chain of conditionals"
+getEmbeddedConsequentAfter op stopSent sent = error (show op ++ "\n" ++ show stopSent ++ "\n" ++ show sent)
 
 makeChain :: Operator -> [Sentence] -> Sentence -> Sentence
 makeChain op [] consq = consq
