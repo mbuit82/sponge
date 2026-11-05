@@ -13,10 +13,10 @@ applyOverTreeM func (ProofTree pfc pfj spfs) = do
 applyOverTree :: (ProofTree -> ProofTree) -> ProofTree -> ProofTree
 applyOverTree func = runIdentity . applyOverTreeM (Identity . func)
 
-makeModusPonensLines :: [ProofTree] -> ProofTree -> ProofTree
-makeModusPonensLines [] pfTree = pfTree
-makeModusPonensLines (spf:rem) pfTree = 
-    makeModusPonensLines rem (ProofTree consq "Modus Ponens" [spf, pfTree])
+applyPfs :: ProofTree -> [ProofTree] -> ProofTree
+applyPfs pfTree [] = pfTree
+applyPfs pfTree (spf:rem) = 
+    applyPfs (ProofTree consq "Modus Ponens" [spf, pfTree]) rem 
     where 
         [_, consq] = args (pfContent pfTree)
 
@@ -65,3 +65,6 @@ getChainLength op (OpNode op' [arg1, arg2])
     | op == op' = 1 + getChainLength op arg2
     | otherwise = 0
 getChainLength op _ = 0
+
+axiomsDict :: Logic -> Map.Map String Axiom
+axiomsDict logic = Map.fromList (map (\a -> (axiomName a, a)) (axioms logic))

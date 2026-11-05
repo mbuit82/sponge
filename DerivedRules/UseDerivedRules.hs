@@ -7,7 +7,7 @@ import Defs.Operators
 import Defs.Specs
 
 import DerivedRules.Utils
-import DerivedRules.Classical
+import DerivedRules.ImplicationalFragment
 import DerivedRules.KReasoning
 import DerivedRules.Deduction
 
@@ -27,22 +27,21 @@ derivedRules = Map.fromList [
     ("K reasoning", kReasoningDerivedRule) -- distribute boxes, push boxes through; hope to add diamonds
     ]
 
-applyDerivedRules' :: Map.Map String (ProofTree -> ProofTree) -> ProofTree -> ProofTree
-applyDerivedRules' derRulesDict pfTree =
+useDerivedRules' :: Map.Map String (ProofTree -> ProofTree) -> ProofTree -> ProofTree
+useDerivedRules' derRulesDict pfTree =
     case derRulesDict Map.!? pfJustification pfTree of 
         Nothing -> pfTree
-        Just func -> func pfTree
+        Just derRule -> derRule pfTree
 
-applyDerivedRules :: ProofTree -> ProofTree
-applyDerivedRules = applyOverTree (applyDerivedRules' derivedRules)
+useDerivedRules :: ProofTree -> ProofTree
+useDerivedRules = applyOverTree (useDerivedRules' derivedRules)
 
 getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], ProofTree)
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
-    let afterDerivedRules = applyDerivedRules userProof -- this way, derived rules can use cited thms
+    let afterDerivedRules = useDerivedRules userProof -- this way, derived rules can use cited thms
     let afterCitingAxioms = useCitedAxioms (getLogic logicName) afterDerivedRules
-    
     afterCitingTheorems <- useCitedTheorems afterCitingAxioms
     pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
 
@@ -65,105 +64,82 @@ applySubstToSent :: Map.Map String Sentence -> Sentence -> Sentence
 applySubstToSent varMap (Atom a) = instantiateVar varMap a
 applySubstToSent varMap (OpNode op args) = (OpNode op (map (applySubstToSent varMap) args))
 
-applySubstToProof :: Map.Map String Sentence -> ProofTree -> ProofTree
-applySubstToProof varMap pfTree = 
-    ProofTree 
-        (applySubstToSent varMap (pfContent pfTree)) 
-        (pfJustification pfTree) 
-        (map (applySubstToProof varMap) (subProofs pfTree))
+-- writing bc might be useful later idk
+changeRootContent :: (Sentence -> Sentence) -> ProofTree -> ProofTree
+changeRootContent sentFunc (ProofTree pfc pfj spfs) = 
+    ProofTree (sentFunc pfc) pfj spfs
 
-makeCitedTheoremInstance :: ProofTree -> Sentence
-makeCitedTheoremInstance (ProofTree pfc pfj spfs) = 
+applySubstToProof :: Map.Map String Sentence -> ProofTree -> ProofTree
+applySubstToProof varMap =
+    applyOverTree (changeRootContent (applySubstToSent varMap))
+
+reconstructCitedTheorem :: ProofTree -> Sentence
+reconstructCitedTheorem (ProofTree pfc pfj spfs) = 
     makeChain cond (map pfContent spfs) pfc
 
-getVarMapFromState :: ProofTree -> Sentence -> Map.Map String Sentence
-getVarMapFromState pfTree schema =
-    getVarMap (makeCitedTheoremInstance pfTree) schema
-
-stripBrackets :: String -> String
-stripBrackets ('[':rest)
-    | not (null rest) && last rest == ']' = init rest
-stripBrackets subsStr = error ("somthing wrong w the user-inputted substitution: " ++ subsStr)
+removeCitingText :: String -> String
+removeCitingText jus =
+    if isInfixOf "applying" jus ||
+        isInfixOf "citing" jus ||
+        isInfixOf "using" jus
+    then dropWhile (/= ' ') (dropWhile isSpace jus)
+    else jus
 
 getTheoremInfo :: String -> (String, String)
 getTheoremInfo jus =
-    let jus' = dropWhile (/= ' ') (dropWhile isSpace jus) in
-        let ((proofName'), rest) = break (=='(') (dropWhile isSpace jus') in
-            let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
-                    (logicName, dropWhileEnd isSpace proofName')
+    let jus' = removeCitingText jus in
+    -- error (takeWhile (/= ' ') (dropWhile isSpace jus))
+    let ((proofName'), rest) = break (=='(') (dropWhile isSpace jus') in
+    let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
+    (logicName, dropWhileEnd isSpace proofName')
 
--- [Sentence] are the deductionArgs, [ProofTree] are the subproofs supplied in the line
-getInfoForCut :: [Sentence] -> [ProofTree] -> ([(Sentence, ProofTree)], Either [Sentence] [ProofTree])
-getInfoForCut deductionArgs [] = ([], Left deductionArgs)
-getInfoForCut [] spfs = ([], Right spfs)
-getInfoForCut (dArg:remArgs) (newRef:remRefs) =
-    let (remPairs, leftovers) = getInfoForCut remArgs remRefs in
-        ((dArg, newRef) : remPairs, leftovers)
+getUsedDerivedArgs :: [Sentence] -> [ProofTree] -> ([(Sentence, ProofTree)], [Sentence], [ProofTree])
+getUsedDerivedArgs deductionArgs [] = ([], deductionArgs, [])
+getUsedDerivedArgs [] spfs = ([], [], spfs)
+getUsedDerivedArgs (dArg:remArgs) (newRef:remRefs) =
+    let (remPairs, unusedDeductions, unusedApps) = getUsedDerivedArgs remArgs remRefs in
+        ((dArg, newRef) : remPairs, unusedDeductions, unusedApps)
 
-instantiateAssumedPfs :: Map.Map Sentence ProofTree -> ProofTree -> ProofTree
-instantiateAssumedPfs pairsDict (ProofTree pfc pfj spfs) =
+derivationComposition :: Map.Map Sentence ProofTree -> ProofTree -> ProofTree
+derivationComposition pairsDict (ProofTree pfc pfj spfs) =
     if pfj == "Assumption" 
         then fromJust (pairsDict Map.!? pfc)
-        else ProofTree pfc pfj (map (instantiateAssumedPfs pairsDict) spfs)
+        else ProofTree pfc pfj (map (derivationComposition pairsDict) spfs)
 
-simulateCut :: Map.Map Sentence ProofTree -> (Either [Sentence] [ProofTree]) -> ProofTree -> ProofTree
-simulateCut pairsDict leftovers pfTree = -- you want to turn the pfTree into something that you will later feed it a line to
-    case leftovers of
-        Left deductionArgs -> instantiateAssumedPfs pairsDict ((makeDeductionsFunc deductionArgs) pfTree)
-        Right spfs -> makeModusPonensLines spfs pfTree
+-- wondering about name
+optimizedApply :: Sentence -> [Sentence] -> ProofTree -> ProofTree -> ProofTree
+optimizedApply citedGoal deductionArgs citedPf pfTree =
+    let varMap = getVarMap (reconstructCitedTheorem pfTree) citedGoal in
+    let citedPfSubstd = applySubstToProof varMap citedPf in
+    let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs in
+    let (usedDerivedArgs, remHyps, remArgs) = getUsedDerivedArgs deductionArgsSubstd (subProofs pfTree) in
+    applyPfs (derivationComposition (Map.fromList usedDerivedArgs) ((makeDeductionsFunc remHyps) citedPfSubstd)) remArgs
 
-insertDerivedRule :: Sentence -> [Sentence] -> ProofTree -> ProofTree -> ProofTree
-insertDerivedRule citedGoal deductionArgs citedPf pfTree = do
-    -- make the varMap from the current and cited lines and cited thm goal
-    let varMap = getVarMapFromState pfTree citedGoal 
-
-    -- apply substitutions to the theorem schema and proof schema that you got
-    let citedPfSubstd = applySubstToProof varMap citedPf 
-    let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs
-
-    -- simulate cut
-    let (pairs, leftovers) = getInfoForCut deductionArgsSubstd (subProofs pfTree)
-    let postApp = simulateCut (Map.fromList pairs) leftovers citedPfSubstd
-    postApp
-
-insertTheoremDerivedRule :: String -> String -> ProofTree -> IO ProofTree
-insertTheoremDerivedRule thmLogicName thmName pfTree = do
-    (thmGoal, deductionArgs, citedPf) <- getHaskellProofWithoutDeduction thmLogicName thmName
-    pure (insertDerivedRule thmGoal deductionArgs citedPf pfTree)
-
-citedTheoremDerivedRule :: ProofTree -> IO ProofTree
-citedTheoremDerivedRule pfTree = do
+useCitedTheorem :: ProofTree -> IO ProofTree
+useCitedTheorem pfTree = do
     let (thmLogicName, thmName) = getTheoremInfo (pfJustification pfTree)
-    insertTheoremDerivedRule thmLogicName thmName pfTree
+    (thmGoal, deductionArgs, citedPf) <- getHaskellProofWithoutDeduction thmLogicName thmName
+    pure (optimizedApply thmGoal deductionArgs citedPf pfTree)
 
 useCitedTheorems' :: ProofTree -> IO ProofTree
 useCitedTheorems' pfTree =
     if "(from " `isInfixOf` (pfJustification pfTree)
-    -- if "applying" `isInfixOf` (pfJustification pfTree) || 
-    --     "using" `isInfixOf` (pfJustification pfTree) || 
-    --     "citing" `isInfixOf` (pfJustification pfTree)
-        then do citedTheoremDerivedRule pfTree
+        then do useCitedTheorem pfTree
         else do pure pfTree
 
 useCitedTheorems :: ProofTree -> IO ProofTree
 useCitedTheorems = applyOverTreeM useCitedTheorems'
 
-insertAxiomDerivedRule :: Axiom -> ProofTree -> ProofTree
-insertAxiomDerivedRule axiom pfTree = do
-    let axc = axiomContent axiom
-    insertDerivedRule axc [] (ProofTree axc (axiomName axiom) []) pfTree
-
-axiomsDict :: Logic -> Map.Map String Axiom
-axiomsDict logic = Map.fromList (map (\a -> (axiomName a, a)) (axioms logic))
-
-citedAxiomDerivedRule :: Logic -> ProofTree -> ProofTree
-citedAxiomDerivedRule logic pfTree = do
-    insertAxiomDerivedRule (axiomsDict logic Map.! (pfJustification pfTree)) pfTree
+useCitedAxiom :: Logic -> ProofTree -> ProofTree
+useCitedAxiom logic pfTree = 
+    let axiom = (axiomsDict logic Map.! (pfJustification pfTree)) in
+    let axc = axiomContent axiom in
+    optimizedApply axc [] (ProofTree axc (axiomName axiom) []) pfTree
 
 useCitedAxioms' :: Logic -> ProofTree -> ProofTree
 useCitedAxioms' logic pfTree =
     if (pfJustification pfTree) `elem` (map axiomName (axioms logic)) && (subProofs pfTree /= [])
-        then citedAxiomDerivedRule logic pfTree
+        then useCitedAxiom logic pfTree
         else pfTree
 
 useCitedAxioms :: Logic -> ProofTree -> ProofTree

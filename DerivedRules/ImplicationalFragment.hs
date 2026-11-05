@@ -1,4 +1,4 @@
-module DerivedRules.Classical where
+module DerivedRules.ImplicationalFragment where
 
 import Core
 import Parse.Sentences
@@ -33,11 +33,11 @@ strengtheningDerivedRule' (p:rest) (ProofTree pfc pfj spfs) =
 
 strengtheningDerivedRule :: ProofTree -> ProofTree
 strengtheningDerivedRule pfTree = 
-    makeModusPonensLines
-        mpSubPfs
+    applyPfs
         (strengtheningDerivedRule' 
             (getEmbeddedAntecedentsUpTo cond x arg1) 
             (ProofTree (strengthenCond) (pfJustification pfTree) [xyPf]))
+        mpSubPfs
     where 
         xyPf:mpSubPfs = subProofs pfTree
         strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)
@@ -49,14 +49,14 @@ strengtheningDerivedRule pfTree =
 -- weaken
 weakeningDerivedRule :: ProofTree -> ProofTree
 weakeningDerivedRule pfTree =
-    makeModusPonensLines 
-        mpSubPfs
+    applyPfs 
         (strengtheningDerivedRule 
             (ProofTree strengthenCond "strengthening" 
                 [ProofTree 
                     (applySubst "(Y -> Q) -> (X -> Q)" [("Y", y), ("X", x), ("Q", forHypSyll)]) 
                     "applying hypothetical_syllogism (from minimal)"
                     [xyPf]]))
+        mpSubPfs
     where
         xyPf:mpSubPfs = subProofs pfTree
         strengthenCond = makeChain cond (map pfContent mpSubPfs) (pfContent pfTree)

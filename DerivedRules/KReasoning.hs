@@ -6,7 +6,7 @@ import Parse.Sentences
 import Defs.Operators
 
 import DerivedRules.Utils
-import DerivedRules.Classical
+import DerivedRules.ImplicationalFragment
 
 import qualified Data.Map as Map
 
