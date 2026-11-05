@@ -64,17 +64,20 @@ step currSmallest kv
     | snd kv == snd currSmallest = if fst kv < fst currSmallest then kv else currSmallest
     | otherwise = currSmallest
 
-pickLineFunc :: Set.Set Int -> [Line] -> (Int, Set.Set Int)
--- pickLineFunc sameContentRefs lns = Set.deleteFindMin sameContentRefs
--- below is the naive, keep-smallest-subproof approach
-pickLineFunc sameContentRefs lns = 
-    let asList = Set.toList sameContentRefs in
-        let sizeProofTrees = map (\int -> (int, Set.size (getSubProofRefs lns int))) asList in
-            let keepRef = fst (foldl' step (0,0) sizeProofTrees) in 
-                (keepRef, Set.delete keepRef sameContentRefs)
+keepSmallestLNum :: Set.Set Int -> [Line] -> (Int, Set.Set Int)
+keepSmallestLNum sameContentRefs lns = Set.deleteFindMin sameContentRefs
 
+-- below is the naive, keep-smallest-subproof approach
+keepSmallestSubproof :: Set.Set Int -> [Line] -> (Int, Set.Set Int)
+keepSmallestSubproof sameContentRefs lns = 
+    let asList = Set.toList sameContentRefs in
+    let sizeProofTrees = map (\int -> (int, Set.size (getSubProofRefs lns int))) asList in
+    let keepRef = fst (foldl' step (0,0) sizeProofTrees) in 
+    (keepRef, Set.delete keepRef sameContentRefs)
+
+-- change the function in the parentheses here to change how to pick from repeated pfs
 replaceInRefs :: Set.Set Int -> [Line] -> [Line]
-replaceInRefs repeateds lns = replaceInRefs' (pickLineFunc repeateds lns) lns
+replaceInRefs repeateds lns = replaceInRefs' (keepSmallestLNum repeateds lns) lns
 
 removeRepeatRefs :: [Line] -> [Line]
 removeRepeatRefs lns =
