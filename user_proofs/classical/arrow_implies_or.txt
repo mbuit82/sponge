@@ -1,0 +1,12 @@
+Theorem: |- (A -> B) -> (~A v B)
+
+
+Using deduction
+
+Proof
+1. |- (A -> B) by Assumption
+2. |- B -> (~A v B) by Or Intro R
+3. |- A -> (~A v B) by hypothetical_syllogism (from minimal): 1 2
+4. |- ~A -> (~A v B) by Or Intro L
+5. |- (A v ~A) by excluded_middle (from classical)
+6. |- ~A v B by Or Elim: 3 4 5

@@ -1,0 +1,11 @@
+Theorem: |- A v ~A
+
+Proof
+1. |- (~A & ~~A) -> ~A by And Elim L
+2. |- (~A & ~~A) -> ~~A by And Elim R
+3. |- ~(~A & ~~A) by Negation Intro: 1 2
+4. |- ~(A v ~A) -> (~A & ~~A) by demorgans_neg_or (from intuitionistic)
+5. |- ~(~A & ~~A) -> ~~(A v ~A) by contrapositive_forward (from intuitionistic): 4
+6. |- ~~(A v ~A) by Modus Ponens: 3 5
+7. |- A v ~A by DNE: 6
+QED

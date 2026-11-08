@@ -1,0 +1,12 @@
+Theorem: |- ~(A v B) -> (~A & ~B)
+
+Proof
+1. |- A -> (A v B) by Or Intro L
+2. |- B -> (A v B) by Or Intro R
+3. |- ~(A v B) -> ~A by contrapositive_forward (from intuitionistic): 1
+4. |- ~(A v B) -> ~B by contrapositive_forward (from intuitionistic): 2
+5. |- ~A -> (~B -> (~A & ~B)) by And Intro
+6. |- (~(A v B) -> ~A) -> ((~(A v B) -> ~B) -> (~(A v B) -> (~A & ~B))) by embedding: 5
+7. |- (~(A v B) -> ~B) -> (~(A v B) -> (~A & ~B)) by Modus Ponens: 3 6
+8. |- ~(A v B) -> (~A & ~B) by Modus Ponens: 4 7
+QED
