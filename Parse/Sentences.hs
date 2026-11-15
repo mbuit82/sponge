@@ -91,10 +91,8 @@ getNextSentence' atomFunc opStack sentStack toSee =
 getTopLevelSentence :: (String -> Sentence) -> [Token] -> Sentence
 getTopLevelSentence atomFunc toks = fst (getNextSentence' atomFunc [] [] (LPToken : toks ++ [RPToken]))
 
-type Parser = [Operator] -> [DefinedOperator] -> String -> Sentence
-
 -- these below are really the only functions that should be exported
-parse :: Parser
+parse :: [Operator] -> [DefinedOperator] -> String -> Sentence
 parse ops defOps input = getTopLevelSentence Atom (tokenize ops defOps input)
 
 parseWithSubst :: [Operator] -> [DefinedOperator] -> String -> [(String, Sentence)] -> Sentence
