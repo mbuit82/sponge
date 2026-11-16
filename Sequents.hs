@@ -250,9 +250,7 @@ tryNoninvertRule rl seq =
     case useRule rl seq of
         Just subSeqs -> 
             let rest = SequentProof seq (seqRuleName rl) (Just (map g4ProofSearch subSeqs)) in
-            if checkProof rest
-                then Just rest
-                else Nothing
+            if checkProof rest then Just rest else Nothing
         Nothing -> Nothing
 
 tryNoninvertRules :: [SequentRule] -> Sequent -> SequentProof
