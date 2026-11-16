@@ -8,12 +8,13 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
-import Language.Haskell.TH (arrowK)
+import Data.Char
 
--- type MultiSet = Map.Map Sentence Int
-
-parseIP :: String -> Sentence
-parseIP = parse [andOp, orOp, cond, negOp] []
+parseIP :: String -> Maybe Sentence
+parseIP str = 
+    if (all isSpace str)
+        then Nothing
+        else Just (parse [andOp, orOp, cond, negOp] [] str)
 
 isAtomic :: Sentence -> Bool
 isAtomic (Atom _) = True
@@ -21,91 +22,20 @@ isAtomic _ = False
 
 data Sequent = Sequent {
     antecedent :: Set.Set Sentence,
-    succedent :: Sentence
+    succedent :: Set.Set Sentence
 } deriving (Show, Eq, Read)
 
--- PROOFTREES BASICS
+data SequentRule = SequentRule {
+    seqRuleName :: String,
+    seqPremises :: [Sequent],
+    seqConclusion :: Sequent
+} deriving (Eq, Show, Read)
+
 data SequentProof = SequentProof {
     seqContent :: Sequent,
     seqJustification :: String,
     subSeqProofs :: Maybe [SequentProof]
 } deriving (Show, Eq, Read)
-
--- technically the more kosher way of doing things (compared to RuleSchema)
--- but not even that much more because this is for rule instsances, which are pretty useless
-data SequentRule = SequentRule {
-    ruleName :: String,
-    premises :: [Sequent],
-    conclusion :: Sequent
-} deriving (Eq, Show, Read)
-
-type RuleSchema = ([String], String)
-andR :: RuleSchema
-andR = (["Gamma => A", "Gamma => B"],
-        "Gamma => A & B")
-orR0 :: RuleSchema
-orR0 = (["Gamma => A"],
-        "Gamma => A v B")
-orR1 :: RuleSchema
-orR1 = (["Gamma => B"],
-        "Gamma => A v B")
-arrowR :: RuleSchema
-arrowR = (["Gamma, A => B"],
-        "Gamma => A -> B")
-andL :: RuleSchema
-andL = (["Gamma, A, B => C"], 
-        "Gamma, A & B => C")
-orL :: RuleSchema
-orL = (["Gamma, A => C", "Gamma, B => C"], 
-        "Gamma, A v B => C")
-arrowL2 :: RuleSchema
-arrowL2 = (["Gamma, C -> (D -> B) => E"], 
-        "Gamma, (C & D) -> B => E")
-arrowL3 :: RuleSchema
-arrowL3 = (["Gamma, C -> B, D -> B => E"], 
-        "Gamma, (C v D) -> B => E")
-arrowL4 :: RuleSchema
-arrowL4 = (["Gamma, C, D -> B => D", "Gamma, B => E"],
-        "Gamma, (C -> D) -> B => E")
-ax :: RuleSchema
-ax = ([],
-        "Gamma, P => P")
-arrowL1 :: RuleSchema
-arrowL1 = (["Gamma, P, B => E"],
-        "Gamma, P -> B, P => E")
-
-g4 :: Map.Map String RuleSchema
-g4 = Map.fromList [
-    ("Ax", ax), 
-    ("L&", andL), ("R&", andR),
-    ("Lv", orL), ("Rv0", orR0), ("Rv1", orR1),
-    ("R->", arrowR),
-    ("L->1", arrowL1), ("L->2", arrowL2), ("L->3", arrowL3), ("L->4", arrowL4)]
-
-invertibleRules :: [String]
-invertibleRules = ["Ax", "R->", "L&", "L->1", "L->2", "L->3", "R&", "Lv"]
-noninvertibleRules :: [String]
-noninvertibleRules = ["L->4", "Rv0", "Rv1"]
-
-getRule :: String -> RuleSchema
-getRule ruleStr = 
-    case Map.lookup ruleStr g4 of
-        Nothing -> error ("rule not in logic currently: " ++ ruleStr)
-        Just rule -> rule
-
--- notice reversed order from isInstance
-isInstanceStr :: String -> Sentence -> Bool
-isInstanceStr schemaStr sent = 
-    isInstance sent (parseIP schemaStr)
-
--- this function takes a schema, and returns a maybe with a matching sentence
--- the matching sentence is the principal formula (this is only for left rules)
-getLMatch :: (Sentence -> Bool) -> Set.Set Sentence -> Maybe Sentence
-getLMatch filterF ant = 
-    Set.lookupMin (Set.filter filterF ant)
-
-mkAnt :: Set.Set Sentence -> [Sentence] -> Set.Set Sentence
-mkAnt baseAnt toAdd = foldl' (flip Set.insert) baseAnt toAdd
 
 splitOnX :: String -> String -> [String]
 splitOnX [] _ = error "splitOnX: empty delimiter"
@@ -117,133 +47,215 @@ splitOnX delim str = filter (/=[]) (go [] str)
       | delim `isPrefixOf` s = reverse acc : go [] (drop n s)
       | otherwise            = go (c:acc) cs
 
-instantiateSchema :: String -> [(String, Sentence)] -> Sentence
-instantiateSchema = parseWithSubst [andOp, orOp, cond] []
-
-getSet :: (String -> Sentence) -> Set.Set Sentence -> String -> Set.Set Sentence
-getSet func base setStr =
-    mkAnt base (map func (filter (\str -> not ("Gamma" `isInfixOf` str)) (splitOnX "," setStr)))
-
 parseSet :: String -> Set.Set Sentence
-parseSet = getSet parseIP Set.empty
-
-instantiateSet :: String -> Set.Set Sentence -> [(String, Sentence)] -> Set.Set Sentence
-instantiateSet setStr gamma subst =
-    getSet (\s -> instantiateSchema s subst) gamma setStr
+parseSet setStr = 
+    let withNothings = map parseIP (filter (\str -> not ("Gamma" `isInfixOf` str)) (splitOnX "," setStr)) in
+        Set.fromList (map fromJust (filter (/= Nothing) withNothings))
 
 parseSequent :: String -> Sequent
-parseSequent seqStr =
+parseSequent seqStr' = let seqStr = " " ++ seqStr' ++ " " in
     case splitOnX "=>" seqStr of 
-        [succStr] -> Sequent Set.empty (parseIP succStr)
-        [antStr, succStr] -> Sequent (parseSet antStr) (parseIP succStr)
+        [antStr, succStr] -> Sequent (parseSet antStr) (parseSet succStr)
         _ -> error "error in sequent parsing"
 
-instantiateSequent :: String -> Set.Set Sentence -> [(String, Sentence)] -> Sequent
-instantiateSequent seqStr gamma subst =
-    let [antStr, succStr] = splitOnX "=>" seqStr in
-    Sequent (instantiateSet antStr gamma subst) (instantiateSchema succStr subst)
+mkSequentRule :: String -> [String] -> String -> SequentRule
+mkSequentRule rn prems concl = SequentRule rn (map parseSequent prems) (parseSequent concl)
 
--- assumes there is only one other thing besides Gamma
-getLPrincipalStr :: RuleSchema -> String
-getLPrincipalStr rule = 
-    let [antStr, _] = splitOnX "=>" (snd rule) in        
-    let [princ] = (filter (/= "Gamma") (splitOnX "," antStr)) in
-    princ
+ax :: SequentRule
+ax = mkSequentRule "Ax" 
+    []
+    "Gamma, P => P"
+andR :: SequentRule
+andR = mkSequentRule "R&" 
+    ["Gamma => A", "Gamma => B"] 
+    "Gamma => A & B"
+orR0 :: SequentRule
+orR0 = mkSequentRule "Rv0"
+    ["Gamma => A"]
+    "Gamma => A v B"
+orR1 :: SequentRule
+orR1 = mkSequentRule "Rv1"
+    ["Gamma => B"]
+    "Gamma => A v B"
+arrowR :: SequentRule
+arrowR = mkSequentRule "R->"
+    ["Gamma, A => B"]
+    "Gamma => A -> B"
+andL :: SequentRule
+andL = mkSequentRule "L&"
+    ["Gamma, A, B => C"]
+    "Gamma, A & B => C"
+orL :: SequentRule
+orL = mkSequentRule "Lv"
+    ["Gamma, A => C", "Gamma, B => C"]
+    "Gamma, A v B => C"
+arrowL1 :: SequentRule
+arrowL1 = mkSequentRule "L->1"
+    ["Gamma, P, B => E"]
+    "Gamma, P -> B, P => E"
+arrowL2 :: SequentRule
+arrowL2 = mkSequentRule "L->2"
+    ["Gamma, C -> (D -> B) => E"]
+    "Gamma, (C & D) -> B => E"
+arrowL3 :: SequentRule
+arrowL3 = mkSequentRule "L->3"
+    ["Gamma, C -> B, D -> B => E"]
+    "Gamma, (C v D) -> B => E"
+arrowL4 :: SequentRule
+arrowL4 = mkSequentRule "L->4"
+    ["Gamma, C, D -> B => D", "Gamma, B => E"]
+    "Gamma, (C -> D) -> B => E"
+negR :: SequentRule
+negR = mkSequentRule "R~"
+    ["Gamma, A => VOID"]
+    "Gamma => ~A"
+negL1 :: SequentRule
+negL1 = mkSequentRule "L~1" 
+    []
+    "Gamma, P, ~P => E"
+negL2 :: SequentRule
+negL2 = mkSequentRule "L~2"
+    ["Gamma, C -> ~D => E"]
+    "Gamma, ~(C & D) => E"
+negL3 :: SequentRule
+negL3 = mkSequentRule "L~3" 
+    ["Gamma, ~C, ~D => E"]
+    "Gamma, ~(C v D) => E"
+negL4 :: SequentRule
+negL4 = mkSequentRule "L~4"
+    ["Gamma, C, ~D => D"]
+    "Gamma, ~(C -> D) => E"
+arrowL5 :: SequentRule
+arrowL5 = mkSequentRule "L->5" 
+    ["Gamma, C, => VOID", "Gamma, B => E"]
+    "Gamma, (~C -> B) => E"
+negL5 :: SequentRule
+negL5 = mkSequentRule "L~5"
+    ["Gamma, C => VOID"]
+    "Gamma, ~~C => E"
+-- VOID is a metasymbol. Represents the empty set. This is the only immoral thing left i think
 
-getSuccStr :: RuleSchema -> String
-getSuccStr rule =
-    let [_, succStr] = splitOnX "=>" (snd rule) in
-    succStr
+invertibleRules :: [SequentRule]
+invertibleRules = [ax, arrowR, andL, arrowL1, arrowL2, arrowL3, negL1, negL2, negL3, negR, andR, orL]
 
--- we already have a witness for the principal formula in this function
-getSubstL :: RuleSchema -> Sequent -> Sentence -> [(String, Sentence)]
-getSubstL rule (Sequent ant succ) chosen = 
-    getSubst chosen (parseIP (getLPrincipalStr rule)) ++ 
-    getSubst succ (parseIP (getSuccStr rule))
-
-getSubstAndGammaL :: RuleSchema -> Sequent -> Sentence -> ([(String, Sentence)], Set.Set Sentence)
-getSubstAndGammaL rule seq chosenPrincipal =
-    (getSubstL rule seq chosenPrincipal, Set.delete chosenPrincipal (antecedent seq))
-
-getSubstR :: RuleSchema -> Sequent -> [(String, Sentence)]
-getSubstR rule (Sequent ant succ) = 
-    getSubst succ (parseIP (getSuccStr rule))
-
-getSubstAndGammaR :: RuleSchema -> Sequent -> ([(String, Sentence)], Set.Set Sentence)
-getSubstAndGammaR rule seq = 
-    (getSubstR rule seq, antecedent seq)
+noninvertibleRules :: [SequentRule]
+noninvertibleRules = [arrowL4, negL4, arrowL5, negL5, orR0, orR1]
 
 
+-- this unification procedure only works on sets.
+-- would have problem in case of schema set {A -> B, C -> D} if it wasn't for just sets
+type Substitution = [(String, Sentence)]
 
+getSubstFragment :: Set.Set Sentence -> Sentence -> Set.Set Substitution
+getSubstFragment sents schema =
+    Set.map fromJust (Set.filter (/= Nothing) (Set.map (getSubst schema) sents))
 
+getSubstFragments :: Set.Set Sentence -> Set.Set Sentence -> Set.Set (Set.Set Substitution)
+getSubstFragments schemas sents = Set.map (getSubstFragment sents) schemas
 
--- USING RULES
-useLRule :: RuleSchema -> Sequent -> Maybe [Sequent]
-useLRule rule seq@(Sequent ant succ) =
-    case getLMatch (isInstanceStr (getLPrincipalStr rule)) ant of
+checkPairsCohere :: (String, Sentence) -> (String, Sentence) -> Bool
+checkPairsCohere (a1, s1) (a2, s2) 
+    | a1 == a2 && s1 /= s2 = False
+    | otherwise = True
+
+-- checks if a pair is coherent with an entire substitution. is the case if it's coherent with all the substitutions. 
+checkPairWithSubst :: Substitution -> (String, Sentence) -> Bool
+checkPairWithSubst [] p = True
+checkPairWithSubst (p':ps') p = checkPairsCohere p' p && checkPairWithSubst ps' p
+
+checkSubstsCohere :: Substitution -> Substitution -> Bool
+checkSubstsCohere subst1 subst2 = and (map (checkPairWithSubst subst1) subst2)
+
+extendSubst :: Substitution -> (String, Sentence) -> Substitution
+extendSubst subst pair = if pair `elem` subst then subst else pair:subst
+
+sumSubsts :: Substitution -> Substitution -> Substitution
+sumSubsts = foldl' extendSubst
+
+sumIfCoherent :: Substitution -> Substitution -> Maybe Substitution
+sumIfCoherent subst1 subst2 =
+    if checkSubstsCohere subst1 subst2 then Just (sumSubsts subst1 subst2) else Nothing
+
+-- given a set of substitutions and a substitution, return the set of coherent extensions by the second arg
+getPossibleSubsts'' :: Set.Set Substitution -> Substitution -> Set.Set Substitution
+getPossibleSubsts'' baseSubsts extendingSubst =
+    Set.map fromJust (Set.filter (/= Nothing) (Set.map (sumIfCoherent extendingSubst) baseSubsts))
+
+getPossibleSubsts' :: Set.Set Substitution -> Set.Set Substitution -> Set.Set Substitution
+getPossibleSubsts' substSet1 substSet2 =
+    Set.unions (Set.map (getPossibleSubsts'' substSet1) substSet2)
+
+getPossibleSubsts :: Set.Set (Set.Set Substitution) -> Set.Set Substitution
+getPossibleSubsts setOfSubsts = Set.foldl' getPossibleSubsts' (Set.fromList [[]]) setOfSubsts -- empty should work here?
+
+checkPPropositional :: Substitution -> Bool
+checkPPropositional [] = True
+checkPPropositional (p:ps) = case p of
+    ("P", (OpNode _ _)) -> False
+    _ -> checkPPropositional ps
+
+getSubsts' :: Set.Set Sentence -> Set.Set Sentence -> Set.Set Substitution
+getSubsts' schemas sents = getPossibleSubsts (getSubstFragments schemas sents)
+
+getSubsts :: Set.Set Sentence -> Set.Set Sentence -> Set.Set Substitution
+getSubsts schemas sents = Set.filter checkPPropositional (getSubsts' schemas sents)
+
+getSetSubst :: Set.Set Sentence -> Set.Set Sentence -> Maybe Substitution
+getSetSubst schemas sents = Set.lookupMin (getSubsts schemas sents)
+
+applySubst :: Substitution -> Sentence -> Sentence
+applySubst subst (Atom a) = instantiateVar (Map.fromList subst) a
+applySubst subst (OpNode op args) = OpNode op (map (applySubst subst) args)
+
+instantiateSet :: Substitution -> Set.Set Sentence -> Set.Set Sentence
+instantiateSet subst set = Set.map (applySubst subst) set
+
+-- this also checks if a rule is applicable
+-- need to have a dumb fix for case where succedent is empty.
+-- reason can't do kosher fix is that it would mean making both sides sets, ie make it basically classical
+tryUnifySeqs :: Sequent -> Sequent -> Maybe Substitution
+tryUnifySeqs (Sequent schemaAnt schemaSucc) (Sequent currAnt currSucc) =
+    let (antSubsts, succSubsts) = (getSubsts schemaAnt currAnt, getSubsts schemaSucc currSucc) in
+    Set.lookupMin (getPossibleSubsts' antSubsts succSubsts)
+
+getGamma :: Sequent -> Sequent -> Substitution -> Set.Set Sentence
+getGamma schemaSeq currSeq subst = 
+    (antecedent currSeq) Set.\\ (Set.map (applySubst subst) (antecedent schemaSeq))
+
+instantiateSequent :: Set.Set Sentence -> Substitution -> Sequent -> Sequent
+instantiateSequent gamma subst (Sequent schemaAnt schemaSucc) = 
+    Sequent (Set.union gamma (instantiateSet subst schemaAnt)) 
+            (instantiateSet subst schemaSucc)
+
+useRule :: SequentRule -> Sequent -> Maybe [Sequent]
+useRule (SequentRule rn prems concl) seq =
+    case tryUnifySeqs concl seq of
         Nothing -> Nothing
-        Just chosen -> 
-            let (subst, gamma) = getSubstAndGammaL rule seq chosen in
-            Just (map (\s -> instantiateSequent s gamma subst) (fst rule))
+        Just subst -> 
+            let gamma = getGamma concl seq subst in
+                Just (map (instantiateSequent gamma (("VOID", Atom "VOID"):subst)) prems)
 
-useRRule :: RuleSchema -> Sequent -> Maybe [Sequent]
-useRRule rule seq@(Sequent ant succ) =
-    case isInstanceStr (getSuccStr rule) succ of
-        False -> Nothing
-        True -> 
-            let (subst, gamma) = getSubstAndGammaR rule seq in
-            Just (map (\seq -> instantiateSequent seq gamma subst) (fst rule))
-
-useAx :: Sequent -> Maybe [Sequent]
-useAx seq@(Sequent ant succ) = 
-    if isAtomic succ && Set.member succ ant
-        then Just []
-        else Nothing
-
-getArrowL1FilterF :: Set.Set Sentence -> Sentence -> Bool
-getArrowL1FilterF ant =
-    \s -> (isInstanceStr "P -> B" s) && (Set.member ((args s) !! 0) (Set.filter isAtomic ant))
-
-useArrowL1 :: Sequent -> Maybe [Sequent]
-useArrowL1 seq@(Sequent ant succ) =
-    case getLMatch (getArrowL1FilterF ant) ant of
-        Nothing -> Nothing
-        Just chosen -> 
-            let subst = getSubst chosen (parseIP "P -> B") ++ getSubst succ (parseIP (getSuccStr arrowL1)) in
-            let gamma = Set.delete ((args chosen) !! 0) (Set.delete chosen ant) in
-            Just (map (\s -> instantiateSequent s gamma subst) (fst arrowL1))
-
-tryRule :: String -> Sequent -> Maybe [Sequent]
-tryRule ruleStr seq
-    | rule == ax = useAx seq
-    | rule == arrowL1 = useArrowL1 seq
-    | otherwise = 
-        case parseIP (getSuccStr rule) of
-            Atom a -> useLRule rule seq
-            _ -> useRRule rule seq
-    where rule = getRule ruleStr
-        
-tryInvertibleRules:: [String] -> Sequent -> Maybe (String, [Sequent])
+tryInvertibleRules:: [SequentRule] -> Sequent -> Maybe (SequentRule, [Sequent])
 tryInvertibleRules [] _ = Nothing
 tryInvertibleRules (rl:rls) seq =
-    case tryRule rl seq of
+    case useRule rl seq of
         Nothing -> tryInvertibleRules rls seq
         Just prems -> Just (rl, prems)
 
-invertibleStep :: Sequent -> Maybe (String, [Sequent])
+invertibleStep :: Sequent -> Maybe (SequentRule, [Sequent])
 invertibleStep = tryInvertibleRules invertibleRules
 
-tryNoninvertRule :: String -> Sequent -> Maybe SequentProof
-tryNoninvertRule ruleName seq =
-    case tryRule ruleName seq of
+tryNoninvertRule :: SequentRule -> Sequent -> Maybe SequentProof
+tryNoninvertRule rl seq =
+    case useRule rl seq of
         Just subSeqs -> 
-            let rest = SequentProof seq ruleName (Just (map g4ProofSearch subSeqs)) in
+            let rest = SequentProof seq (seqRuleName rl) (Just (map g4ProofSearch subSeqs)) in
             if checkProof rest
                 then Just rest
                 else Nothing
         Nothing -> Nothing
 
-tryNoninvertRules :: [String] -> Sequent -> SequentProof
+tryNoninvertRules :: [SequentRule] -> Sequent -> SequentProof
 tryNoninvertRules [] seq = SequentProof seq "NOT PROVABLE" Nothing
 tryNoninvertRules (rl:rls) seq =
     case tryNoninvertRule rl seq of
@@ -256,7 +268,7 @@ noninvertibleStep = tryNoninvertRules noninvertibleRules
 g4ProofSearch :: Sequent -> SequentProof
 g4ProofSearch seq =
     case invertibleStep seq of
-        Just (j, subSeqs) -> SequentProof seq j (Just (map g4ProofSearch subSeqs))
+        Just (j, subSeqs) -> SequentProof seq (seqRuleName j) (Just (map g4ProofSearch subSeqs))
         Nothing -> noninvertibleStep seq
 
 checkProof :: SequentProof -> Bool
@@ -266,7 +278,7 @@ checkProof seqPf =
         Just sspfs -> and (map checkProof sspfs)
 
 g4Test :: String -> Bool
-g4Test = checkProof <$> g4ProofSearch <$> parseSequent 
+g4Test = checkProof . g4ProofSearch . parseSequent 
 
 condTests :: [String]
 condTests = [
@@ -306,8 +318,36 @@ orTests = [
     "=> (A v (B & C)) -> ((A v B) & (A v C))" -- dist or over and
     ]
 
-testAll :: Bool
-testAll = and(map g4Test (condTests ++ andTests ++ orTests))
+negTests :: [String]
+negTests = [
+    "=> (P -> Q) -> (~Q -> ~P)",
+    "=> P -> ~~P",
+    "=> (P -> ~Q) -> (Q -> ~P)",
+    "=> (P -> ~P) -> ~P",
+    "=> ~P -> (P -> Q)",
+    "=> (P -> Q) -> ((P -> ~Q) -> ~P)",
+    "=> ~A -> ((A v B) -> B)",
+    "=> (P -> Q) -> (~~P -> ~~Q)",
+    "=> (~A v B) -> (A -> B)",
+    "=> ~(A v B) -> (~A & ~B)",
+    "=> (~A & ~B) -> ~(A v B)",
+    "=> (~A v ~B) -> ~(A & B)"
+    ]
+
+classicalTests :: [String] -- should fail for G4mp and G4ip
+classicalTests = [
+    "=> ((P -> Q) -> P) -> P",
+    "=> P v ~P",
+    "=> ~~P -> P",
+    "=> (A -> B) -> (~A v B)",
+    "=> (~Q -> ~P) -> (P -> Q)",
+    "=> ~(A & B) -> (~A v ~B)",
+    "=> ~(~A & ~B) -> (A v B)",
+    "=> (~P -> P) -> P"
+    ]
+
+doubleNegTests :: [String]
+doubleNegTests = map (\s -> "=> ~~(" ++ drop 3 s ++ ")") classicalTests
 
 
 compile_G4_G25 :: SequentProof -> SequentProof

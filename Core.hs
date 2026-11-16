@@ -134,23 +134,27 @@ isInstance sentence (OpNode schemaOp schemaArgs) =
 haveSameStructure :: Sentence -> Sentence -> Bool
 haveSameStructure s1 s2 = isInstance s1 s2 && isInstance s2 s1
 
--- presupposes isInstance (ie will crash otherwise)
-getSubst :: Sentence -> Sentence -> [(String, Sentence)]
--- the first Sentence is a sentence, second is a schema
+-- BIG NOTE: NOTICE FLIPPED ORDER FROM BEFORE
+getSubst :: Sentence -> Sentence -> Maybe [(String, Sentence)]
+-- the first Sentence is a schema, second is a sentence
 -- need to think about naming for sentences/formulae
-getSubst sentence (Atom a) = [(a, sentence)]
-getSubst sentence (OpNode schemaOp schemaArgs) =
-    case sentence of 
-        Atom _ -> error msg
+getSubst (Atom a) sent = Just [(a, sent)]
+getSubst (OpNode schemaOp schemaArgs) sent =
+    case sent of 
+        Atom _ -> Nothing
         OpNode sentOp sentArgs -> 
             if schemaOp == sentOp 
-                then concatMap (\p -> getSubst (fst p) (snd p)) (zip sentArgs schemaArgs)
-                else error msg
-    where 
-        msg = ("looks like sentence " ++ show sentence ++ " isn't an instance of " ++ show (OpNode schemaOp schemaArgs))
+                then concat <$> mapM (\p -> getSubst (fst p) (snd p)) (zip schemaArgs sentArgs)
+                else Nothing
+
+getSubstWithFail :: Sentence -> Sentence -> [(String, Sentence)]
+getSubstWithFail schema sent =
+    case getSubst schema sent of
+        Nothing -> error ("looks like sentence " ++ show sent ++ " isn't an instance of " ++ show schema)
+        Just subst -> subst
 
 getVarMap :: Sentence -> Sentence -> Map.Map String Sentence
-getVarMap sent schema = Map.fromList (getSubst sent schema)
+getVarMap sent schema = Map.fromList (getSubstWithFail schema sent)
 
 instantiateVar :: Map.Map String Sentence -> String -> Sentence
 instantiateVar varMap str = case varMap Map.!? str of

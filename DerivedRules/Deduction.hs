@@ -57,4 +57,4 @@ useDeduction hyp = applyOverTree (useDeduction' hyp)
 
 makeDeductionsFunc :: [Sentence] -> ProofTree -> ProofTree
 makeDeductionsFunc deductionAntecedents =
-    foldl (.) id (map useDeduction deductionAntecedents)
+    foldl' (.) id (map useDeduction deductionAntecedents) -- used to be foldl... still works tho
