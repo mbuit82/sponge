@@ -1,4 +1,4 @@
-module Sequents where
+module DerivedRules.Sequents where
 
 import Core 
 import Parse.Sentences

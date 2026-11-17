@@ -10,7 +10,7 @@ import DerivedRules.Utils
 import DerivedRules.ImplicationalFragment
 import DerivedRules.KReasoning
 import DerivedRules.Deduction
-import Sequents
+import DerivedRules.Sequents
 
 import Data.Maybe
 import Data.List

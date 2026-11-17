@@ -77,13 +77,26 @@ keepSmallestSubproof sameContentRefs lns =
 
 -- change the function in the parentheses here to change how to pick from repeated pfs
 replaceInRefs :: Set.Set Int -> [Line] -> [Line]
-replaceInRefs repeateds lns = replaceInRefs' (keepSmallestLNum repeateds lns) lns
+replaceInRefs repeateds lns = replaceInRefs' (keepSmallestSubproof repeateds lns) lns
+
+-- this is for if you accidentally already proved things
+-- never the case so far, but potentially useful in proofsearch. 
+contentLastLnRepeated :: Int -> [[Int]] -> Maybe Int
+contentLastLnRepeated lastNum [] = Nothing
+contentLastLnRepeated lastNum (rfp:rfps) =
+    if lastNum `elem` rfp 
+        then Just (minimum rfp)
+        else contentLastLnRepeated lastNum rfps
 
 removeRepeatRefs :: [Line] -> [Line]
 removeRepeatRefs lns =
-    let repeatedsList = Map.elems (getRepeatedRefs lns) in
-        let listOfFuncs = map (replaceInRefs. Set.fromList) (repeatedsList) in
-            foldl' (\acc f -> f acc) lns listOfFuncs
+    let listOfFuncs = map (replaceInRefs . Set.fromList) (repeatedsList) in
+    foldl' (\acc f -> f acc) lns' listOfFuncs
+    where 
+        repeatedsList = Map.elems (getRepeatedRefs lns)
+        lns' = case contentLastLnRepeated (lineNumber (last lns)) repeatedsList of
+            Nothing -> lns
+            Just n -> take n lns
 
 getUsedRefs :: [Line] -> Set.Set Int
 getUsedRefs lns = getSubProofRefs lns (lineNumber ((reverse lns) !! 0))

@@ -1,3 +1,6 @@
-Theorem: |- A -> (B -> (A & B))
+Theorem: |- P -> (Q -> (P & Q))
+
+
+
 Proof
-1. |- A -> (B -> (A & B)) by classical result
+1. |- P -> (Q -> (P & Q))   by classical result

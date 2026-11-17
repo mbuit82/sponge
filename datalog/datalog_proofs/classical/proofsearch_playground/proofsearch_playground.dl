@@ -1,2 +1,5 @@
 #include "../../../datalog_engines/classical.dl"
 
+Goal($Conditional($Atom("P"), $Conditional($Atom("Q"), $And($Atom("P"), $Atom("Q"))))).
+
+Line(1, $Conditional($Atom("P"), $Conditional($Atom("Q"), $And($Atom("P"), $Atom("Q")))), "And Intro", 0, 0).

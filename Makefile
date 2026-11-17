@@ -18,7 +18,7 @@ basics:
 	
 
 
-exec/build-proof: ToDatalog/UserProofs.hs ToDatalog/Utils.hs $(wildcard DerivedRules/*.hs) $(wildcard Defs/*.hs) Core.hs
+exec/build-proof: ToDatalog/UserProofs.hs ToDatalog/Utils.hs $(wildcard DerivedRules/*.hs) $(wildcard Defs/*.hs) $(wildcard ToDatalog/*.hs) Core.hs
 	@ ghc ToDatalog/UserProofs.hs -main-is ToDatalog.UserProofs.main -o exec/build-proof -outputdir build
 
 exec/check-datalog-output: ToDatalog/Utils.hs  Commands/CheckDatalogOutput.hs

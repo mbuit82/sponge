@@ -42,10 +42,9 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
 
 -- complete function to compile user input to Datalog
 userToDatalog :: String -> String -> IO ()
-userToDatalog logicName proofName = do
-    (goal, haskellProof) <- getHaskellProof logicName proofName
-    compileDatalogProof proofName goal logic ((pruneProofTree . proofTreeToLines) haskellProof)
-    where logic = getLogic logicName
+userToDatalog logicName pfName = do
+    (goal, pfTree) <- getHaskellProof logicName pfName
+    compileDatalogProof pfName goal (getLogic logicName) ((pruneProofTree . proofTreeToLines) pfTree)
 
 main :: IO ()
 main = doFunc userToDatalog
