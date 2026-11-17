@@ -10,6 +10,7 @@ import DerivedRules.Utils
 import DerivedRules.ImplicationalFragment
 import DerivedRules.KReasoning
 import DerivedRules.Deduction
+import Sequents
 
 import Data.Maybe
 import Data.List
@@ -40,7 +41,8 @@ getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence],
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
-    let afterDerivedRules = useDerivedRules userProof -- this way, derived rules can use cited thms
+    let afterProofSearch = useProofSearch userProof
+    let afterDerivedRules = useDerivedRules afterProofSearch -- this way, derived rules can use cited thms
     let afterCitingAxioms = useCitedAxioms (getLogic logicName) afterDerivedRules
     afterCitingTheorems <- useCitedTheorems afterCitingAxioms
     pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
@@ -100,12 +102,6 @@ getUsedDerivedArgs (dArg:remArgs) (newRef:remRefs) =
     let (remPairs, unusedDeductions, unusedApps) = getUsedDerivedArgs remArgs remRefs in
         ((dArg, newRef) : remPairs, unusedDeductions, unusedApps)
 
-derivationComposition :: Map.Map Sentence ProofTree -> ProofTree -> ProofTree
-derivationComposition pairsDict (ProofTree pfc pfj spfs) =
-    if pfj == "Assumption" 
-        then fromJust (pairsDict Map.!? pfc)
-        else ProofTree pfc pfj (map (derivationComposition pairsDict) spfs)
-
 -- wondering about name
 optimizedApply :: Sentence -> [Sentence] -> ProofTree -> ProofTree -> ProofTree
 optimizedApply citedGoal deductionArgs citedPf pfTree =
@@ -113,7 +109,7 @@ optimizedApply citedGoal deductionArgs citedPf pfTree =
     let citedPfSubstd = applySubstToProof varMap citedPf in
     let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs in
     let (usedDerivedArgs, remHyps, remArgs) = getUsedDerivedArgs deductionArgsSubstd (subProofs pfTree) in
-    applyPfs (derivationComposition (Map.fromList usedDerivedArgs) ((makeDeductionsFunc remHyps) citedPfSubstd)) remArgs
+    applyPfs (composeDerivations usedDerivedArgs ((makeDeductionsFunc remHyps) citedPfSubstd)) remArgs
 
 useCitedTheorem :: ProofTree -> IO ProofTree
 useCitedTheorem pfTree = do

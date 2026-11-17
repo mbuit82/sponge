@@ -26,7 +26,7 @@ getNEmbeddedAntecedents :: Operator -> Int -> Sentence -> [Sentence]
 getNEmbeddedAntecedents op 0 _ = []
 getNEmbeddedAntecedents op n (OpNode op' [arg1, arg2])
     | op' == op = arg1 : getNEmbeddedAntecedents op (n-1) arg2
-    | otherwise = error "can only get N antecedents on a conditional"
+    | otherwise = error ("getting embedded left args for operator " ++ (show op))
 
 getNthConsequent :: Operator -> Int -> Sentence -> Sentence
 getNthConsequent op 0 sent = sent
@@ -68,3 +68,21 @@ getChainLength op _ = 0
 
 axiomsDict :: Logic -> Map.Map String Axiom
 axiomsDict logic = Map.fromList (map (\a -> (axiomName a, a)) (axioms logic))
+
+-- NOTE: I don't like this here. Feel like it's too big a thing to be tucked away here. 
+-- but needs to not be in UseDerivedRules in order to avoid import errors
+-- inefficient with passing a list that's made into a map but useful in Sequents for clarity of code
+-- also inefficient with checking every node. In theory, if you have an efficient proof, should not matter
+-- particularly, if you've already derived an assumption, it will be less efficient
+composeDerivations :: [(Sentence, ProofTree)] -> ProofTree -> ProofTree
+composeDerivations pairs (ProofTree pfc pfj spfs) =
+    case (Map.lookup pfc (Map.fromList pairs)) of
+        Nothing -> ProofTree pfc pfj (map (composeDerivations pairs) spfs)
+        Just newDerivation -> newDerivation
+-- -- OLD. more efficient. Changed to make good for Sequents
+-- derivationComposition pairs pft@(ProofTree pfc "Assumption" spfs) =
+--     case (Map.lookup pfc (Map.fromList pairs)) of
+--         Nothing -> pft
+--         Just newDerivation -> newDerivation
+-- derivationComposition pairs (ProofTree pfc pfj spfs) =
+--     ProofTree pfc pfj (map (derivationComposition pairs) spfs)
