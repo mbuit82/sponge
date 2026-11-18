@@ -1,6 +1,6 @@
-Theorem: |- P -> (Q -> (P & Q))
+Theorem: |- ((A v B) -> C) -> ((A -> C) & (B -> C))
 
 
 
 Proof
-1. |- P -> (Q -> (P & Q))   by classical result
+1. |- ((A v B) -> C) -> ((A -> C) & (B -> C))          by classical result

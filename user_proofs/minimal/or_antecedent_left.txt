@@ -1,0 +1,11 @@
+Theorem: |- ((C v D) -> B) -> (C -> B)
+
+Using deduction
+Using deduction
+
+Proof
+1. |- (C v D) -> B by Assumption
+2. |- C by Assumption
+3. |- C -> (C v D) by Or Intro L
+4. |- C v D by Modus Ponens: 2 3
+5. |- B by Modus Ponens: 4 1

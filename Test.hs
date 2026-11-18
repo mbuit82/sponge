@@ -5,7 +5,9 @@ import Defs.Specs
 import Parse.Proofs
 import Parse.Sentences
 import ToDatalog.Engines (compileDatalogEngine)
-import ToDatalog.UserProofs (compileDatalogProof)
+import ToDatalog.UserProofs (compileDatalogProof, userToDatalog)
+import DerivedRules.ProofSearch.Sequents
+import DerivedRules.ProofSearch.G4Compiler
 import qualified Data.Map as Map
 
 testEngines :: IO ()
@@ -171,5 +173,9 @@ strength2' = "2. |- (P -> (Q -> (R -> (S -> x)))) -> (P -> (Q -> (R -> (y -> (S 
 
 strengthpf' = parseUserProof (getLogic "minimal") [strength1', strength2']
 
+                
 
+            
 
+--     let Just ax = findAxiomWithName pfj in
+    

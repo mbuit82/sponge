@@ -10,7 +10,7 @@ import DerivedRules.Utils
 import DerivedRules.ImplicationalFragment
 import DerivedRules.KReasoning
 import DerivedRules.Deduction
-import DerivedRules.Sequents
+import DerivedRules.ProofSearch.G4Compiler
 
 import Data.Maybe
 import Data.List
@@ -37,15 +37,19 @@ useDerivedRules' derRulesDict pfTree =
 useDerivedRules :: ProofTree -> ProofTree
 useDerivedRules = applyOverTree (useDerivedRules' derivedRules)
 
+useEverythingButDeduction :: String -> ProofTree -> IO ProofTree
+useEverythingButDeduction logicName userProof = do
+    let afterProofSearch = useProofSearch userProof
+    let afterDerivedRules = useDerivedRules afterProofSearch -- this way, derived rules can use cited thms
+    let afterCitingAxioms = useCitedAxioms (getLogic logicName) afterDerivedRules
+    useCitedTheorems afterCitingAxioms
+
 getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], ProofTree)
 getHaskellProofWithoutDeduction logicName proofName = do
     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
-    let afterProofSearch = useProofSearch userProof
-    let afterDerivedRules = useDerivedRules afterProofSearch -- this way, derived rules can use cited thms
-    let afterCitingAxioms = useCitedAxioms (getLogic logicName) afterDerivedRules
-    afterCitingTheorems <- useCitedTheorems afterCitingAxioms
-    pure (goal, deductionArgs, afterCitingTheorems) -- this is what we return for the FINAL pass, which is deduction (below)
+    afterEverythingButDeduction <- useEverythingButDeduction logicName userProof
+    pure (goal, deductionArgs, afterEverythingButDeduction) -- this is what we return for the FINAL pass, which is deduction (below)
 
 getHaskellProof :: String -> String -> IO (Sentence, ProofTree)
 getHaskellProof logicName proofName = do

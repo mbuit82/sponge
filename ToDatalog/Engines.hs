@@ -71,19 +71,22 @@ conclusionToDatalog :: InferenceRule -> String
 conclusionToDatalog rule = 
     "Justified(n) :- " ++ 
     makeDatalogLine ruleSchemaToDatalog (conclusion rule) (ruleName rule) "n" "i" jv
-    where jv = case snd (premises rule) of 
-            Nothing -> "_"
-            Just _ -> "j"
+    where jv = case premises rule of 
+            [a] -> "_"
+            [a,b] -> "j"
+    -- where jv = case snd (premises rule) of 
+    --         Nothing -> "_"
+    --         Just _ -> "j"
 
 premisesToDatalog :: InferenceRule -> [String] 
 premisesToDatalog rule =
     concat [ [  v ++ " < n", 
                 "Justified(" ++ v ++ ")", 
                 makeDatalogLine ruleSchemaToDatalog prem "_" v "_" "_"] 
-            | (v, prem) <- zip ["i", "j"] premList]
-    where premList = case snd (premises rule) of
-                        Nothing -> [fst (premises rule)]
-                        Just s -> [fst (premises rule), s]
+            | (v, prem) <- zip ["i", "j"] (premises rule)]
+    -- where premList = case snd (premises rule) of
+    --                     Nothing -> [fst (premises rule)]
+    --                     Just s -> [fst (premises rule), s]
 
 inferenceRuleToDatalog :: InferenceRule -> String 
 inferenceRuleToDatalog rule =

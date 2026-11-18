@@ -1,0 +1,13 @@
+#include "../../../datalog_engines/intuitionistic.dl"
+
+Goal($Conditional($Not($Or($Atom("A"), $Atom("B"))), $Not($Atom("B")))).
+
+Line(1, $Conditional($Conditional($Not($Or($Atom("A"), $Atom("B"))), $Conditional($Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B")))), $Not($Atom("B")))), $Conditional($Conditional($Not($Or($Atom("A"), $Atom("B"))), $Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B"))))), $Conditional($Not($Or($Atom("A"), $Atom("B"))), $Not($Atom("B"))))), "Frege", 0, 0).
+Line(2, $Conditional($Conditional($Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B")))), $Not($Atom("B"))), $Conditional($Not($Or($Atom("A"), $Atom("B"))), $Conditional($Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B")))), $Not($Atom("B"))))), "Simp", 0, 0).
+Line(3, $Conditional($Conditional($Atom("B"), $Or($Atom("A"), $Atom("B"))), $Conditional($Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B")))), $Not($Atom("B")))), "Negation Intro", 0, 0).
+Line(4, $Conditional($Atom("B"), $Or($Atom("A"), $Atom("B"))), "Or Intro R", 0, 0).
+Line(5, $Conditional($Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B")))), $Not($Atom("B"))), "Modus Ponens", 4, 3).
+Line(6, $Conditional($Not($Or($Atom("A"), $Atom("B"))), $Conditional($Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B")))), $Not($Atom("B")))), "Modus Ponens", 5, 2).
+Line(7, $Conditional($Conditional($Not($Or($Atom("A"), $Atom("B"))), $Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B"))))), $Conditional($Not($Or($Atom("A"), $Atom("B"))), $Not($Atom("B")))), "Modus Ponens", 6, 1).
+Line(8, $Conditional($Not($Or($Atom("A"), $Atom("B"))), $Conditional($Atom("B"), $Not($Or($Atom("A"), $Atom("B"))))), "Simp", 0, 0).
+Line(9, $Conditional($Not($Or($Atom("A"), $Atom("B"))), $Not($Atom("B"))), "Modus Ponens", 8, 7).

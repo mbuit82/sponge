@@ -11,10 +11,10 @@ import qualified Data.Map as Map
 
 -- INFERENCE RULES
 modusPonens :: InferenceRule
-modusPonens = InferenceRule "Modus Ponens" (parse [] [] "P", Just (parse [cond] [] "P -> Q")) (parse [] [] "Q")
+modusPonens = InferenceRule "Modus Ponens" [parse [] [] "P", parse [cond] [] "P -> Q"] (parse [] [] "Q")
 
 necessitation :: InferenceRule
-necessitation = InferenceRule "Necessitation" (parse [] [] "P", Nothing) (parse [box] [] "L P")
+necessitation = InferenceRule "Necessitation" [parse [] [] "P"] (parse [box] [] "L P")
 
 
 -- I think this is what i had in mind

@@ -1,0 +1,10 @@
+Theorem: |- ~(C & D) -> (C -> ~D)
+
+
+Proof
+1. |- C -> (D -> (C & D)) by And Intro
+2. |- (D -> (C & D)) -> (~(C & D) -> ~D) by contrapositive_forward (from intuitionistic)
+3. |- C -> (~(C & D) -> ~D) by hypothetical_syllogism (from minimal): 1 2
+4. |- ~(C & D) -> (C -> ~D) by applying switch_args (from minimal): 3
+QED
+

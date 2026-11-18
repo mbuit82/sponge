@@ -1,4 +1,4 @@
-module DerivedRules.Sequents where
+module DerivedRules.ProofSearch.Sequents where
 
 import Core 
 import Parse.Sentences
@@ -25,19 +25,32 @@ isAtomic _ = False
 data Sequent = Sequent {
     antecedent :: Set.Set Sentence,
     succedent :: Set.Set Sentence
-} deriving (Show, Eq, Read)
+} deriving Eq
+instance Show Sequent where
+    show = prettyPrintSequent
+
+prettyPrintSet :: Set.Set Sentence -> String
+prettyPrintSet sent = show (Set.toList sent)
+
+prettyPrintSequent :: Sequent -> String
+prettyPrintSequent seq@(Sequent ant succ) =
+    prettyPrintSet ant ++ " => " ++ prettyPrintSet succ
 
 data SequentRule = SequentRule {
     seqRuleName :: String,
     seqPremises :: [Sequent],
     seqConclusion :: Sequent
-} deriving (Eq, Show, Read)
+} deriving Eq
+instance Show SequentRule where
+    show = seqRuleName
+
 
 data SequentProof = SequentProof {
     seqContent :: Sequent,
     seqJustification :: SequentRule,
     seqSubProofs :: Maybe [SequentProof]
-} deriving (Show, Eq, Read)
+} deriving (Show, Eq)
+
 
 splitOnX :: String -> String -> [String]
 splitOnX [] _ = error "splitOnX: empty delimiter"
@@ -64,6 +77,7 @@ parseSequent seqStr' = let seqStr = " " ++ seqStr' ++ " " in
 mkSequentRule :: String -> [String] -> String -> SequentRule
 mkSequentRule rn prems concl = SequentRule rn (map parseSequent prems) (parseSequent concl)
 
+-- particular choice of rules is mix of Troelstra book and Dyckoff
 ax :: SequentRule
 ax = mkSequentRule "Ax" 
     []
@@ -106,7 +120,7 @@ arrowL3 = mkSequentRule "L->3"
     "Gamma, (C v D) -> B => E"
 arrowL4 :: SequentRule
 arrowL4 = mkSequentRule "L->4"
-    ["Gamma, C, D -> B => D", "Gamma, B => E"]
+    ["Gamma, D -> B, => C -> D", "Gamma, B => E"]
     "Gamma, (C -> D) -> B => E"
 negR :: SequentRule
 negR = mkSequentRule "R~"
@@ -126,15 +140,15 @@ negL3 = mkSequentRule "L~3"
     "Gamma, ~(C v D) => E"
 negL4 :: SequentRule
 negL4 = mkSequentRule "L~4"
-    ["Gamma, C, ~D => D"]
+    ["Gamma, ~D => C -> D"]
     "Gamma, ~(C -> D) => E"
 arrowL5 :: SequentRule
 arrowL5 = mkSequentRule "L->5" 
-    ["Gamma, C, => VOID", "Gamma, B => E"]
+    ["Gamma, => ~C", "Gamma, B => E"]
     "Gamma, (~C -> B) => E"
 negL5 :: SequentRule
 negL5 = mkSequentRule "L~5"
-    ["Gamma, C => VOID"]
+    ["Gamma => ~C"]
     "Gamma, ~~C => E"
 -- VOID can be thought of as a metasymbol. It would represent the empty set.
 -- However, it is currently an object language constant in the proof search, 
@@ -145,7 +159,7 @@ invertibleRules :: [SequentRule]
 invertibleRules = [ax, andL, arrowR, arrowL1, arrowL2, arrowL3, negL1, negL2, negL3, negR, andR, orL]
 
 noninvertibleRules :: [SequentRule]
-noninvertibleRules = [arrowL4, negL4, arrowL5, negL5, orR0, orR1]
+noninvertibleRules = [orR0, orR1, arrowL4, negL4, arrowL5, negL5]
 
 
 -- this unification procedure only works on sets.
@@ -255,7 +269,7 @@ tryNoninvertRule :: SequentRule -> Sequent -> Maybe SequentProof
 tryNoninvertRule rl seq = case useRule rl seq of
     Just subSeqs -> 
         let rest = SequentProof seq rl (Just (map g4ProofSearch subSeqs)) in
-        if checkProof rest then Just rest else Nothing
+        if checkSeqProof rest then Just rest else Nothing
     Nothing -> Nothing
 
 notProvable :: SequentRule
@@ -275,185 +289,7 @@ g4ProofSearch seq = case invertibleStep seq of
     Just (rl, subSeqs) -> SequentProof seq rl (Just (map g4ProofSearch subSeqs))
     Nothing -> noninvertibleStep seq
 
-checkProof :: SequentProof -> Bool
-checkProof seqPf = case seqSubProofs seqPf of
+checkSeqProof :: SequentProof -> Bool
+checkSeqProof seqPf = case seqSubProofs seqPf of
     Nothing -> False
-    Just sspfs -> and (map checkProof sspfs)
-
-g4StrPS :: String -> SequentProof
-g4StrPS = g4ProofSearch . parseSequent 
-
-g4Test :: String -> Bool
-g4Test = checkProof . g4StrPS
-
-condTests :: [String]
-condTests = [
-    "=> A -> A", -- identity
-    "=> A -> (B -> A)", -- Simp
-    "=> (A -> (B -> C)) -> ((A -> B) -> (A -> C))", -- Frege
-    "=> A -> ((A -> B) -> B)", -- modus ponens (assertion)
-    "=> (A -> B) -> ((B -> C) -> (A -> C))", -- suffixing (hyp syll)
-    "=> (B -> C) -> ((A -> B) -> (A -> C))", -- prefixing (transitivity)
-    "=> (A -> B) -> ((P -> (B -> C)) -> (P -> (A -> C)))", -- both suffixing and prefixing
-    "=> (A -> (B -> C)) -> (B -> (A -> C))" -- switch args
-    ]
-
-andTests :: [String]
-andTests = [
-    "=> A -> (B -> (A & B))", -- And Intro
-    "=> (A & B) -> A", -- And Elim L
-    "=> (A & B) -> B", -- And Elim R
-    "=> (A & B) -> (B & A)", -- and comm
-    "=> (A & (B & C)) -> ((A & B) & C)", -- and assoc 1
-    "=> ((A & B) & C) -> (A & (B & C))", -- and assoc 2
-    "=> ((A & B) -> C) -> (A -> (B -> C))", -- currying
-    "=> (A -> (B -> C)) -> ((A & B) -> C)" -- uncurrying
-    ]
-
-orTests :: [String]
-orTests = [
-    "=> A -> (A v B)", -- Or Intro L
-    "=> B -> (A v B)", -- Or Intro L
-    "=> (A -> C) -> ((B -> C) -> ((A v B) -> C))", -- Or Elim
-    "=> (A v B) -> (B v A)", -- or comm
-    "=> (A v (B v C)) -> ((A v B) v C)", -- or assoc 1
-    "=> ((A v B) v C) -> (A v (B v C))", -- or assoc 2
-    "=> ((A v B) -> C) -> ((A -> C) & (B -> C))", -- idk what it's called
-    "=> ((A -> C) & (B -> C)) -> ((A v B) -> C)", -- reverse of abovs
-    "=> ((A -> A) -> (B v C)) -> (B v C)", -- test Rv embedded in L->->
-    "=> (A & (B v C)) -> ((A & B) v (A & C))", -- dist and over or
-    "=> (A v (B & C)) -> ((A v B) & (A v C))" -- dist or over and
-    ]
-
-negTests :: [String]
-negTests = [
-    "=> (A -> B) -> (~B -> ~A)", -- contraposition
-    "=> A -> ~~A", -- dni
-    "=> (A -> ~B) -> (B -> ~A)", -- wiki neg axiom
-    "=> (A -> ~A) -> ~A", -- reductio (Hackstaff)
-    "=> ~A -> (A -> B)", -- neg elim
-    "=> (A -> B) -> ((A -> ~B) -> ~A)", -- neg intro
-    "=> ~A -> ((A v B) -> B)", -- disjunctive syllogism
-    "=> (A -> B) -> (~~A -> ~~B)", -- double contraposition
-    "=> (~A v B) -> (A -> B)", -- or implies arrow
-    "=> ~(A v B) -> (~A & ~B)", -- DM
-    "=> (~A & ~B) -> ~(A v B)", -- DM
-    "=> (~A v ~B) -> ~(A & B)" -- DM
-    ]
-
-classicalTests :: [String] -- should fail for G4mp and G4ip
-classicalTests = [
-    "=> ((A -> B) -> A) -> A", -- peirce
-    "=> A v ~A", -- lem
-    "=> ~~A -> A", -- dne
-    "=> (A -> B) -> (~A v B)", -- arrow implies or
-    "=> (~B -> ~A) -> (A -> B)", -- backward contraposition
-    "=> ~(A & B) -> (~A v ~B)", -- demorgans classical case
-    "=> ~(~A & ~B) -> (A v B)", -- SF version of DM
-    "=> (~A -> A) -> A" -- consequentia mirabilis
-    ]
-
-doubleNegTests :: [String] -- should pass for G4ip
-doubleNegTests = map (\s -> "=> ~~(" ++ drop 3 s ++ ")") classicalTests
-
-getSuccSent :: Sequent -> Sentence
-getSuccSent (Sequent _ succ) = (fromJust (Set.lookupMin succ))
-
--- this should work, but defensively adding an error in case it doesn't so it fails
-getStepSubst :: SequentProof -> [(String, Sentence)]
-getStepSubst seqPf@(SequentProof seqpfc rl subseqpfs) =
-    case tryUnifySeqs (seqConclusion rl) seqpfc of
-        Nothing -> error "something's wrong"
-        Just subst -> subst
-
--- really consider changing the order of substitutions
-parseForSeq :: [(String, Sentence)] -> String -> Sentence
-parseForSeq subst str = parseWithSubst [andOp, orOp, cond, negOp] [] str subst
-
--- I think there are some edge cases to this not working. 
--- particularly, deduct the same arg twice. Stupid, but still an edge case. 
--- e.g. (A -> (A -> A)) would potentially be funny
--- but it wouldn't even tbh one of the things would just get overridden bc substs become maps
--- I actually think that issue may come up earlier, in Deduction.hs
-compileG4' :: [(Sentence, ProofTree)] -> SequentProof -> ProofTree
-compileG4' oldDerivations seqPf@(SequentProof seqpfc rl subseqpfs) =
-    let p = parseForSeq (getStepSubst seqPf) in -- I think lazy eval makes this good :D
-    case (seqRuleName rl) of
-        "Ax" -> ProofTree (getSuccSent seqpfc) "Assumption" []
-        "R&" -> 
-            let [aRecCall, bRecCall] = map (compileG4' oldDerivations) (fromJust subseqpfs) in
-            ProofTree
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                    [bRecCall,
-                    ProofTree (p "B -> (A & B)") "Modus Ponens" 
-                        [aRecCall,
-                        ProofTree (p "A -> (B -> (A & B))") "And Intro" []]]
-        "L&" -> -- unsure about where I need to add old and new derivations
-            let aDerivation = ProofTree 
-                    (p "A") 
-                    "Modus Ponens" 
-                    [(ProofTree (p "A & B") "Assumption" []), (ProofTree (p "(A & B) -> A") "And Elim L" [])] in
-            let bDerivation = ProofTree 
-                    (p "B") 
-                    "Modus Ponens" 
-                    [(ProofTree (p "A & B") "Assumption" []), (ProofTree (p "(A & B) -> B") "And Elim R" [])] in
-            let newDerivations = [((p "A"), aDerivation), (p "B", bDerivation)] in
-            let [recCall] = map (compileG4' (oldDerivations ++ newDerivations)) (fromJust subseqpfs) in
-            composeDerivations newDerivations recCall
-        "Rv0" -> 
-            let [recCall] = map (compileG4' oldDerivations) (fromJust subseqpfs) in
-            ProofTree 
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                    [recCall,
-                    ProofTree (p "A -> (A v B)") "Or Intro L" []]
-        "Rv1" -> 
-            let [recCall] = map (compileG4' oldDerivations) (fromJust subseqpfs) in
-            ProofTree 
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                    [recCall,
-                    ProofTree (p "B -> (A v B)") "Or Intro R" []]
-        "Lv" -> 
-            let [aRecCall, bRecCall] = map (compileG4' oldDerivations) (fromJust subseqpfs) in
-            ProofTree 
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                [ProofTree (p "A v B") "Assumption" [],
-                ProofTree (p "(A v B) -> C") "Modus Ponens"
-                    [bRecCall,
-                    ProofTree (p "(B -> C) -> ((A v B) -> C)") "Modus Ponens"
-                        [aRecCall,
-                        ProofTree (p "(A -> C) -> ((B -> C) -> ((A v B) -> C))") "Or Elim" []]]]
-        "R->" -> -- you could instead have it collect deduction args... I think I like that more
-        -- you would use makeDeductionsFunc, and have this always return a list of deduction args you're keeping track of
-            let [recCall] = map (compileG4' oldDerivations) (fromJust subseqpfs) in
-            let [deductionArg] = getNEmbeddedAntecedents cond 1 (getSuccSent seqpfc) in
-            useDeduction deductionArg recCall
-
-compileG4 :: SequentProof -> ProofTree
-compileG4 = compileG4' []
-
-g4TheoremSearch :: Sentence -> SequentProof
-g4TheoremSearch sent = g4ProofSearch (Sequent Set.empty (Set.fromList [sent]))
-
-proofSearch :: Sentence -> ProofTree
-proofSearch = compileG4 . g4TheoremSearch
--- with classical stuff it'd look something like this
-    -- let iSearch = g4TheoremSearch sent in
-    -- if checkProof iSearch == True
-    --     then compileG4 iSearch
-    --     else 
-    --         ProofTree
-    --             sent
-    --             "DNE"
-
-useProofSearch' :: ProofTree -> ProofTree
-useProofSearch' pfTree =
-    if (pfJustification pfTree) == "classical result"
-        then proofSearch (pfContent pfTree)
-        else pfTree
-
-useProofSearch :: ProofTree -> ProofTree
-useProofSearch = applyOverTree useProofSearch'
+    Just sspfs -> and (map checkSeqProof sspfs)

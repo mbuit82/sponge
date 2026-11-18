@@ -6,10 +6,10 @@ import Defs.Specs
 import Data.List
 import System.Environment (getArgs)
 
-prettyPrintPremises :: (Sentence, Maybe Sentence) -> String
-prettyPrintPremises (prem1, Nothing) =
+prettyPrintPremises :: [Sentence] -> String
+prettyPrintPremises [prem1] =
     "|- " ++ prettyPrintSentence prem1 
-prettyPrintPremises (prem1, Just prem2) =
+prettyPrintPremises [prem1, prem2] =
     "|- " ++ prettyPrintSentence prem1 ++ " and |- " ++ prettyPrintSentence prem2
 
 prettyPrintRule :: InferenceRule -> String

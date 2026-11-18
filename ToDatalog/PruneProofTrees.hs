@@ -81,6 +81,7 @@ replaceInRefs repeateds lns = replaceInRefs' (keepSmallestSubproof repeateds lns
 
 -- this is for if you accidentally already proved things
 -- never the case so far, but potentially useful in proofsearch. 
+-- not currently being used due to bugs
 contentLastLnRepeated :: Int -> [[Int]] -> Maybe Int
 contentLastLnRepeated lastNum [] = Nothing
 contentLastLnRepeated lastNum (rfp:rfps) =
@@ -90,13 +91,9 @@ contentLastLnRepeated lastNum (rfp:rfps) =
 
 removeRepeatRefs :: [Line] -> [Line]
 removeRepeatRefs lns =
+    let repeatedsList = Map.elems (getRepeatedRefs lns) in
     let listOfFuncs = map (replaceInRefs . Set.fromList) (repeatedsList) in
-    foldl' (\acc f -> f acc) lns' listOfFuncs
-    where 
-        repeatedsList = Map.elems (getRepeatedRefs lns)
-        lns' = case contentLastLnRepeated (lineNumber (last lns)) repeatedsList of
-            Nothing -> lns
-            Just n -> take n lns
+    foldl' (\acc f -> f acc) lns listOfFuncs
 
 getUsedRefs :: [Line] -> Set.Set Int
 getUsedRefs lns = getSubProofRefs lns (lineNumber ((reverse lns) !! 0))

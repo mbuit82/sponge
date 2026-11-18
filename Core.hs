@@ -53,7 +53,7 @@ prettyPrintAxiom axiom =
 
 data InferenceRule = InferenceRule {
     ruleName :: String,
-    premises :: (Sentence, Maybe Sentence), -- can have max two (bc of how Datalog is set up)
+    premises :: [Sentence], -- can have max two (bc of how Datalog is set up)
     conclusion :: Sentence} deriving (Eq, Show, Read)
 
 -- well, by design, the operators in the axioms and inference rules need to be in the operators. 
@@ -110,9 +110,10 @@ axiomsWf logic = all (isWff logic) (map axiomContent (axioms logic))
 
 inferenceRuleWf :: Logic -> InferenceRule -> Bool
 inferenceRuleWf logic rule = 
-    isWff logic (conclusion rule) && case premises rule of
-        (p1, Nothing) -> isWff logic p1
-        (p1, Just p2) -> isWff logic p1 && isWff logic p2
+    isWff logic (conclusion rule) && and (map (isWff logic) (premises rule))
+    -- case premises rule of
+    --     (p1, Nothing) -> isWff logic p1
+    --     (p1, Just p2) -> isWff logic p1 && isWff logic p2
 
 inferenceRulesWf :: Logic -> Bool
 inferenceRulesWf logic = all (inferenceRuleWf logic) (inferenceRules logic)
@@ -225,3 +226,31 @@ proofTreeToLines :: ProofTree -> [Line]
 proofTreeToLines pftree = 
     let revLines' = proofTreeToLines' 1 pftree in
         reverse (map (invertLineNumbers (length (revLines'))) revLines')
+
+
+-- could in theory replace the datalog
+findAxiomWithName :: [Axiom] -> String -> Maybe Axiom
+findAxiomWithName [] _ = Nothing
+findAxiomWithName (ax:axs) str =
+    if (axiomName ax) == str
+        then Just ax
+        else findAxiomWithName axs str
+
+findRuleWithName :: [InferenceRule] -> String -> Maybe InferenceRule
+findRuleWithName [] _ = Nothing
+findRuleWithName (rl:rls) str =
+    if (ruleName rl) == str
+        then Just rl
+        else findRuleWithName rls str
+
+checkProof :: Logic -> ProofTree -> Bool
+checkProof logic pft@(ProofTree pfc pfj spfs) =
+    case findAxiomWithName (axioms logic) pfj of
+        Just ax -> and (isInstance pfc (axiomContent ax) : map (checkProof logic) spfs)
+        Nothing -> case findRuleWithName (inferenceRules logic) pfj of
+            Just rl -> 
+                let spfContents = map pfContent spfs in
+                let premMatchResult = and (map (\(snt, sch) -> isInstance snt sch) (zip spfContents (premises rl))) in
+                let conclMatchResult = isInstance pfc (conclusion rl) in
+                and (premMatchResult : conclMatchResult : map (checkProof logic) spfs)
+            Nothing -> False

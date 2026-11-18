@@ -1,0 +1,5 @@
+Theorem: |- ~(A v B) -> ~A
+
+Proof
+1. |- A -> (A v B) by Or Intro L
+2. |- ~(A v B) -> ~A by applying contrapositive_forward (from intuitionistic): 1

@@ -161,9 +161,9 @@ specLinearIntensionalKernelHesselink = Spec {
         Axiom "(3)" (parse [linNull, linOr, linNeg] [] "~(A + B) + (B + A)"),
         Axiom "(4)" (parse [linNeg, linOr] [] "~((A + B) + C) + (A + (B + C))")],
     newInferenceRules = [
-        InferenceRule "(0)Forward" (parse [] [] "A", Nothing) (parse [linNull, linOr] [] "0 + A"),
-        InferenceRule "(0)Backward" (parse [linNull, linOr] [] "0 + A", Nothing) (parse [] [] "A"),
-        InferenceRule "cut-rule" (parse [linOr] [] "A + B", Just (parse [linNeg, linOr] [] "~B + C")) (parse [linOr] [] "A + C")]
+        InferenceRule "(0)Forward" [parse [] [] "A"] (parse [linNull, linOr] [] "0 + A"),
+        InferenceRule "(0)Backward" [parse [linNull, linOr] [] "0 + A"] (parse [] [] "A"),
+        InferenceRule "cut-rule" [parse [linOr] [] "A + B", parse [linNeg, linOr] [] "~B + C"] (parse [linOr] [] "A + C")]
 }
 
 linOps = [linNull, linOr, linNeg, quest] -- not as familiar with these so to be safe and avoid bugs am just gonna use this list lol
@@ -180,8 +180,8 @@ specLinearHesselink = Spec {
         Axiom "(28)" (parse linOps [] "~?0"),
         Axiom "(29)" (parse linOps [] "~?(?A + ?B) + (?A + ?B)")],
     newInferenceRules = [
-        InferenceRule "(25)Forward" (parse linOps [] "~A + ?B", Nothing) (parse linOps [] "~?A + ?B"),
-        InferenceRule "(25)Backward" (parse linOps [] "~?A + ?B", Nothing) (parse linOps [] "~A + ?B")
+        InferenceRule "(25)Forward" [parse linOps [] "~A + ?B"] (parse linOps [] "~?A + ?B"),
+        InferenceRule "(25)Backward" [parse linOps [] "~?A + ?B"] (parse linOps [] "~A + ?B")
     ]
 }
 
