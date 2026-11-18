@@ -20,9 +20,10 @@ getStepSubst seqPf@(SequentProof seqpfc rl subseqpfs) =
         Nothing -> error "something's wrong"
         Just subst -> subst
 
--- really consider changing the order of substitutions
-parseForSeq :: [(String, Sentence)] -> String -> Sentence
-parseForSeq subst str = parseWithSubst [andOp, orOp, cond, negOp] [] str subst
+-- really consider changing the order of substitutions in parseWithSubst
+-- that's the only reason this helper exists
+compilerParseHelper :: [(String, Sentence)] -> String -> Sentence
+compilerParseHelper subst str = parseWithSubst [andOp, orOp, cond, negOp] [] str subst
 
 mkSentSubsts :: [ProofTree] -> [(Sentence, ProofTree)]
 mkSentSubsts = map (\pft -> (pfContent pft, pft))
@@ -34,7 +35,7 @@ mkSentSubsts = map (\pft -> (pfContent pft, pft))
 -- I actually think that issue may come up earlier, in Deduction.hs
 compileG4 :: SequentProof -> ProofTree
 compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
-    let p = parseForSeq (getStepSubst seqPf) in -- I think lazy eval makes this good :D
+    let p = compilerParseHelper (getStepSubst seqPf) in -- I think lazy eval makes this good :D
     case (seqRuleName rl) of
         "Ax" -> ProofTree (getSuccSent seqpfc) "Assumption" []
         "R&" -> 
@@ -82,7 +83,7 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                     ProofTree (p "(B -> C) -> ((A v B) -> C)") "Modus Ponens"
                         [aRecCall,
                         ProofTree (p "(A -> C) -> ((B -> C) -> ((A v B) -> C))") "Or Elim" []]]]
-        "R->" -> -- you could instead have it collect deduction args... I think I like that more
+        "R->" -> -- think about: could instead have it collect deduction args?
         -- you would use makeDeductionsFunc, and have this always return a list of deduction args you're keeping track of
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             let [deductionArg] = getNEmbeddedAntecedents cond 1 (getSuccSent seqpfc) in
@@ -92,7 +93,7 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
             let bDerivation = ProofTree
                     (p "B")
                     "Modus Ponens"
-                    [ProofTree (p "P") "Assumption" [], -- problem — not closed in L->4
+                    [ProofTree (p "P") "Assumption" [],
                     ProofTree (p "P -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) recCall
         "L->2" ->

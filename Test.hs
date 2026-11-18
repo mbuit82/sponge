@@ -6,8 +6,8 @@ import Parse.Proofs
 import Parse.Sentences
 import ToDatalog.Engines (compileDatalogEngine)
 import ToDatalog.UserProofs (compileDatalogProof, userToDatalog)
-import DerivedRules.ProofSearch.Sequents
-import DerivedRules.ProofSearch.G4Compiler
+-- import DerivedRules.ProofSearch.Sequents
+-- import DerivedRules.ProofSearch.G4Compiler
 import qualified Data.Map as Map
 
 testEngines :: IO ()
