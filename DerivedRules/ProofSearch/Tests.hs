@@ -6,9 +6,6 @@ import DerivedRules.UseDerivedRules
 import DerivedRules.ProofSearch.Sequents
 import DerivedRules.ProofSearch.G4Compiler
 
-
-
-
 g4StrPS :: String -> SequentProof
 g4StrPS = g4ProofSearch . parseSequent
 
@@ -17,6 +14,12 @@ g4ThmStrPS str = g4StrPS ("=> " ++ str)
 
 g4Test :: String -> Bool
 g4Test = checkSeqProof . g4ThmStrPS
+
+testG4AndCompiler :: String -> IO Bool
+testG4AndCompiler str = do
+    let compiledProof = compileG4 (g4ThmStrPS str)
+    unfolded <- useEverythingButDeduction "classical" compiledProof 
+    pure (checkProof (getLogic "classical") unfolded)
 
 condTests :: [String]
 condTests = [
@@ -90,10 +93,3 @@ classicalTests = [
 
 doubleNegTests :: [String] -- should pass for G4ip
 doubleNegTests = map (\s -> "~~(" ++ s ++ ")") classicalTests
-
-testG4AndCompiler :: String -> IO Bool
-testG4AndCompiler str = do
-    let compiledProof = compileG4 (g4ThmStrPS str)
-    unfolded <- useEverythingButDeduction "classical" compiledProof 
-    pure (checkProof (getLogic "classical") unfolded)
-

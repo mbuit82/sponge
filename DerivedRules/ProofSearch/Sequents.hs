@@ -272,11 +272,11 @@ tryNoninvertRule rl seq = case useRule rl seq of
         if checkSeqProof rest then Just rest else Nothing
     Nothing -> Nothing
 
-notProvable :: SequentRule
-notProvable = mkSequentRule "NOT PROVABLE" [] ("Gamma => S")
+giveUp :: SequentRule
+giveUp = mkSequentRule "NOT PROVABLE" [] "Gamma => S"
 
 tryNoninvertRules :: [SequentRule] -> Sequent -> SequentProof
-tryNoninvertRules [] seq = SequentProof seq notProvable Nothing
+tryNoninvertRules [] seq = SequentProof seq giveUp Nothing
 tryNoninvertRules (rl:rls) seq = case tryNoninvertRule rl seq of
     Just rest -> rest
     Nothing -> tryNoninvertRules rls seq
