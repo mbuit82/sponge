@@ -1,7 +1,7 @@
 # Proof Search
 
 ### Overview
-Proof search is semidecidable in axiomatic systems. This is not good enough. Fortunately, it is decidable in sequent systems, and there are particularly effective decision procedures for sequent systems (e.g. G4ip), and (most importantly) you can translate sequent proofs to axiomatic proofs (meaning I don't have to give up the "everything is checked in Datalog" aspect of sponge). So this feature is proof search in G4ip, together with a compiler from sequent proofs in G4ip to axiomatic systems (to the ND-esque axiomatization with primitive negation I have). 
+Proof search is semidecidable in axiomatic systems. This is not good enough. Fortunately, it is decidable in sequent systems, and there are particularly effective decision procedures for sequent systems (e.g. G4ip), and (most importantly) you can translate sequent proofs to axiomatic proofs (meaning I don't have to give up the "everything is checked in Datalog" aspect of sponge). So this feature is proof search in G4ip, together with a compiler from sequent proofs in G4ip to axiomatic systems (to the ND-esque axiomatization with primitive negation that is currently the base of nearly all the logics that have theorems proved for them in sponge right now). 
 
 ### Status
 This is still under construction, but you can now search for theorems of minimal logic (modulo substitution of operators). As soon as I get the compiler cases for negation, it will extend to intuitionistic logic (and classical logic, by double negation translation and DNE). 
