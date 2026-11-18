@@ -2,22 +2,23 @@ module DerivedRules.ProofSearch.Tests where
 
 import Core
 import Defs.Specs
+import Defs.Operators
 import DerivedRules.UseDerivedRules
 import DerivedRules.ProofSearch.Sequents
 import DerivedRules.ProofSearch.G4Compiler
 
-g4StrPS :: String -> SequentProof
-g4StrPS = g4ProofSearch . parseSequent
+g4StrPS :: G4Logic -> String -> SequentProof
+g4StrPS g4Logic = (g4ProofSearch g4Logic) . parseSequent
 
-g4ThmStrPS :: String -> SequentProof
-g4ThmStrPS str = g4StrPS ("=> " ++ str)
+g4ThmStrPS :: G4Logic -> String -> SequentProof
+g4ThmStrPS g4Logic str = g4StrPS g4Logic ("=> " ++ str)
 
-g4Test :: String -> Bool
-g4Test = checkSeqProof . g4ThmStrPS
+g4Test :: G4Logic -> String -> Bool
+g4Test g4Logic = checkSeqProof . (g4ThmStrPS g4Logic)
 
-testG4AndCompiler :: String -> IO Bool
-testG4AndCompiler str = do
-    let compiledProof = compileG4 (g4ThmStrPS str)
+testG4AndCompiler :: G4Logic -> String -> IO Bool
+testG4AndCompiler g4Logic str = do
+    let compiledProof = compileG4 (g4ThmStrPS g4Logic str)
     unfolded <- useEverythingButDeduction "classical" compiledProof 
     pure (checkProof (getLogic "classical") unfolded)
 
@@ -61,6 +62,12 @@ orTests = [
     "(A & (B v C)) -> ((A & B) v (A & C))", -- dist and over or
     "(A v (B & C)) -> ((A v B) & (A v C))", -- dist or over and
     "((A & B) -> (C1 v C2)) -> (A -> (B -> (C1 v C2)))" -- currying  modified
+    ]
+
+modalTests :: [String]
+modalTests = [
+    "LA -> LA",
+    ""
     ]
 
 negTests :: [String]

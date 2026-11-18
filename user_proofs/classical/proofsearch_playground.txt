@@ -4,3 +4,5 @@ Theorem: |- ((A v B) -> C) -> ((A -> C) & (B -> C))
 
 Proof
 1. |- ((A v B) -> C) -> ((A -> C) & (B -> C))          by classical result
+QED
+1. |- ((A -> B) -> A) -> A by classical result

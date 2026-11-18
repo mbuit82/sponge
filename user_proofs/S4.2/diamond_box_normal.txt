@@ -3,24 +3,24 @@ Theorem: |- ML(P -> Q) -> (MLP -> MLQ)
 
 Proof
 1. |- ML(LP -> LQ) -> (LMLP -> M((LP -> LQ) & LP))  by citing lemma_for_S42 (from S4)
-2. |- ((LP -> LQ) -> (LP -> LQ))                    by citing identity (from minimal)
-3. |- ((LP -> LQ) & LP) -> LQ                       by applying uncurrying (from minimal): 2
-4. |- M((LP -> LQ) & LP) -> MLQ                     by K reasoning: 3
-5. |- ML(LP -> LQ) -> (LMLP -> MLQ)                 by strengthening: 4 1
+2. |- ((LP -> LQ) & LP) -> LQ                       by classical result
+3. |- M((LP -> LQ) & LP) -> MLQ                     by K reasoning: 2
+4. |- ML(LP -> LQ) -> (LMLP -> MLQ)                 by strengthening: 3 1
 
-6. |- LP -> LLP                                     by 4 Axiom
-7. |- MLP -> MLLP                                   by K reasoning: 6
-8. |- MLLP -> LMLP                                  by Convergence Axiom
-9. |- MLP -> LMLP                                   by hypothetical_syllogism (from minimal): 7 8
-10. |- ML(LP -> LQ) -> (MLP -> MLQ)                 by weakening: 9 5
+5. |- LP -> LLP                                     by 4 Axiom
+6. |- MLP -> MLLP                                   by K reasoning: 5
+7. |- MLLP -> LMLP                                  by Convergence Axiom
+8. |- MLP -> LMLP                                   by hypothetical_syllogism (from minimal): 6 7
+9. |- ML(LP -> LQ) -> (MLP -> MLQ)                 by weakening: 8 4
 
-11. |- L(P -> Q) -> (LP -> LQ)                      by K Axiom
-12. |- LL(P -> Q) -> L(LP -> LQ)                    by K reasoning: 11
-13. |- L(P -> Q) -> LL(P -> Q)                      by 4 Axiom
-14. |- L(P -> Q) -> L(LP -> LQ)                     by hypothetical_syllogism (from minimal): 13 12
-15. |- ML(P -> Q) -> ML(LP -> LQ)                   by K reasoning: 14
-16. |- ML(P -> Q) -> (MLP -> MLQ)                   by hypothetical_syllogism (from minimal): 15 10
+10. |- L(P -> Q) -> (LP -> LQ)                      by K Axiom
+11. |- LL(P -> Q) -> L(LP -> LQ)                    by K reasoning: 10
+12. |- L(P -> Q) -> LL(P -> Q)                      by 4 Axiom
+13. |- L(P -> Q) -> L(LP -> LQ)                     by hypothetical_syllogism (from minimal): 12 11
+14. |- ML(P -> Q) -> ML(LP -> LQ)                   by K reasoning: 13
+15. |- ML(P -> Q) -> (MLP -> MLQ)                   by hypothetical_syllogism (from minimal): 14 9
 QED
 
 think this proof has a pretty good show of what sponge can do now
 note you don't actually need to say "applying" or "citing"
+and we have proof search on modal sentences (for minimal reults)! (will extend to classical soon)

@@ -16,7 +16,7 @@ parseIP :: String -> Maybe Sentence
 parseIP str = 
     if (all isSpace str)
         then Nothing
-        else Just (parse [andOp, orOp, cond, negOp] [] str)
+        else Just (parse [andOp, orOp, cond, negOp, box] [diamond] str)
 
 isAtomic :: Sentence -> Bool
 isAtomic (Atom _) = True
@@ -44,13 +44,11 @@ data SequentRule = SequentRule {
 instance Show SequentRule where
     show = seqRuleName
 
-
 data SequentProof = SequentProof {
     seqContent :: Sequent,
     seqJustification :: SequentRule,
     seqSubProofs :: Maybe [SequentProof]
 } deriving (Show, Eq)
-
 
 splitOnX :: String -> String -> [String]
 splitOnX [] _ = error "splitOnX: empty delimiter"
@@ -78,10 +76,11 @@ mkSequentRule :: String -> [String] -> String -> SequentRule
 mkSequentRule rn prems concl = SequentRule rn (map parseSequent prems) (parseSequent concl)
 
 -- particular choice of rules is mix of Troelstra book and Dyckoff
+-- important modifications are ax and arrowL1. Both changes are admissible in 
 ax :: SequentRule
 ax = mkSequentRule "Ax" 
     []
-    "Gamma, P => P"
+    "Gamma, A => A"
 andR :: SequentRule
 andR = mkSequentRule "R&" 
     ["Gamma => A", "Gamma => B"] 
@@ -108,8 +107,8 @@ orL = mkSequentRule "Lv"
     "Gamma, A v B => C"
 arrowL1 :: SequentRule
 arrowL1 = mkSequentRule "L->1"
-    ["Gamma, P, B => E"]
-    "Gamma, P -> B, P => E"
+    ["Gamma, A, B => E"]
+    "Gamma, A -> B, A => E"
 arrowL2 :: SequentRule
 arrowL2 = mkSequentRule "L->2"
     ["Gamma, C -> (D -> B) => E"]
@@ -129,7 +128,7 @@ negR = mkSequentRule "R~"
 negL1 :: SequentRule
 negL1 = mkSequentRule "L~1" 
     []
-    "Gamma, P, ~P => E"
+    "Gamma, A, ~A => E" -- originally propositional restriction but should also be good like this
 negL2 :: SequentRule
 negL2 = mkSequentRule "L~2"
     ["Gamma, C -> ~D => E"]
@@ -155,12 +154,24 @@ negL5 = mkSequentRule "L~5"
 -- Meaning the proof search isn't the moral solution to primitive negation
 -- It is however though the only immoral thing left I think
 
-invertibleRules :: [SequentRule]
-invertibleRules = [ax, andL, arrowR, arrowL1, arrowL2, arrowL3, negL1, negL2, negL3, negR, andR, orL]
+mInvertibleRules :: [SequentRule]
+mInvertibleRules = [ax, andL, arrowR, arrowL1, arrowL2, arrowL3, andR, orL]
+mNoninvertibleRules :: [SequentRule]
+mNoninvertibleRules = [orR0, orR1, arrowL4]
 
-noninvertibleRules :: [SequentRule]
-noninvertibleRules = [orR0, orR1, arrowL4, negL4, arrowL5, negL5]
+iInvertibleRules :: [SequentRule]
+iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3, negR]
+iNoninvertibleRules :: [SequentRule]
+iNoninvertibleRules = mNoninvertibleRules ++ [negL4, arrowL5, negL5]
 
+data G4Logic = G4Logic {
+    invertibleRules :: [SequentRule], 
+    noninvertibleRules :: [SequentRule]}
+
+g4mp :: G4Logic
+g4mp = G4Logic mInvertibleRules mNoninvertibleRules
+g4ip :: G4Logic
+g4ip = G4Logic iInvertibleRules iNoninvertibleRules
 
 -- this unification procedure only works on sets.
 -- would have problem in case of schema set {A -> B, C -> D} if it wasn't for just sets
@@ -174,9 +185,7 @@ getSubstFragments :: Set.Set Sentence -> Set.Set Sentence -> Set.Set (Set.Set Su
 getSubstFragments schemas sents = Set.map (getSubstFragment sents) schemas
 
 checkPairsCohere :: (String, Sentence) -> (String, Sentence) -> Bool
-checkPairsCohere (a1, s1) (a2, s2) 
-    | a1 == a2 && s1 /= s2 = False
-    | otherwise = True
+checkPairsCohere (a1, s1) (a2, s2) = not (a1 == a2 && s1 /= s2)
 
 -- checks if a pair is coherent with an entire subst. 
 -- true if it's coherent with all the pairs in the subst.
@@ -262,34 +271,34 @@ tryInvertibleRules (rl:rls) seq = case useRule rl seq of
     Nothing -> tryInvertibleRules rls seq
     Just prems -> Just (rl, prems)
 
-invertibleStep :: Sequent -> Maybe (SequentRule, [Sequent])
-invertibleStep = tryInvertibleRules invertibleRules
+invertibleStep :: G4Logic -> Sequent -> Maybe (SequentRule, [Sequent])
+invertibleStep g4Logic = tryInvertibleRules (invertibleRules g4Logic)
 
-tryNoninvertRule :: SequentRule -> Sequent -> Maybe SequentProof
-tryNoninvertRule rl seq = case useRule rl seq of
+tryNoninvertRule :: G4Logic -> SequentRule -> Sequent -> Maybe SequentProof
+tryNoninvertRule g4Logic rl seq = case useRule rl seq of
     Just subSeqs -> 
-        let rest = SequentProof seq rl (Just (map g4ProofSearch subSeqs)) in
+        let rest = SequentProof seq rl (Just (map (g4ProofSearch g4Logic) subSeqs)) in
         if checkSeqProof rest then Just rest else Nothing
     Nothing -> Nothing
 
 giveUp :: SequentRule
 giveUp = mkSequentRule "NOT PROVABLE" [] "Gamma => S"
 
-tryNoninvertRules :: [SequentRule] -> Sequent -> SequentProof
-tryNoninvertRules [] seq = SequentProof seq giveUp Nothing
-tryNoninvertRules (rl:rls) seq = case tryNoninvertRule rl seq of
+tryNoninvertRules :: G4Logic -> [SequentRule] -> Sequent -> SequentProof
+tryNoninvertRules _ [] seq = SequentProof seq giveUp Nothing
+tryNoninvertRules g4Logic (rl:rls) seq = case tryNoninvertRule g4Logic rl seq of
     Just rest -> rest
-    Nothing -> tryNoninvertRules rls seq
+    Nothing -> tryNoninvertRules g4Logic rls seq
 
-noninvertibleStep :: Sequent -> SequentProof
-noninvertibleStep = tryNoninvertRules noninvertibleRules
+noninvertibleStep :: G4Logic -> Sequent -> SequentProof
+noninvertibleStep g4Logic = tryNoninvertRules g4Logic (noninvertibleRules g4Logic)
 
-g4ProofSearch :: Sequent -> SequentProof
-g4ProofSearch seq = case invertibleStep seq of
-    Just (rl, subSeqs) -> SequentProof seq rl (Just (map g4ProofSearch subSeqs))
-    Nothing -> noninvertibleStep seq
+g4ProofSearch :: G4Logic -> Sequent -> SequentProof
+g4ProofSearch g4Logic seq = case invertibleStep g4Logic seq of
+    Just (rl, subSeqs) -> SequentProof seq rl (Just (map (g4ProofSearch g4Logic) subSeqs))
+    Nothing -> noninvertibleStep g4Logic seq
 
-checkSeqProof :: SequentProof -> Bool
+checkSeqProof :: SequentProof -> Bool -- very informal
 checkSeqProof seqPf = case seqSubProofs seqPf of
     Nothing -> False
     Just sspfs -> and (map checkSeqProof sspfs)

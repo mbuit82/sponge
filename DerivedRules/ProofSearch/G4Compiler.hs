@@ -93,8 +93,8 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
             let bDerivation = ProofTree
                     (p "B")
                     "Modus Ponens"
-                    [ProofTree (p "P") "Assumption" [],
-                    ProofTree (p "P -> B") "Assumption" []] in
+                    [ProofTree (p "A") "Assumption" [],
+                    ProofTree (p "A -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) recCall
         "L->2" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
@@ -167,26 +167,26 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
             composeDerivations (mkSentSubsts [nCDerivation, nDDerivation]) recCall
         "L~4" -> undefined
         "L~5" -> undefined
+        "NOT PROVABLE" -> error "trying to compile a proof for an unprovable statement"
 
 
-g4TheoremSearch :: Sentence -> SequentProof
-g4TheoremSearch sent = g4ProofSearch (Sequent Set.empty (Set.fromList [sent]))
+g4TheoremSearch :: G4Logic -> Sentence -> SequentProof
+g4TheoremSearch g4Logic sent = g4ProofSearch g4Logic (Sequent Set.empty (Set.fromList [sent]))
 
-proofSearch :: Sentence -> ProofTree
-proofSearch = compileG4 . g4TheoremSearch
+proofSearch :: G4Logic -> Sentence -> ProofTree
+-- proofSearch g4Logic = compileG4 . (g4TheoremSearch g4Logic)
 -- with classical stuff it'd look something like this
-    -- let iSearch = g4TheoremSearch sent in
-    -- if checkProof iSearch == True
-    --     then compileG4 iSearch
-    --     else 
-    --         ProofTree
-    --             sent
-    --             "DNE"
+proofSearch g4Logic sent =
+    let search = g4TheoremSearch g4Logic sent in
+    if checkSeqProof search == True
+        then compileG4 search
+        else error (show sent ++ " is not a classical result it seems")
 
+-- TODO: as soon as you finish the compiler, you can change this to g4ip
 useProofSearch' :: ProofTree -> ProofTree
 useProofSearch' pfTree =
     if (pfJustification pfTree) == "classical result"
-        then proofSearch (pfContent pfTree)
+        then proofSearch g4mp (pfContent pfTree)
         else pfTree
 
 useProofSearch :: ProofTree -> ProofTree

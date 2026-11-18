@@ -1,0 +1,12 @@
+Theorem: |- LA -> ((LA -> LB) -> LB)
+
+
+
+Proof
+1. |- LA -> ((LA -> LB) -> LB) by classical result
+QED
+
+
+
+
+The point of this is to explicitly test being able to do modal operators and still getting classical results
