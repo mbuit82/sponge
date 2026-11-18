@@ -91,7 +91,6 @@ classicalTests = [
 doubleNegTests :: [String] -- should pass for G4ip
 doubleNegTests = map (\s -> "~~(" ++ s ++ ")") classicalTests
 
-
 testG4AndCompiler :: String -> IO Bool
 testG4AndCompiler str = do
     let compiledProof = compileG4 (g4ThmStrPS str)

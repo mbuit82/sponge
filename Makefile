@@ -26,7 +26,7 @@ exec/check-datalog-output: ToDatalog/Utils.hs  Commands/CheckDatalogOutput.hs
 
 proof-processing: exec/build-proof exec/check-datalog-output
 
-check-proof: exec/build-proof
+check-proof: exec/build-proof exec/check-datalog-output
 	@ ./exec/build-proof $(LOGIC) $(PROOF)
 	@ souffle -D datalog/datalog_proofs/$(LOGIC)/$(PROOF) datalog/datalog_proofs/$(LOGIC)/$(PROOF)/$(PROOF).dl
 	@ ./exec/check-datalog-output $(LOGIC) $(PROOF)
@@ -35,7 +35,7 @@ check-proof: exec/build-proof
 PROOF_FILES := $(wildcard user_proofs/$(LOGIC)/*.txt)
 PROOF_NAMES := $(basename $(notdir $(PROOF_FILES)))
 
-check-logic: exec/build-proof
+check-logic: exec/build-proof exec/check-datalog-output
 	@ ./exec/build-proof $(LOGIC)
 	@ echo Checking all proofs in $(LOGIC)...
 	@ for pnm in $(PROOF_NAMES); do \
@@ -48,7 +48,7 @@ LOGIC_NAMES:= $(wildcard user_proofs/$(LOGIC)/*.txt)
 LOGIC_DIRS := $(wildcard user_proofs/*/)
 LOGICS := $(notdir $(patsubst %/,%,$(LOGIC_DIRS)))
 
-check-all: exec/build-proof
+check-all: exec/build-proof exec/check-datalog-output
 	@ for lnm in $(LOGICS); do \
 		make check-logic LOGIC=$$lnm; \
 	done

@@ -24,7 +24,7 @@ checkDatalogOutputWithMsg logicName proofName = do
         if result
                 then do putStrLn (proofName ++" has been proved!")
                 else do 
-                        putStrLn "Proof is not yet proven."
+                        putStrLn (proofName ++" is not yet proven.")
                         unjustifiedContent <- readFile (getCsvFileName logicName proofName "Unjustified")
                         putStrLn "The following lines of the datalog proof are not proven: "
                         putStrLn unjustifiedContent
