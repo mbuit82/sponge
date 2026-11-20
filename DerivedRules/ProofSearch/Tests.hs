@@ -7,11 +7,16 @@ import DerivedRules.UseDerivedRules
 import DerivedRules.ProofSearch.Sequents
 import DerivedRules.ProofSearch.G4Compiler
 
+import qualified Data.Set as Set
+
 g4StrPS :: G4Logic -> String -> SequentProof
 g4StrPS g4Logic = (g4ProofSearch g4Logic) . parseSequent
 
 g4ThmStrPS :: G4Logic -> String -> SequentProof
 g4ThmStrPS g4Logic str = g4StrPS g4Logic ("=> " ++ str)
+
+t :: String -> SequentProof
+t = g4ThmStrPS g4ip
 
 g4Test :: G4Logic -> String -> Bool
 g4Test g4Logic = checkSeqProof . (g4ThmStrPS g4Logic)
@@ -21,6 +26,23 @@ testG4AndCompiler g4Logic str = do
     let compiledProof = compileG4 (g4ThmStrPS g4Logic str)
     unfolded <- useEverythingButDeduction "classical" compiledProof 
     pure (checkProof (getLogic "classical") unfolded)
+
+ruleInProof :: SequentRule -> SequentProof -> Bool 
+ruleInProof seqrl seqpf@(SequentProof seqpfc seqpfj subseqpfs) =
+    if seqrl == seqpfj 
+        then True
+        else case subseqpfs of
+            Nothing -> False
+            Just s -> or (map (ruleInProof seqrl) s)
+
+getRulesInProof :: SequentProof -> Set.Set SequentRule
+getRulesInProof seqpf@(SequentProof _ seqpfj subseqpfs) =
+    case subseqpfs of
+        Nothing -> Set.singleton seqpfj
+        Just s -> Set.union (Set.singleton seqpfj) (Set.unions (map getRulesInProof s))
+
+c :: SequentProof -> IO ()
+c seqpf = mapM_ print (proofTreeToLines (compileG4 seqpf))
 
 condTests :: [String]
 condTests = [
@@ -67,11 +89,12 @@ orTests = [
 modalTests :: [String]
 modalTests = [
     "LA -> LA",
-    ""
+    "((LA & (LA -> (LB v LC))) -> (LB v LC))"
     ]
 
 negTests :: [String]
 negTests = [
+    "~(A & ~A)", -- lnc
     "(A -> B) -> (~B -> ~A)", -- contraposition
     "A -> ~~A", -- dni
     "(A -> ~B) -> (B -> ~A)", -- wiki neg axiom
@@ -83,8 +106,16 @@ negTests = [
     "(~A v B) -> (A -> B)", -- or implies arrow
     "~(A v B) -> (~A & ~B)", -- DM
     "(~A & ~B) -> ~(A v B)", -- DM
-    "(~A v ~B) -> ~(A & B)" -- DM
+    "(~A v ~B) -> ~(A & B)", -- DM
+    "(C & ~D) -> ~(C -> D)",
+    "~(C -> D) -> ~~(C & ~D)",
+    "~(C -> D) -> ~~C",
+    "((~C -> B) & ~B) -> ~~C",
+    "~~((~C -> B) -> (C v B))",
+    "((~C -> B) & ~~~B) -> ~~C",
+    "((~A -> B) & ~~~A) -> B" -- case where you need L5 (checked)
     ]
+
 
 classicalTests :: [String] -- should fail for G4mp and G4ip
 classicalTests = [

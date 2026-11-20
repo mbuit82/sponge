@@ -135,15 +135,29 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                     ProofTree (p "(C -> D) -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) rootRecCall
         "L->5" -> undefined
-        "R~" -> undefined -- would have to be some sort of neg intro?
+        "R~" -> 
+            let [recCall] = map compileG4 (fromJust subseqpfs) in -- this is a way to derive a contradiction 
+            ProofTree 
+            (p "~A")
+            "MYSTERY DERIVATION"
+                [recCall]
+            -- the way this works is like this:
+            -- when you get here, you're going to look through the subseqproofs for what is ultimately the contradiction. 
+            -- ah, but this only works if we have one path down right? hm. 
+            -- so maybe we do, for all formulae and subformulae X in the context, we do a proof search for A -> X and A -> ~X
+            -- you get those, and then you're going to do proof search for A -> X and A -> ~X, with Gamma = Gamma, A. 
+            -- and then you put those at the top
+            -- I feel like this should work because what "Gamma, A => VOID" is saying is that Gamma and A derive a contradiction.
+            -- the question is just what the space of sentences that could be X is. Is it infinite? If so this is fucked. 
+            -- so we should be able to find it
         "L~1" -> 
             ProofTree 
                 (p "E")
                 "Modus Ponens"
-                [ProofTree (p "P") "Assumption" [],
-                ProofTree (p "P -> E") "Modus Ponens"
-                    [ProofTree (p "~P") "Assumption" [],
-                    ProofTree (p "~P -> (P -> E)") "Negation Elim" []]]
+                [ProofTree (p "A") "Assumption" [],
+                ProofTree (p "A -> E") "Modus Ponens"
+                    [ProofTree (p "~A") "Assumption" [],
+                    ProofTree (p "~A -> (A -> E)") "Negation Elim" []]]
         "L~2" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             let cndDerivation = ProofTree
@@ -166,7 +180,15 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                         ProofTree (p "~(C v D) -> ~D") "applying neg_or_right (from intuitionistic)" []] in
             composeDerivations (mkSentSubsts [nCDerivation, nDDerivation]) recCall
         "L~4" -> undefined
-        "L~5" -> undefined
+        "L~5" -> 
+            let [recCall] = map compileG4 (fromJust subseqpfs) in -- a derivation of ~C
+             ProofTree
+             (p "E")
+             "Modus Ponens"
+                [recCall,
+                ProofTree (p "~C -> E") "Modus Ponens"
+                    [ProofTree (p "~~C") "Assumption" [],
+                    ProofTree (p "~~C -> (~C -> E)") "Negation Elim" []]]
         "NOT PROVABLE" -> error "trying to compile a proof for an unprovable statement"
 
 

@@ -79,24 +79,36 @@ keepSmallestSubproof sameContentRefs lns =
 replaceInRefs :: Set.Set Int -> [Line] -> [Line]
 replaceInRefs repeateds lns = replaceInRefs' (keepSmallestSubproof repeateds lns) lns
 
--- this is for if you accidentally already proved things
--- never the case so far, but potentially useful in proofsearch. 
--- not currently being used due to bugs
-contentLastLnRepeated :: Int -> [[Int]] -> Maybe Int
-contentLastLnRepeated lastNum [] = Nothing
-contentLastLnRepeated lastNum (rfp:rfps) =
-    if lastNum `elem` rfp 
-        then Just (minimum rfp)
-        else contentLastLnRepeated lastNum rfps
-
 removeRepeatRefs :: [Line] -> [Line]
 removeRepeatRefs lns =
     let repeatedsList = Map.elems (getRepeatedRefs lns) in
     let listOfFuncs = map (replaceInRefs . Set.fromList) (repeatedsList) in
     foldl' (\acc f -> f acc) lns listOfFuncs
 
+-- This now does the thing for getting earliest occurence of proof
+-- this func and the next two.
+-- the strat is to just make the root of the tree the earliest occurence of the
+-- content of the last line of the proof, which is in theory the theorem statement
+findFirstLNumWithContent :: Sentence -> [Line] -> Maybe Int
+findFirstLNumWithContent sent [] = Nothing
+findFirstLNumWithContent sent (ln:lns) =
+    if sent == lineContent ln 
+        then Just (lineNumber ln) 
+        else findFirstLNumWithContent sent lns
+
+getLastLineContent :: [Line] -> Sentence
+getLastLineContent lns = (lineContent ((reverse lns) !! 0))
+
+findFirstLNumWithThm :: [Line] -> Maybe Int
+findFirstLNumWithThm lns = 
+    findFirstLNumWithContent (getLastLineContent lns) lns
+
 getUsedRefs :: [Line] -> Set.Set Int
-getUsedRefs lns = getSubProofRefs lns (lineNumber ((reverse lns) !! 0))
+getUsedRefs lns = 
+    case findFirstLNumWithThm lns of
+        Nothing -> error "oopsie something bad"
+        Just n -> getSubProofRefs lns n
+    -- getSubProofRefs lns (lineNumber ((reverse lns) !! 0))
         
 removeUnusedLines :: Set.Set Int -> [Line] -> [Line]
 removeUnusedLines usedRefs [] = []
@@ -114,7 +126,7 @@ intoZipper :: [Line] -> Zipper
 intoZipper [] = error "sadfadfdsfdsffdsafds"
 intoZipper (ln:rem) = Zipper [] (Just ln) rem
 
--- finds the first occurrence. This is taken advantage of in the strengthening derived rule
+-- finds the first occurrence
 findLineWithUserNum :: [Line] -> Int -> Maybe Line
 findLineWithUserNum [] _ = Nothing
 findLineWithUserNum (l : remLines) uNum =
@@ -129,8 +141,7 @@ getCurrentRefLine zipper r =
         Just ln -> ln
 
 getCurrentRefLines :: Zipper -> Line -> [Line]
-getCurrentRefLines zipper currLine =
-    map (getCurrentRefLine zipper) (refLines currLine)
+getCurrentRefLines zipper currLine = map (getCurrentRefLine zipper) (refLines currLine)
 
 getUpdatedCurrentRefs :: Zipper -> Line -> [Int]
 getUpdatedCurrentRefs zipper currLine = map lineNumber (getCurrentRefLines zipper currLine)
@@ -156,7 +167,7 @@ renumber' n zipper =
         Just ln -> renumber' (n+1) (stepZipper (renumberLine zipper n) zipper)
 
 renumber :: [Line] -> [Line]
-renumber = reverse.seen.(renumber' 1).intoZipper
+renumber = reverse . seen . (renumber' 1) . intoZipper
 
 resetUserNumbers :: [Line] -> [Line]
 resetUserNumbers lns = map (\(Line n c j r _) -> Line n c j r (Just n)) lns

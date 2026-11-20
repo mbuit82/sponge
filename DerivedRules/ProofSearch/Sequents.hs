@@ -25,7 +25,7 @@ isAtomic _ = False
 data Sequent = Sequent {
     antecedent :: Set.Set Sentence,
     succedent :: Set.Set Sentence
-} deriving Eq
+} deriving (Eq, Ord)
 instance Show Sequent where
     show = prettyPrintSequent
 
@@ -40,7 +40,7 @@ data SequentRule = SequentRule {
     seqRuleName :: String,
     seqPremises :: [Sequent],
     seqConclusion :: Sequent
-} deriving Eq
+} deriving (Eq, Ord)
 instance Show SequentRule where
     show = seqRuleName
 
@@ -121,7 +121,7 @@ arrowL4 :: SequentRule
 arrowL4 = mkSequentRule "L->4"
     ["Gamma, D -> B, => C -> D", "Gamma, B => E"]
     "Gamma, (C -> D) -> B => E"
-negR :: SequentRule
+negR :: SequentRule -- the best way to do this is to see these in action. You'll get a clear answer then. 
 negR = mkSequentRule "R~"
     ["Gamma, A => VOID"]
     "Gamma => ~A"
@@ -143,7 +143,7 @@ negL4 = mkSequentRule "L~4"
     "Gamma, ~(C -> D) => E"
 arrowL5 :: SequentRule
 arrowL5 = mkSequentRule "L->5" 
-    ["Gamma, => ~C", "Gamma, B => E"]
+    ["Gamma => ~C", "Gamma, B => E"]
     "Gamma, (~C -> B) => E"
 negL5 :: SequentRule
 negL5 = mkSequentRule "L~5"
@@ -162,7 +162,7 @@ mNoninvertibleRules = [orR0, orR1, arrowL4]
 iInvertibleRules :: [SequentRule]
 iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3, negR]
 iNoninvertibleRules :: [SequentRule]
-iNoninvertibleRules = mNoninvertibleRules ++ [negL4, arrowL5, negL5]
+iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5]
 
 data G4Logic = G4Logic {
     invertibleRules :: [SequentRule], 
