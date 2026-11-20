@@ -1,9 +1,9 @@
-Theorem: |- A -> (B -> (A & B))
+Theorem: |- (A -> B) -> (~B -> ~A)
 
 
 
 Proof
-1. |- A -> (B -> (A & B)) by classical result
+1. |- (A -> B) -> (~B -> ~A) by classical result
 QED
 1. |- ((A v B) -> C) -> ((A -> C) & (B -> C))          by classical result
 QED

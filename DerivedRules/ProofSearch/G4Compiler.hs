@@ -3,6 +3,7 @@ module DerivedRules.ProofSearch.G4Compiler where
 import Core 
 import Parse.Sentences
 import Defs.Operators
+import Defs.Axioms
 import DerivedRules.Utils
 import DerivedRules.Deduction
 import DerivedRules.ProofSearch.Sequents
@@ -28,6 +29,30 @@ compilerParseHelper subst str = parseWithSubst [andOp, orOp, cond, negOp] [] str
 mkSentSubsts :: [ProofTree] -> [(Sentence, ProofTree)]
 mkSentSubsts = map (\pft -> (pfContent pft, pft))
 
+getSubFormulas :: Sentence -> Set.Set Sentence
+getSubFormulas s@(Atom a) = Set.singleton s
+getSubFormulas s@(OpNode op args) = 
+    Set.union (Set.singleton s) (Set.unions (map getSubFormulas args))
+
+getAllSubFormulas :: Set.Set Sentence -> Set.Set Sentence
+getAllSubFormulas gamma = 
+    Set.unions (Set.map getSubFormulas gamma)
+
+derivesBot :: Set.Set Sentence -> Sentence -> Sentence -> Maybe (Sentence, SequentProof, SequentProof)
+derivesBot gamma a tgtX =
+    let posResult = g4ProofSearch g4ip (Sequent gamma (Set.singleton (OpNode cond [a, tgtX]))) in
+    case checkSeqProof posResult of
+        False -> Nothing
+        True -> 
+            let negResult = g4ProofSearch g4ip (Sequent gamma (Set.singleton (OpNode cond [a, OpNode negOp [tgtX]]))) in
+            case checkSeqProof negResult of
+                False -> Nothing
+                True -> Just (tgtX, posResult, negResult)
+
+getBotDerivations :: Set.Set Sentence -> Sentence -> Set.Set (Sentence, SequentProof, SequentProof)
+getBotDerivations gamma a =
+    Set.map fromJust (Set.filter (/= Nothing) (Set.map (derivesBot gamma a) (getAllSubFormulas gamma)))
+    
 -- I think there are some edge cases to this not working. 
 -- particularly, deduct the same arg twice. Stupid, but still an edge case. 
 -- e.g. (A -> (A -> A)) would potentially be funny
@@ -136,20 +161,18 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
             composeDerivations (mkSentSubsts [bDerivation]) rootRecCall
         "L->5" -> undefined
         "R~" -> 
-            let [recCall] = map compileG4 (fromJust subseqpfs) in -- this is a way to derive a contradiction 
-            ProofTree 
-            (p "~A")
-            "MYSTERY DERIVATION"
-                [recCall]
-            -- the way this works is like this:
-            -- when you get here, you're going to look through the subseqproofs for what is ultimately the contradiction. 
-            -- ah, but this only works if we have one path down right? hm. 
-            -- so maybe we do, for all formulae and subformulae X in the context, we do a proof search for A -> X and A -> ~X
-            -- you get those, and then you're going to do proof search for A -> X and A -> ~X, with Gamma = Gamma, A. 
-            -- and then you put those at the top
-            -- I feel like this should work because what "Gamma, A => VOID" is saying is that Gamma and A derive a contradiction.
-            -- the question is just what the space of sentences that could be X is. Is it infinite? If so this is fucked. 
-            -- so we should be able to find it
+            case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
+                Nothing -> error "fucked up in R~ compiler case search for bot case"
+                Just (x, axSeqDer, aNotXSeqDer) -> 
+                    let negElim = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negE) in
+                    let consequentOfNegElim = (args negElim) !! 1 in
+                    ProofTree 
+                        (p "~A")
+                        "Modus Ponens"
+                        [compileG4 aNotXSeqDer,
+                        ProofTree consequentOfNegElim "Modus Ponens"
+                            [compileG4 axSeqDer,
+                            ProofTree negElim "Negation Elim" []]]
         "L~1" -> 
             ProofTree 
                 (p "E")
@@ -208,7 +231,7 @@ proofSearch g4Logic sent =
 useProofSearch' :: ProofTree -> ProofTree
 useProofSearch' pfTree =
     if (pfJustification pfTree) == "classical result"
-        then proofSearch g4mp (pfContent pfTree)
+        then proofSearch g4ip (pfContent pfTree)
         else pfTree
 
 useProofSearch :: ProofTree -> ProofTree

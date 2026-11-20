@@ -48,7 +48,7 @@ data SequentProof = SequentProof {
     seqContent :: Sequent,
     seqJustification :: SequentRule,
     seqSubProofs :: Maybe [SequentProof]
-} deriving (Show, Eq)
+} deriving (Show, Eq, Ord)
 
 splitOnX :: String -> String -> [String]
 splitOnX [] _ = error "splitOnX: empty delimiter"
