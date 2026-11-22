@@ -160,9 +160,13 @@ mNoninvertibleRules :: [SequentRule]
 mNoninvertibleRules = [orR0, orR1, arrowL4]
 
 iInvertibleRules :: [SequentRule]
-iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3, negR]
+iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3]
 iNoninvertibleRules :: [SequentRule]
-iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5]
+iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5, negR]
+-- reason negR is in noninvertibe rules is for it to happen after the other neg rules.
+-- this is to avoid infinite loop in compiler case. 
+-- the reason for this infinite loop is, I think, when the only thing to draw a contradiciton in Gamma, A is A. 
+-- but you get to a point where to solve the A -> ~A case, you need to use R~ on ~A. And so you get an infinite loop. 
 
 data G4Logic = G4Logic {
     invertibleRules :: [SequentRule], 

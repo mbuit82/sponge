@@ -46,15 +46,16 @@ tokenize :: [Operator] -> [DefinedOperator] -> String -> [Token]
 tokenize ops defOps str = tokenize' ops defOps str []
 
 pop :: [a] -> [a]
-pop [] = error "Stack underflow from pop"
+pop [] = error "Stack underflow from pop (Sentences.hs)"
 pop (_:xs) = xs
 
 fetch :: [a] -> a
-fetch [] = error "Stack underflow from fetch"
+fetch [] = error "Stack underflow from fetch (Sentences.hs): "
 fetch (x:_) = x
 
 getNextSentence' :: (String -> Sentence) -> [Token] -> [Sentence] -> [Token] -> (Sentence, [Token])
 getNextSentence' _ [] [sent] toSee = (sent, toSee) -- yes: we've gotten the next sentence, and there's no operators (so we're not currently building something). perfect.
+-- getNextSentence' _ [] _ _ = error "opoosdfodfs"
 getNextSentence' _ opStack [] [] = error ("shid we reached the end and we have no sentences lel. current opStack (rest are empty): " ++ show opStack)
 getNextSentence' _ opStack [sent] [] = error ("this case doesn't make sense really. opStack and sentStack: " ++ show opStack ++ ", " ++ show sent)
 getNextSentence' _ opStack sentStack [] = error ("error in parsing. check for a missing set of parentheses? opStack and sentStack: " ++ show opStack ++ ", " ++ show sentStack)

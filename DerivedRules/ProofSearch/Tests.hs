@@ -5,6 +5,7 @@ import Defs.Specs
 import Defs.Operators
 import DerivedRules.UseDerivedRules
 import DerivedRules.ProofSearch.Sequents
+import Parse.Sentences
 import DerivedRules.ProofSearch.G4Compiler
 
 import qualified Data.Set as Set
@@ -15,15 +16,20 @@ g4StrPS g4Logic = (g4ProofSearch g4Logic) . parseSequent
 g4ThmStrPS :: G4Logic -> String -> SequentProof
 g4ThmStrPS g4Logic str = g4StrPS g4Logic ("=> " ++ str)
 
+-- c and t are for seeing things for testing
 t :: String -> SequentProof
 t = g4ThmStrPS g4ip
+
+c :: SequentProof -> IO ()
+c seqpf = mapM_ print (proofTreeToLines (compileG4 seqpf))
 
 g4Test :: G4Logic -> String -> Bool
 g4Test g4Logic = checkSeqProof . (g4ThmStrPS g4Logic)
 
-testG4AndCompiler :: G4Logic -> String -> IO Bool
-testG4AndCompiler g4Logic str = do
-    let compiledProof = compileG4 (g4ThmStrPS g4Logic str)
+-- depends on checkProof which I think was faulty
+testG4AndCompiler :: String -> IO Bool
+testG4AndCompiler str = do
+    let compiledProof = cProofSearch (parse [andOp, orOp, negOp, cond] [] str)
     unfolded <- useEverythingButDeduction "classical" compiledProof 
     pure (checkProof (getLogic "classical") unfolded)
 
@@ -40,9 +46,6 @@ getRulesInProof seqpf@(SequentProof _ seqpfj subseqpfs) =
     case subseqpfs of
         Nothing -> Set.singleton seqpfj
         Just s -> Set.union (Set.singleton seqpfj) (Set.unions (map getRulesInProof s))
-
-c :: SequentProof -> IO ()
-c seqpf = mapM_ print (proofTreeToLines (compileG4 seqpf))
 
 condTests :: [String]
 condTests = [
@@ -101,8 +104,9 @@ negTests = [
     "(A -> ~A) -> ~A", -- reductio (Hackstaff)
     "~A -> (A -> B)", -- neg elim
     "(A -> B) -> ((A -> ~B) -> ~A)", -- neg intro
+    -- the proof generated for this is actually a proof of Hackstaff |- Neg Intro! 
     "~A -> ((A v B) -> B)", -- disjunctive syllogism
-    "(A -> B) -> (~~A -> ~~B)", -- double contraposition
+    "(A -> B) -> (~~A -> ~~B)", -- double contraposition (600 lines)
     "(~A v B) -> (A -> B)", -- or implies arrow
     "~(A v B) -> (~A & ~B)", -- DM
     "(~A & ~B) -> ~(A v B)", -- DM
@@ -113,7 +117,11 @@ negTests = [
     "((~C -> B) & ~B) -> ~~C",
     "~~((~C -> B) -> (C v B))",
     "((~C -> B) & ~~~B) -> ~~C",
-    "((~A -> B) & ~~~A) -> B" -- case where you need L5 (checked)
+    "((~A -> B) & ~~~A) -> B",
+    "~~~A -> ~A", -- TNE
+    "~A -> ~~~A", -- TNI
+    "~~~~A -> ~~A", -- QNE
+    "~~A -> ~~~~A" -- QNI
     ]
 
 
@@ -123,7 +131,7 @@ classicalTests = [
     "A v ~A", -- lem
     "~~A -> A", -- dne
     "(A -> B) -> (~A v B)", -- arrow implies or
-    "(~B -> ~A) -> (A -> B)", -- backward contraposition
+    "(~B -> ~A) -> (A -> B)", -- backward contraposition (700 lines)
     "~(A & B) -> (~A v ~B)", -- demorgans classical case
     "~(~A & ~B) -> (A v B)", -- SF version of DM
     "(~A -> A) -> A" -- consequentia mirabilis

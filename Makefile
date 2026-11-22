@@ -1,6 +1,6 @@
 all: basics proof-processing
 
-exec/build-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs $(wildcard Defs/*.hs) Core.hs
+exec/build-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs $(wildcard Defs/*.hs) $(wildcard Parse/*.hs) Core.hs
 	@ ghc ToDatalog/Engines.hs -main-is ToDatalog.Engines.main -o exec/build-engines -outputdir build
 
 exec/show-logic: Core.hs Defs/Specs.hs Commands/ShowLogic.hs

@@ -1,8 +1,8 @@
-Theorem: |- (A -> B) -> (~B -> ~A)
-
-
+Theorem: |- (~A -> A) -> A
 
 Proof
+1. |- (~A -> A) -> A  by classical result
+QED
 1. |- (A -> B) -> (~B -> ~A) by classical result
 QED
 1. |- ((A v B) -> C) -> ((A -> C) & (B -> C))          by classical result

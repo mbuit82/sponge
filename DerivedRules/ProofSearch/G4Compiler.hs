@@ -40,24 +40,19 @@ getAllSubFormulas gamma =
 
 derivesBot :: Set.Set Sentence -> Sentence -> Sentence -> Maybe (Sentence, SequentProof, SequentProof)
 derivesBot gamma a tgtX =
-    let posResult = g4ProofSearch g4ip (Sequent gamma (Set.singleton (OpNode cond [a, tgtX]))) in
-    case checkSeqProof posResult of
-        False -> Nothing
-        True -> 
-            let negResult = g4ProofSearch g4ip (Sequent gamma (Set.singleton (OpNode cond [a, OpNode negOp [tgtX]]))) in
-            case checkSeqProof negResult of
-                False -> Nothing
-                True -> Just (tgtX, posResult, negResult)
+        let posResult = g4ProofSearch g4ip (Sequent (Set.union gamma (Set.singleton a)) (Set.singleton tgtX)) in
+        case checkSeqProof posResult of
+            False -> Nothing
+            True -> 
+                let negResult = g4ProofSearch g4ip (Sequent (Set.union gamma (Set.singleton a)) (Set.singleton (OpNode negOp [tgtX]))) in
+                case checkSeqProof negResult of
+                    False -> Nothing
+                    True -> Just (tgtX, posResult, negResult)
 
 getBotDerivations :: Set.Set Sentence -> Sentence -> Set.Set (Sentence, SequentProof, SequentProof)
 getBotDerivations gamma a =
-    Set.map fromJust (Set.filter (/= Nothing) (Set.map (derivesBot gamma a) (getAllSubFormulas gamma)))
+    Set.map fromJust (Set.filter (/= Nothing) (Set.map (derivesBot gamma a) (getAllSubFormulas (Set.union gamma (Set.singleton a)))))
     
--- I think there are some edge cases to this not working. 
--- particularly, deduct the same arg twice. Stupid, but still an edge case. 
--- e.g. (A -> (A -> A)) would potentially be funny
--- but it wouldn't even tbh one of the things would just get overridden bc substs become maps
--- I actually think that issue may come up earlier, in Deduction.hs
 compileG4 :: SequentProof -> ProofTree
 compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
     let p = compilerParseHelper (getStepSubst seqPf) in -- I think lazy eval makes this good :D
@@ -159,20 +154,34 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                     [cdDerivation,
                     ProofTree (p "(C -> D) -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) rootRecCall
-        "L->5" -> undefined
-        "R~" -> 
+        "L->5" -> -- ~C -> B
+            let [nCDerivation, eDerivation] = map compileG4 (fromJust subseqpfs) in
+            let bDerivation = 
+                    ProofTree 
+                    (p "B") "Modus Ponens"
+                        [nCDerivation,
+                        ProofTree (p "~C -> B") "Assumption" []] in
+            composeDerivations (mkSentSubsts [bDerivation]) eDerivation
+        "R~" -> -- old case here because it was good for debugging
+            -- ProofTree 
+            -- (p "~A")
+            -- "MYSTERY DERIVATION"
+            -- (map compileG4 (fromJust subseqpfs))
+            -- -- we don't actually use the recursive case. Bad? 
             case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
-                Nothing -> error "fucked up in R~ compiler case search for bot case"
-                Just (x, axSeqDer, aNotXSeqDer) -> 
-                    let negElim = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negE) in
-                    let consequentOfNegElim = (args negElim) !! 1 in
+                Nothing -> error ("R~ MESSED UP\n" ++ show seqpfc)
+                Just (x, xSeqDer, nxSeqDer) -> 
+                    let negIntro = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negI) in
+                    let axDer = useDeduction (p "A") (compileG4 xSeqDer) in
+                    let anxDer = useDeduction (p "A") (compileG4 nxSeqDer) in 
+                    let consequentOfNegElim = (args negIntro) !! 1 in
                     ProofTree 
                         (p "~A")
                         "Modus Ponens"
-                        [compileG4 aNotXSeqDer,
+                        [anxDer,
                         ProofTree consequentOfNegElim "Modus Ponens"
-                            [compileG4 axSeqDer,
-                            ProofTree negElim "Negation Elim" []]]
+                            [axDer,
+                            ProofTree negIntro "Negation Intro" []]]
         "L~1" -> 
             ProofTree 
                 (p "E")
@@ -202,8 +211,23 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                         [ProofTree (p "~(C v D)") "Assumption" [],
                         ProofTree (p "~(C v D) -> ~D") "applying neg_or_right (from intuitionistic)" []] in
             composeDerivations (mkSentSubsts [nCDerivation, nDDerivation]) recCall
-        "L~4" -> undefined
-        "L~5" -> 
+        "L~4" -> -- ~(C -> D)
+            let [recCall] = map compileG4 (fromJust subseqpfs) in 
+            let nDDerivation = 
+                    ProofTree
+                    (p "~D")
+                    "Modus Ponens"
+                        [ProofTree (p "~(C -> D)") "Assumption" [],
+                        ProofTree (p "~(C -> D) -> ~D") "Modus Ponens" 
+                            [ProofTree (p "D -> (C -> D)") "Simp" [],
+                            ProofTree (p "(D -> (C -> D)) -> (~(C -> D) -> ~D)") "citing contrapositive_forward (from intuitionistic)" []]] in
+            let cdDerivation = composeDerivations (mkSentSubsts [nDDerivation]) recCall in
+            ProofTree (p "E") "Modus Ponens"
+                [cdDerivation,
+                ProofTree (p "(C -> D) -> E") "Modus Ponens" 
+                    [ProofTree (p "~(C -> D)") "Assumption" [],
+                    ProofTree (p "~(C -> D) -> ((C -> D) -> E)") "Negation Elim" []]]
+        "L~5" -> -- is kinda similar to the L~4 case
             let [recCall] = map compileG4 (fromJust subseqpfs) in -- a derivation of ~C
              ProofTree
              (p "E")
@@ -218,20 +242,37 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
 g4TheoremSearch :: G4Logic -> Sentence -> SequentProof
 g4TheoremSearch g4Logic sent = g4ProofSearch g4Logic (Sequent Set.empty (Set.fromList [sent]))
 
-proofSearch :: G4Logic -> Sentence -> ProofTree
+proofSearch :: G4Logic -> Sentence -> Maybe ProofTree
 -- proofSearch g4Logic = compileG4 . (g4TheoremSearch g4Logic)
 -- with classical stuff it'd look something like this
 proofSearch g4Logic sent =
     let search = g4TheoremSearch g4Logic sent in
     if checkSeqProof search == True
-        then compileG4 search
-        else error (show sent ++ " is not a classical result it seems")
+        then Just (compileG4 search)
+        else Nothing
+
+iProofSearch :: Sentence -> Maybe ProofTree
+iProofSearch = proofSearch g4ip
+
+cProofSearch :: Sentence -> ProofTree
+cProofSearch sent = 
+    case iProofSearch sent of
+        Just pf -> pf
+        Nothing -> 
+            case iProofSearch (OpNode negOp [OpNode negOp [sent]]) of
+                Nothing -> error ("seems " ++ show sent ++ " is not a classical theorem")
+                Just dnSearch -> 
+                    ProofTree 
+                    (sent)
+                    "Modus Ponens"
+                        [dnSearch,
+                        ProofTree (applySubst [("P", sent)] (axiomContent dne)) "DNE" []]
 
 -- TODO: as soon as you finish the compiler, you can change this to g4ip
 useProofSearch' :: ProofTree -> ProofTree
 useProofSearch' pfTree =
     if (pfJustification pfTree) == "classical result"
-        then proofSearch g4ip (pfContent pfTree)
+        then cProofSearch (pfContent pfTree)
         else pfTree
 
 useProofSearch :: ProofTree -> ProofTree

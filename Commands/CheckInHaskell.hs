@@ -44,6 +44,7 @@ checkLogic logicName = do
     (logicName, notProved) <- checkLogic' logicName
     reportOnLogic logicName notProved
 
+-- NOTE: I think something about this doesn't work because it was saying some proofs that were not right were right
 checkAll :: IO ()
 checkAll = do
     results <- mapM checkLogic' logicNames
