@@ -24,7 +24,7 @@ Negation is the only place there's interesting discussion (beyond the partial ev
 
 ### Negation
 Here the choice of negation axioms picked finally becomes relevant. 
-Picking `~P -> (P -> Q)` (called `Negation Elim` in the code) allows for easy compiler cases of `L~1`, `L~4`, and `L~5`. 
+Picking `~P -> (P -> Q)` (called `Negation Elim` in the code) allows for easy compiler cases for `L~1`, `L~4`, and `L~5`. 
 The choice of negation introduction axiom is a little harder. `(P -> Q) -> ((P -> ~Q) -> ~P)` (`Negation Intro` in the code) mirrors the (intuitionistic) ND rule for negation, so is a cohesive choice, given the rest of the axiomatization. 
 However, it results in a compiler case for `R~` that does not use the recursive case, instead searching in the current antecedent `Gamma` of the sequent for a sentence `X` such that `Gamma, A => X` and `Gamma, A => ~X`. 
 Such a pair of sequents are guaranteed to exist, particularly (and rather trivially) with `X := A`. 
