@@ -122,14 +122,14 @@ arrowL4 :: SequentRule
 arrowL4 = mkSequentRule "L->4"
     ["Gamma, D -> B, => C -> D", "Gamma, B => E"]
     "Gamma, (C -> D) -> B => E"
-negR :: SequentRule -- the best way to do this is to see these in action. You'll get a clear answer then. 
+negR :: SequentRule
 negR = mkSequentRule "R~"
     ["Gamma, A => NotA"]
     "Gamma => ~A"
-negRLoop :: SequentRule -- the best way to do this is to see these in action. You'll get a clear answer then. 
-negRLoop = mkSequentRule "R~"
-    ["Gamma, A => ~A"]
-    "Gamma => ~A"
+-- negRLoop :: SequentRule
+-- negRLoop = mkSequentRule "R~"
+--     ["Gamma, A => ~A"]
+--     "Gamma => ~A"
 negL1 :: SequentRule
 negL1 = mkSequentRule "L~1" 
     []
@@ -171,26 +171,19 @@ mNoninvertibleRules :: [SequentRule]
 mNoninvertibleRules = [orR0, orR1, arrowL4]
 
 iInvertibleRules :: [SequentRule]
-iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3]
+iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3, negR]
 iNoninvertibleRules :: [SequentRule]
-iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5, negR]
-iLoopRules :: [SequentRule]
-iLoopRules = [negRLoop]
--- reason negR is in noninvertibe rules is for it to happen after the other neg rules.
--- this is to avoid infinite loop in compiler case. 
--- the reason for this infinite loop is, I think, when the only thing to draw a contradiciton in Gamma, A is A. 
--- but you get to a point where to solve the A -> ~A case, you need to use R~ on ~A. And so you get an infinite loop. 
+iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5]
 
 data G4Logic = G4Logic {
     invertibleRules :: [SequentRule], 
-    noninvertibleRules :: [SequentRule],
-    loopRules :: [SequentRule]}
+    noninvertibleRules :: [SequentRule]}
 -- order of application should be invertible, then loop, then noninvertible. 
 
 g4mp :: G4Logic
-g4mp = G4Logic mInvertibleRules mNoninvertibleRules []
+g4mp = G4Logic mInvertibleRules mNoninvertibleRules
 g4ip :: G4Logic
-g4ip = G4Logic iInvertibleRules iNoninvertibleRules iLoopRules
+g4ip = G4Logic iInvertibleRules iNoninvertibleRules
 
 -- this unification procedure only works on sets.
 -- would have problem in case of schema set {A -> B, C -> D} if it wasn't for just sets

@@ -68,155 +68,130 @@ replaceNotAInTree sent = applyOverTree (replaceNotAInTree' sent)
 
 compileG4 :: SequentProof -> ProofTree
 compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
-    let p = compilerParseHelper (getStepSubst seqPf) in -- I think lazy eval makes this good :D
+    let p = compilerParseHelper (getStepSubst seqPf) in
     case (seqRuleName rl) of
         "Ax" -> ProofTree (getSuccSent seqpfc) "Assumption" []
         "R&" -> 
             let [aRecCall, bRecCall] = map compileG4 (fromJust subseqpfs) in
-            ProofTree
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                    [bRecCall,
-                    ProofTree (p "B -> (A & B)") "Modus Ponens" 
-                        [aRecCall,
-                        ProofTree (p "A -> (B -> (A & B))") "And Intro" []]]
+            ProofTree (getSuccSent seqpfc) "Modus Ponens"
+                [bRecCall,
+                ProofTree (p "B -> (A & B)") "Modus Ponens" 
+                    [aRecCall,
+                    ProofTree (p "A -> (B -> (A & B))") "And Intro" []]]
         "L&" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let aDerivation = ProofTree 
-                    (p "A") 
-                    "Modus Ponens" 
-                    [(ProofTree (p "A & B") "Assumption" []), (ProofTree (p "(A & B) -> A") "And Elim L" [])] in
-            let bDerivation = ProofTree 
-                    (p "B") 
-                    "Modus Ponens" 
-                    [(ProofTree (p "A & B") "Assumption" []), (ProofTree (p "(A & B) -> B") "And Elim R" [])] in
+            let aDerivation = 
+                    ProofTree (p "A") "Modus Ponens" 
+                        [(ProofTree (p "A & B") "Assumption" []), 
+                        ProofTree (p "(A & B) -> A") "And Elim L" []] in
+            let bDerivation = 
+                    ProofTree (p "B") "Modus Ponens" 
+                        [(ProofTree (p "A & B") "Assumption" []),
+                        ProofTree (p "(A & B) -> B") "And Elim R" []] in
             composeDerivations (mkSentSubsts [aDerivation, bDerivation]) recCall
         "Rv0" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            ProofTree 
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                    [recCall,
-                    ProofTree (p "A -> (A v B)") "Or Intro L" []]
+            ProofTree (getSuccSent seqpfc) "Modus Ponens"
+                [recCall,
+                ProofTree (p "A -> (A v B)") "Or Intro L" []]
         "Rv1" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            ProofTree 
-                (getSuccSent seqpfc)
-                "Modus Ponens"
-                    [recCall,
-                    ProofTree (p "B -> (A v B)") "Or Intro R" []]
+            ProofTree (getSuccSent seqpfc) "Modus Ponens"
+                [recCall,
+                ProofTree (p "B -> (A v B)") "Or Intro R" []]
         "Lv" ->
             let [aRecCall, bRecCall] = map compileG4 (fromJust subseqpfs) in
-            ProofTree 
-                (getSuccSent seqpfc)
-                "Modus Ponens"
+            ProofTree (getSuccSent seqpfc) "Modus Ponens"
                 [ProofTree (p "A v B") "Assumption" [],
                 ProofTree (p "(A v B) -> C") "Modus Ponens"
                     [bRecCall,
                     ProofTree (p "(B -> C) -> ((A v B) -> C)") "Modus Ponens"
                         [aRecCall,
                         ProofTree (p "(A -> C) -> ((B -> C) -> ((A v B) -> C))") "Or Elim" []]]]
-        "R->" -> -- think about: could instead have it collect deduction args?
-        -- you would use makeDeductionsFunc, and have this always return a list of deduction args you're keeping track of
+        "R->" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             let [deductionArg] = getNEmbeddedAntecedents cond 1 (getSuccSent seqpfc) in
             useDeduction deductionArg recCall
         "L->1" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let bDerivation = ProofTree
-                    (p "B")
-                    "Modus Ponens"
-                    [ProofTree (p "A") "Assumption" [],
-                    ProofTree (p "A -> B") "Assumption" []] in
+            let bDerivation = 
+                    ProofTree (p "B") "Modus Ponens"
+                        [ProofTree (p "A") "Assumption" [],
+                        ProofTree (p "A -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) recCall
         "L->2" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let curriedDerivation = ProofTree
-                    (p "C -> (D -> B)")
-                    "Modus Ponens"
-                    [ProofTree (p "(C & D) -> B") "Assumption" [],
-                    ProofTree (p "((C & D) -> B) -> (C -> (D -> B))") "citing currying (from minimal)" []] in
+            let curriedDerivation = 
+                    ProofTree (p "C -> (D -> B)") "Modus Ponens"
+                        [ProofTree (p "(C & D) -> B") "Assumption" [],
+                        ProofTree (p "((C & D) -> B) -> (C -> (D -> B))") "citing currying (from minimal)" []] in
             composeDerivations (mkSentSubsts [curriedDerivation]) recCall
         "L->3" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let cbDerivation = ProofTree
-                    (p "C -> B")
-                    "Modus Ponens"
+            let cbDerivation = 
+                    ProofTree (p "C -> B") "Modus Ponens"
                         [ProofTree (p "(C v D) -> B") "Assumption" [],
                         ProofTree (p "((C v D) -> B) -> (C -> B)") "citing or_antecedent_left (from minimal)" []] in
-            let dbDerivation = ProofTree 
-                    (p "D -> B")
-                    "Modus Ponens"
+            let dbDerivation = 
+                    ProofTree (p "D -> B") "Modus Ponens"
                         [ProofTree (p "(C v D) -> B") "Assumption" [],
                         ProofTree (p "((C v D) -> B) -> (D -> B)") "citing or_antecedent_right (from minimal)" []] in
             composeDerivations (mkSentSubsts [cbDerivation, dbDerivation]) recCall
         "L->4" ->
             let [cdRecCall, rootRecCall] = map compileG4 (fromJust subseqpfs) in
-            let bUnderDDerivation = ProofTree
-                    (p "B")
-                    "Modus Ponens"
-                    [ProofTree (p "C -> D") "Modus Ponens"
-                        [ProofTree (p "D") "Assumption" [],
-                        ProofTree (p "D -> (C -> D)") "Simp" []],
-                    ProofTree (p "(C -> D) -> B") "Assumption" []] in
+            let bUnderDDerivation = 
+                    ProofTree (p "B") "Modus Ponens"
+                        [ProofTree (p "C -> D") "Modus Ponens"
+                            [ProofTree (p "D") "Assumption" [],
+                            ProofTree (p "D -> (C -> D)") "Simp" []],
+                        ProofTree (p "(C -> D) -> B") "Assumption" []] in
             let dbDerivation = useDeduction (p "D") bUnderDDerivation in
             let cdDerivation = composeDerivations (mkSentSubsts [dbDerivation]) cdRecCall in
-            let bDerivation = ProofTree 
-                    (p "B")
-                    "Modus Ponens"
-                    [cdDerivation,
-                    ProofTree (p "(C -> D) -> B") "Assumption" []] in
+            let bDerivation = 
+                    ProofTree (p "B") "Modus Ponens"
+                        [cdDerivation,
+                        ProofTree (p "(C -> D) -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) rootRecCall
         "L->5" -> -- ~C -> B
             let [nCDerivation, eDerivation] = map compileG4 (fromJust subseqpfs) in
             let bDerivation = 
-                    ProofTree 
-                    (p "B") "Modus Ponens"
+                    ProofTree (p "B") "Modus Ponens"
                         [nCDerivation,
                         ProofTree (p "~C -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) eDerivation
         "R~" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            ProofTree
-                (p "~A")
-                "Modus Ponens"
+            ProofTree (p "~A") "Modus Ponens"
                     [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
                     ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
         "L~1" -> 
-            ProofTree 
-                (p "E")
-                "Modus Ponens"
+            ProofTree (p "E") "Modus Ponens"
                 [ProofTree (p "A") "Assumption" [],
                 ProofTree (p "A -> E") "Modus Ponens"
                     [ProofTree (p "~A") "Assumption" [],
                     ProofTree (p "~A -> (A -> E)") "Negation Elim" []]]
         "L~2" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let cndDerivation = ProofTree
-                    (p "C -> ~D")
-                    "Modus Ponens"
-                    [ProofTree (p "~(C & D)") "Assumption" [],
-                    ProofTree (p "~(C & D) -> (C -> ~D)") "citing neg_and (from intuitionistic)" []] in
+            let cndDerivation = 
+                    ProofTree (p "C -> ~D") "Modus Ponens"
+                        [ProofTree (p "~(C & D)") "Assumption" [],
+                        ProofTree (p "~(C & D) -> (C -> ~D)") "citing neg_and (from intuitionistic)" []] in
             composeDerivations (mkSentSubsts [cndDerivation]) recCall
         "L~3" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let nCDerivation = ProofTree
-                    (p "~C")
-                    "Modus Ponens"
+            let nCDerivation = 
+                    ProofTree (p "~C") "Modus Ponens"
                         [ProofTree (p "~(C v D)") "Assumption" [],
                         ProofTree (p "~(C v D) -> ~C") "applying neg_or_left (from intuitionistic)" []] in
-            let nDDerivation = ProofTree
-                    (p "~D")
-                    "Modus Ponens"
+            let nDDerivation = 
+                    ProofTree (p "~D") "Modus Ponens"
                         [ProofTree (p "~(C v D)") "Assumption" [],
                         ProofTree (p "~(C v D) -> ~D") "applying neg_or_right (from intuitionistic)" []] in
             composeDerivations (mkSentSubsts [nCDerivation, nDDerivation]) recCall
         "L~4" -> -- ~(C -> D)
             let [recCall] = map compileG4 (fromJust subseqpfs) in 
             let nDDerivation = 
-                    ProofTree
-                    (p "~D")
-                    "Modus Ponens"
+                    ProofTree (p "~D") "Modus Ponens"
                         [ProofTree (p "~(C -> D)") "Assumption" [],
                         ProofTree (p "~(C -> D) -> ~D") "Modus Ponens" 
                             [ProofTree (p "D -> (C -> D)") "Simp" [],
@@ -229,15 +204,12 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                     ProofTree (p "~(C -> D) -> ((C -> D) -> E)") "Negation Elim" []]]
         "L~5" -> -- is kinda similar to the L~4 case
             let [recCall] = map compileG4 (fromJust subseqpfs) in -- a derivation of ~C
-             ProofTree
-             (p "E")
-             "Modus Ponens"
+            ProofTree (p "E") "Modus Ponens"
                 [recCall,
                 ProofTree (p "~C -> E") "Modus Ponens"
                     [ProofTree (p "~~C") "Assumption" [],
                     ProofTree (p "~~C -> (~C -> E)") "Negation Elim" []]]
         "NOT PROVABLE" -> error "trying to compile a proof for an unprovable statement"
-
 
 g4TheoremSearch :: G4Logic -> Sentence -> SequentProof
 g4TheoremSearch g4Logic sent = g4ProofSearch g4Logic (Sequent Set.empty (Set.fromList [sent]))
@@ -303,8 +275,9 @@ useProofSearch = applyOverTree useProofSearch'
 --             pfJustification = "And Elim R", 
 --             subProofs = []}]},ProofTree {pfContent = (~(A) -> (A -> NotA)), pfJustification = "Negation Elim", subProofs = []}]}]}
 
-oldCase :: SequentProof -> (String -> Sentence) -> ProofTree
-oldCase (SequentProof seqpfc seqpfj subseqpfs) p = 
+-- keeping for posterity
+oldCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
+oldCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
     case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
                 Nothing -> error ("R~ MESSED UP\n" ++ show seqpfc)
                 Just (x, xSeqDer, nxSeqDer) -> 
@@ -320,8 +293,8 @@ oldCase (SequentProof seqpfc seqpfj subseqpfs) p =
                             [axDer,
                             ProofTree negIntro "Negation Intro" []]]
 
-newCase :: SequentProof -> (String -> Sentence) -> ProofTree
-newCase (SequentProof seqpfc seqpfj subseqpfs) p = 
+newCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
+newCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
     let [recCall] = map compileG4 (fromJust subseqpfs) in
         ProofTree
             (p "~A")

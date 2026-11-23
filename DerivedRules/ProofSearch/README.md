@@ -1,7 +1,7 @@
 # Proof Search
 
 ## Overview
-Proof search is semidecidable in axiomatic systems. This is not good enough. However, it is decidable in sequent systems, and there are particularly effective decision procedures for sequent systems (e.g. G4ip), and (crucially) you can translate sequent proofs to axiomatic proofs (meaning I don't have to give up the "everything is checked in Datalog" aspect of sponge). 
+Proof search is semidecidable in axiomatic systems. This is not good enough. However, it is decidable in sequent systems, and there are simple and effective decision procedures for sequent systems (e.g. G4ip), and (crucially) you can translate sequent proofs to axiomatic proofs (meaning I don't have to give up the "everything is checked in Datalog" aspect of sponge). 
 
 So this feature is proof search in a version of G4ip, together with a compiler from sequent proofs in G4ip to axiomatic systems (to the ND-esque axiomatization with primitive negation that is currently the base of nearly all the logics that have theorems proved for them in sponge right now). 
 
@@ -19,13 +19,18 @@ Some other design choices for the sequent system that differ from the aforementi
 
 ## Details on the compiler
 The compiler is rather straight forward, and takes advantage of the ND-style axiomatization that has been used for minimal/intuitionistic/classical logic so far. 
+Nearly all cases take advantage of what is essentially partial evaluation via derivation composition. 
+Negation is the only place there's interesting discussion (beyond the partial evaluation). 
 
+### Negation
 Here the choice of negation axioms picked finally becomes relevant. 
 Picking `~P -> (P -> Q)` (called `Negation Elim` in the code) allows for easy compiler cases of `L~1`, `L~4`, and `L~5`. 
 The choice of negation introduction axiom is a little harder. `(P -> Q) -> ((P -> ~Q) -> ~P)` (`Negation Intro` in the code) mirrors the (intuitionistic) ND rule for negation, so is a cohesive choice, given the rest of the axiomatization. 
-However, it results in a compiler case for `R~` that does not use the recursive case, instead searching in the current antecedent `Gamma` of the sequent for a sentence `X` such that `Gamma, A => X` and `Gamma, A => ~X`. (I'm not sure how I'd even use the recursive case anyways, since it has an empty succedent.) 
-Another option is to use `(P -> ~P) -> ~P`, called `reductio` in the code. This would actually be nicer, since it would result in only one nonconstructive case. However, the proof from `Negation Intro` to `reductio` is quite immediate (7 lines in datalog), so I am not convinced it would be best to use it as an axiom if in other cases `Negation Intro` results in shorter proofs than `reductio`. (The two are equivalent though, using minimal logic and `Negation Elim` as a base.)
+However, it results in a compiler case for `R~` that does not use the recursive case, instead searching in the current antecedent `Gamma` of the sequent for a sentence `X` such that `Gamma, A => X` and `Gamma, A => ~X`. 
+Such a pair of sequents are guaranteed to exist, particularly (and rather trivially) with `X := A`. 
 
-Ultimately the choice of second negation axiom depends not only on what makes this compiler case nice but also what makes other often-used proofs, like contraposition, short. 
+This means that, in the general case, this reduces to `reductio` (`(P -> ~P) -> ~P`), since the proofsearch expressed as a sequent rule (`Gamma, A => ~A / Gamma => ~A`) is just the axiom of `reductio`. 
 
-I have tested this case extensively in the `Tests.hs` file in the `DerivedRules/ProofSearch` directory, and I am pretty sure it is sound (though I have not formally verified it). 
+This actually gets rid of the need for proof search. The sequent rule just above is also completely valid, and trivially invertible, so we're all good on those sides of things. It would, however, require looping in the proof search, getting rid of the beauty of G4ip. We can get around this by replacing `~A` in the premise with a placeholder `NotA` that at compile time we replace with `~A`. This is what happens in the code now. 
+
+I've left `Negation Intro` as the negation axiom for intuitionistic logic because it gives some pretty short derivations for commonly used derived rules/theorems like contraposition, and the derivation from `Negation Intro` to `reductio` is rather short (7 datalog lines). Would be interesting to more rigorously check advantages/disadvantages of using one or the other by seeing if `reductio` has short proofs of e.g. contraposition. 
