@@ -35,8 +35,7 @@ getSubFormulas s@(OpNode op args) =
     Set.union (Set.singleton s) (Set.unions (map getSubFormulas args))
 
 getAllSubFormulas :: Set.Set Sentence -> Set.Set Sentence
-getAllSubFormulas gamma = 
-    Set.unions (Set.map getSubFormulas gamma)
+getAllSubFormulas gamma = Set.unions (Set.map getSubFormulas gamma)
 
 derivesBot :: Set.Set Sentence -> Sentence -> Sentence -> Maybe (Sentence, SequentProof, SequentProof)
 derivesBot gamma a tgtX =
