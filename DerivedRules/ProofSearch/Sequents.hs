@@ -76,7 +76,8 @@ mkSequentRule :: String -> [String] -> String -> SequentRule
 mkSequentRule rn prems concl = SequentRule rn (map parseSequent prems) (parseSequent concl)
 
 -- particular choice of rules is mix of Troelstra book and Dyckoff
--- important modifications are ax and arrowL1. Both changes are admissible in 
+-- important modifications are ax and arrowL1. Both changes are admissible
+-- details are in README of ProofSearch
 ax :: SequentRule
 ax = mkSequentRule "Ax" 
     []
@@ -123,12 +124,16 @@ arrowL4 = mkSequentRule "L->4"
     "Gamma, (C -> D) -> B => E"
 negR :: SequentRule -- the best way to do this is to see these in action. You'll get a clear answer then. 
 negR = mkSequentRule "R~"
-    ["Gamma, A => VOID"]
+    ["Gamma, A => NotA"]
+    "Gamma => ~A"
+negRLoop :: SequentRule -- the best way to do this is to see these in action. You'll get a clear answer then. 
+negRLoop = mkSequentRule "R~"
+    ["Gamma, A => ~A"]
     "Gamma => ~A"
 negL1 :: SequentRule
 negL1 = mkSequentRule "L~1" 
     []
-    "Gamma, A, ~A => E" -- originally propositional restriction but should also be good like this
+    "Gamma, A, ~A => E"
 negL2 :: SequentRule
 negL2 = mkSequentRule "L~2"
     ["Gamma, C -> ~D => E"]
@@ -149,10 +154,16 @@ negL5 :: SequentRule
 negL5 = mkSequentRule "L~5"
     ["Gamma => ~C"]
     "Gamma, ~~C => E"
--- VOID can be thought of as a metasymbol. It would represent the empty set.
--- However, it is currently an object language constant in the proof search, 
--- Meaning the proof search isn't the moral solution to primitive negation
--- It is however though the only immoral thing left I think
+-- NotA can be thought of as a metasymbol.
+-- Looking _only_ at the sequent system, it can be thought of as the empty set. 
+-- (This is not formally the case in the code though.)
+-- However, you can think of NotA as ~A too and you get a sound rule that is useful for the compiler case for R~. 
+-- Replacing NotA with ~A in the rule you get a version of reductio: (A -> ~A) -> ~A. 
+-- The R~ case would then reduce to that, which has a rather short proof (either immediate or 7 lines, depending on choice of axiomatization).
+-- However, if we used that in the sequent proof search, we'd have a rule that loops. 
+-- we can avoid doing the loop this way because the rule is also sound with an empty succedent (by translation of Bot). 
+-- So we can use the rule like this, and then when it comes time to compile, replace NotA with ~A. 
+-- For the sequent system by itself, this is immoral, but the compiler I think justifies this for this use case
 
 mInvertibleRules :: [SequentRule]
 mInvertibleRules = [ax, andL, arrowR, arrowL1, arrowL2, arrowL3, andR, orL]
@@ -163,6 +174,8 @@ iInvertibleRules :: [SequentRule]
 iInvertibleRules = mInvertibleRules ++ [negL1, negL2, negL3]
 iNoninvertibleRules :: [SequentRule]
 iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5, negR]
+iLoopRules :: [SequentRule]
+iLoopRules = [negRLoop]
 -- reason negR is in noninvertibe rules is for it to happen after the other neg rules.
 -- this is to avoid infinite loop in compiler case. 
 -- the reason for this infinite loop is, I think, when the only thing to draw a contradiciton in Gamma, A is A. 
@@ -170,12 +183,14 @@ iNoninvertibleRules = mNoninvertibleRules ++ [negL4, negL5, arrowL5, negR]
 
 data G4Logic = G4Logic {
     invertibleRules :: [SequentRule], 
-    noninvertibleRules :: [SequentRule]}
+    noninvertibleRules :: [SequentRule],
+    loopRules :: [SequentRule]}
+-- order of application should be invertible, then loop, then noninvertible. 
 
 g4mp :: G4Logic
-g4mp = G4Logic mInvertibleRules mNoninvertibleRules
+g4mp = G4Logic mInvertibleRules mNoninvertibleRules []
 g4ip :: G4Logic
-g4ip = G4Logic iInvertibleRules iNoninvertibleRules
+g4ip = G4Logic iInvertibleRules iNoninvertibleRules iLoopRules
 
 -- this unification procedure only works on sets.
 -- would have problem in case of schema set {A -> B, C -> D} if it wasn't for just sets
@@ -267,7 +282,7 @@ useRule (SequentRule rn prems concl) seq =
         Nothing -> Nothing
         Just subst -> 
             let gamma = getGamma concl seq subst in
-                Just (map (instantiateSequent gamma (("VOID", Atom "VOID"):subst)) prems)
+                Just (map (instantiateSequent gamma (("NotA", Atom "NotA"):subst)) prems)
 
 tryInvertibleRules:: [SequentRule] -> Sequent -> Maybe (SequentRule, [Sequent])
 tryInvertibleRules [] _ = Nothing
@@ -277,6 +292,12 @@ tryInvertibleRules (rl:rls) seq = case useRule rl seq of
 
 invertibleStep :: G4Logic -> Sequent -> Maybe (SequentRule, [Sequent])
 invertibleStep g4Logic = tryInvertibleRules (invertibleRules g4Logic)
+
+-- tryLoopRule :: G4Logic -> SequentRule -> Sequent -> Maybe (SequentRule, [Sequent])
+-- tryLoopRule g4Logic rl seq =
+--     -- try the rule. 
+--     -- if for the result of trying the rule, everything in the original sequent (ant, succ) is in the new (ant, succ), then Nothing
+--     -- else use it
 
 tryNoninvertRule :: G4Logic -> SequentRule -> Sequent -> Maybe SequentProof
 tryNoninvertRule g4Logic rl seq = case useRule rl seq of

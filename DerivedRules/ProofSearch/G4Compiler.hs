@@ -52,7 +52,20 @@ derivesBot gamma a tgtX =
 getBotDerivations :: Set.Set Sentence -> Sentence -> Set.Set (Sentence, SequentProof, SequentProof)
 getBotDerivations gamma a =
     Set.map fromJust (Set.filter (/= Nothing) (Set.map (derivesBot gamma a) (getAllSubFormulas (Set.union gamma (Set.singleton a)))))
-    
+
+replaceNotA :: Sentence -> Sentence -> Sentence
+replaceNotA replacement (Atom "NotA") = replacement
+replaceNotA replacement (Atom a) = Atom a
+replaceNotA replacement (OpNode op args) =
+    OpNode op (map (replaceNotA replacement) args)
+
+replaceNotAInTree' :: Sentence -> ProofTree -> ProofTree
+replaceNotAInTree' sent (ProofTree pfc pfj spfs) =
+    ProofTree (replaceNotA sent pfc) pfj spfs
+
+replaceNotAInTree :: Sentence -> ProofTree -> ProofTree
+replaceNotAInTree sent = applyOverTree (replaceNotAInTree' sent)
+
 compileG4 :: SequentProof -> ProofTree
 compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
     let p = compilerParseHelper (getStepSubst seqPf) in -- I think lazy eval makes this good :D
@@ -162,26 +175,13 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                         [nCDerivation,
                         ProofTree (p "~C -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) eDerivation
-        "R~" -> -- old case here because it was good for debugging
-            -- ProofTree 
-            -- (p "~A")
-            -- "MYSTERY DERIVATION"
-            -- (map compileG4 (fromJust subseqpfs))
-            -- -- we don't actually use the recursive case. Bad? 
-            case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
-                Nothing -> error ("R~ MESSED UP\n" ++ show seqpfc)
-                Just (x, xSeqDer, nxSeqDer) -> 
-                    let negIntro = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negI) in
-                    let axDer = useDeduction (p "A") (compileG4 xSeqDer) in
-                    let anxDer = useDeduction (p "A") (compileG4 nxSeqDer) in 
-                    let consequentOfNegElim = (args negIntro) !! 1 in
-                    ProofTree 
-                        (p "~A")
-                        "Modus Ponens"
-                        [anxDer,
-                        ProofTree consequentOfNegElim "Modus Ponens"
-                            [axDer,
-                            ProofTree negIntro "Negation Intro" []]]
+        "R~" -> 
+            let [recCall] = map compileG4 (fromJust subseqpfs) in
+            ProofTree
+                (p "~A")
+                "Modus Ponens"
+                    [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
+                    ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
         "L~1" -> 
             ProofTree 
                 (p "E")
@@ -277,3 +277,54 @@ useProofSearch' pfTree =
 
 useProofSearch :: ProofTree -> ProofTree
 useProofSearch = applyOverTree useProofSearch'
+
+
+-- ProofTree {pfContent = NotA, 
+-- pfJustification = "Modus Ponens", 
+-- subProofs = 
+--     [ProofTree {pfContent = A, 
+--     pfJustification = "Modus Ponens", 
+--     subProofs = 
+--         [ProofTree {pfContent = (A & ~(A)), 
+--         pfJustification = "Assumption", 
+--         subProofs = []},
+--         ProofTree {pfContent = ((A & ~(A)) -> A), 
+--         pfJustification = "And Elim L", subProofs = []}]},
+--     ProofTree {pfContent = (A -> NotA), 
+--     pfJustification = "Modus Ponens", 
+--     subProofs = 
+--         [ProofTree {pfContent = ~(A), 
+--         pfJustification = "Modus Ponens", 
+--         subProofs = 
+--             [ProofTree {pfContent = (A & ~(A)), 
+--             pfJustification = "Assumption", 
+--             subProofs = []},
+--             ProofTree {pfContent = ((A & ~(A)) -> ~(A)), 
+--             pfJustification = "And Elim R", 
+--             subProofs = []}]},ProofTree {pfContent = (~(A) -> (A -> NotA)), pfJustification = "Negation Elim", subProofs = []}]}]}
+
+oldCase :: SequentProof -> (String -> Sentence) -> ProofTree
+oldCase (SequentProof seqpfc seqpfj subseqpfs) p = 
+    case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
+                Nothing -> error ("R~ MESSED UP\n" ++ show seqpfc)
+                Just (x, xSeqDer, nxSeqDer) -> 
+                    let negIntro = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negI) in
+                    let axDer = useDeduction (p "A") (compileG4 xSeqDer) in
+                    let anxDer = useDeduction (p "A") (compileG4 nxSeqDer) in 
+                    let consequentOfNegElim = (args negIntro) !! 1 in
+                    ProofTree 
+                        (p "~A")
+                        "Modus Ponens"
+                        [anxDer,
+                        ProofTree consequentOfNegElim "Modus Ponens"
+                            [axDer,
+                            ProofTree negIntro "Negation Intro" []]]
+
+newCase :: SequentProof -> (String -> Sentence) -> ProofTree
+newCase (SequentProof seqpfc seqpfj subseqpfs) p = 
+    let [recCall] = map compileG4 (fromJust subseqpfs) in
+        ProofTree
+            (p "~A")
+            "Modus Ponens"
+                [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
+                ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]

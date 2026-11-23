@@ -1,7 +1,7 @@
-Theorem: |- (~A -> A) -> A
+Theorem: |- ~~((~C -> B) -> (C v B))
 
 Proof
-1. |- (~A -> A) -> A  by classical result
+1. |- ~~((~C -> B) -> (C v B))  by classical result
 QED
 1. |- (A -> B) -> (~B -> ~A) by classical result
 QED
