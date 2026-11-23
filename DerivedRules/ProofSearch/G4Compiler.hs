@@ -234,9 +234,7 @@ cProofSearch sent =
             case iProofSearch (OpNode negOp [OpNode negOp [sent]]) of
                 Nothing -> error ("seems " ++ show sent ++ " is not a classical theorem")
                 Just dnSearch -> 
-                    ProofTree 
-                    (sent)
-                    "Modus Ponens"
+                    ProofTree (sent) "Modus Ponens"
                         [dnSearch,
                         ProofTree (applySubst [("P", sent)] (axiomContent dne)) "DNE" []]
 
