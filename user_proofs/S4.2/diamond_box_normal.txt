@@ -11,7 +11,7 @@ Proof
 6. |- MLP -> MLLP                                   by K reasoning: 5
 7. |- MLLP -> LMLP                                  by Convergence Axiom
 8. |- MLP -> LMLP                                   by hypothetical_syllogism (from minimal): 6 7
-9. |- ML(LP -> LQ) -> (MLP -> MLQ)                 by weakening: 8 4
+9. |- ML(LP -> LQ) -> (MLP -> MLQ)                  by weakening: 8 4
 
 10. |- L(P -> Q) -> (LP -> LQ)                      by K Axiom
 11. |- LL(P -> Q) -> L(LP -> LQ)                    by K reasoning: 10

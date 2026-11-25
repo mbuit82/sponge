@@ -1,0 +1,11 @@
+#include "../../../datalog_engines/intuitionistic.dl"
+
+Goal($Conditional($Conditional($Atom("P"), $Not($Atom("P"))), $Not($Atom("P")))).
+
+Line(1, $Conditional($Conditional($Atom("P"), $Atom("P")), $Conditional($Conditional($Atom("P"), $Not($Atom("P"))), $Not($Atom("P")))), "Negation Intro", 0, 0).
+Line(2, $Conditional($Conditional($Atom("P"), $Conditional($Conditional($Atom("P"), $Atom("P")), $Atom("P"))), $Conditional($Conditional($Atom("P"), $Conditional($Atom("P"), $Atom("P"))), $Conditional($Atom("P"), $Atom("P")))), "Frege", 0, 0).
+Line(3, $Conditional($Atom("P"), $Conditional($Conditional($Atom("P"), $Atom("P")), $Atom("P"))), "Simp", 0, 0).
+Line(4, $Conditional($Conditional($Atom("P"), $Conditional($Atom("P"), $Atom("P"))), $Conditional($Atom("P"), $Atom("P"))), "Modus Ponens", 3, 2).
+Line(5, $Conditional($Atom("P"), $Conditional($Atom("P"), $Atom("P"))), "Simp", 0, 0).
+Line(6, $Conditional($Atom("P"), $Atom("P")), "Modus Ponens", 5, 4).
+Line(7, $Conditional($Conditional($Atom("P"), $Not($Atom("P"))), $Not($Atom("P"))), "Modus Ponens", 6, 1).

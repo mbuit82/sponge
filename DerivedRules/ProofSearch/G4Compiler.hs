@@ -1,6 +1,6 @@
 module DerivedRules.ProofSearch.G4Compiler where
 
-import Core 
+import Core
 import Parse.Sentences
 import Defs.Operators
 import Defs.Axioms
@@ -28,29 +28,6 @@ compilerParseHelper subst str = parseWithSubst [andOp, orOp, cond, negOp] [] str
 
 mkSentSubsts :: [ProofTree] -> [(Sentence, ProofTree)]
 mkSentSubsts = map (\pft -> (pfContent pft, pft))
-
-getSubFormulas :: Sentence -> Set.Set Sentence
-getSubFormulas s@(Atom a) = Set.singleton s
-getSubFormulas s@(OpNode op args) = 
-    Set.union (Set.singleton s) (Set.unions (map getSubFormulas args))
-
-getAllSubFormulas :: Set.Set Sentence -> Set.Set Sentence
-getAllSubFormulas gamma = Set.unions (Set.map getSubFormulas gamma)
-
-derivesBot :: Set.Set Sentence -> Sentence -> Sentence -> Maybe (Sentence, SequentProof, SequentProof)
-derivesBot gamma a tgtX =
-        let posResult = g4ProofSearch g4ip (Sequent (Set.union gamma (Set.singleton a)) (Set.singleton tgtX)) in
-        case checkSeqProof posResult of
-            False -> Nothing
-            True -> 
-                let negResult = g4ProofSearch g4ip (Sequent (Set.union gamma (Set.singleton a)) (Set.singleton (OpNode negOp [tgtX]))) in
-                case checkSeqProof negResult of
-                    False -> Nothing
-                    True -> Just (tgtX, posResult, negResult)
-
-getBotDerivations :: Set.Set Sentence -> Sentence -> Set.Set (Sentence, SequentProof, SequentProof)
-getBotDerivations gamma a =
-    Set.map fromJust (Set.filter (/= Nothing) (Set.map (derivesBot gamma a) (getAllSubFormulas (Set.union gamma (Set.singleton a)))))
 
 replaceNotA :: Sentence -> Sentence -> Sentence
 replaceNotA replacement (Atom "NotA") = replacement
@@ -119,6 +96,16 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                         ProofTree (p "A -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) recCall
         "L->2" ->
+            -- what would be nice here is to leave the citation of currying as an open term, 
+            -- but only leaving one deduction open
+            -- I wonder if that could be another optimization pass? 
+            -- basically you want to check if you are doing modus ponens P -> Q, P with a P that is an assumption and a P -> Q that was formed from an open term, then you want to eliminate that detour
+            -- this is basically normalization
+            -- this issue is that you don't have a representation of open terms
+            -- are these two differen things? normalization would be eliminating successive MP and deduction occurrences. 
+            -- the only way I can think of doing this I'm not sure if it's nice:
+            -- it would be to have a prooftree node that represents use of deduction. 
+            -- that way you could literally have successive intro/elim terms you can syntactically eliminate. 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             let curriedDerivation = 
                     ProofTree (p "C -> (D -> B)") "Modus Ponens"
@@ -214,8 +201,6 @@ g4TheoremSearch :: G4Logic -> Sentence -> SequentProof
 g4TheoremSearch g4Logic sent = g4ProofSearch g4Logic (Sequent Set.empty (Set.fromList [sent]))
 
 proofSearch :: G4Logic -> Sentence -> Maybe ProofTree
--- proofSearch g4Logic = compileG4 . (g4TheoremSearch g4Logic)
--- with classical stuff it'd look something like this
 proofSearch g4Logic sent =
     let search = g4TheoremSearch g4Logic sent in
     if checkSeqProof search == True
@@ -237,42 +222,36 @@ cProofSearch sent =
                         [dnSearch,
                         ProofTree (applySubst [("P", sent)] (axiomContent dne)) "DNE" []]
 
--- TODO: as soon as you finish the compiler, you can change this to g4ip
 useProofSearch' :: ProofTree -> ProofTree
-useProofSearch' pfTree =
-    if (pfJustification pfTree) == "classical result"
-        then cProofSearch (pfContent pfTree)
-        else pfTree
+useProofSearch' pfTree@(ProofTree pfc pfj _) =
+    case pfj of
+        "classical result" -> cProofSearch pfc
+        "intuitionistic result" -> 
+            case iProofSearch pfc of
+                Nothing -> error ("seems " ++ show pfc ++ " is not an intuitionistic theorem")
+                Just pf -> pf
+        _ -> pfTree
 
 useProofSearch :: ProofTree -> ProofTree
 useProofSearch = applyOverTree useProofSearch'
 
+-- ProofTree {pfContent = ~((P & ~(P))), pfJustification = "Negation Intro", subProofs = [
+--         ProofTree {pfContent = ((P & ~(P)) -> P), pfJustification = "And Elim L", subProofs = []},
+--         ProofTree {pfContent = ((P & ~(P)) -> ~(P)), pfJustification = "And Elim R", subProofs = []}]}
 
--- ProofTree {pfContent = NotA, 
--- pfJustification = "Modus Ponens", 
--- subProofs = 
---     [ProofTree {pfContent = A, 
---     pfJustification = "Modus Ponens", 
---     subProofs = 
---         [ProofTree {pfContent = (A & ~(A)), 
---         pfJustification = "Assumption", 
---         subProofs = []},
---         ProofTree {pfContent = ((A & ~(A)) -> A), 
---         pfJustification = "And Elim L", subProofs = []}]},
---     ProofTree {pfContent = (A -> NotA), 
---     pfJustification = "Modus Ponens", 
---     subProofs = 
---         [ProofTree {pfContent = ~(A), 
---         pfJustification = "Modus Ponens", 
---         subProofs = 
---             [ProofTree {pfContent = (A & ~(A)), 
---             pfJustification = "Assumption", 
---             subProofs = []},
---             ProofTree {pfContent = ((A & ~(A)) -> ~(A)), 
---             pfJustification = "And Elim R", 
---             subProofs = []}]},ProofTree {pfContent = (~(A) -> (A -> NotA)), pfJustification = "Negation Elim", subProofs = []}]}]}
+-- ProofTree {pfContent = (~((A v B)) -> ~(B)), pfJustification = "applying contrapositive_forward (from intuitionistic)", subProofs = [
+--     ProofTree {pfContent = (B -> (A v B)), pfJustification = "Or Intro R", subProofs = []}]}
 
 -- keeping for posterity
+newCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
+newCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
+    let [recCall] = map compileG4 (fromJust subseqpfs) in
+        ProofTree
+            (p "~A")
+            "Modus Ponens"
+                [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
+                ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
+
 oldCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
 oldCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
     case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
@@ -290,11 +269,25 @@ oldCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p =
                             [axDer,
                             ProofTree negIntro "Negation Intro" []]]
 
-newCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
-newCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
-    let [recCall] = map compileG4 (fromJust subseqpfs) in
-        ProofTree
-            (p "~A")
-            "Modus Ponens"
-                [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
-                ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
+getSubFormulas :: Sentence -> Set.Set Sentence
+getSubFormulas s@(Atom a) = Set.singleton s
+getSubFormulas s@(OpNode op args) = 
+    Set.union (Set.singleton s) (Set.unions (map getSubFormulas args))
+
+getAllSubFormulas :: Set.Set Sentence -> Set.Set Sentence
+getAllSubFormulas gamma = Set.unions (Set.map getSubFormulas gamma)
+
+derivesBot :: Set.Set Sentence -> Sentence -> Sentence -> Maybe (Sentence, SequentProof, SequentProof)
+derivesBot gamma a tgtX =
+        let posResult = g4ProofSearch g4ip (Sequent (Set.union gamma (Set.singleton a)) (Set.singleton tgtX)) in
+        case checkSeqProof posResult of
+            False -> Nothing
+            True -> 
+                let negResult = g4ProofSearch g4ip (Sequent (Set.union gamma (Set.singleton a)) (Set.singleton (OpNode negOp [tgtX]))) in
+                case checkSeqProof negResult of
+                    False -> Nothing
+                    True -> Just (tgtX, posResult, negResult)
+
+getBotDerivations :: Set.Set Sentence -> Sentence -> Set.Set (Sentence, SequentProof, SequentProof)
+getBotDerivations gamma a =
+    Set.map fromJust (Set.filter (/= Nothing) (Set.map (derivesBot gamma a) (getAllSubFormulas (Set.union gamma (Set.singleton a)))))
