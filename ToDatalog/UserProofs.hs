@@ -44,7 +44,7 @@ compileDatalogProof proofName proofGoal proofLogic proofLines =
 userToDatalog :: String -> String -> IO ()
 userToDatalog logicName pfName = do
     (goal, pfTree) <- getHaskellProof logicName pfName
-    compileDatalogProof pfName goal (getLogic logicName) ((pruneProofTree . proofTreeToLines) pfTree)
+    compileDatalogProof pfName goal (getLogic logicName) ((proofTreeToLines) pfTree)
 
 main :: IO ()
 main = doFunc userToDatalog

@@ -20,6 +20,10 @@ applyPfs pfTree (spf:rem) =
     where 
         [_, consq] = args (pfContent pfTree)
 
+mkSentSubsts :: [ProofTree] -> [(Sentence, ProofTree)]
+mkSentSubsts = map (\pft -> (pfContent pft, pft))
+
+
 
 -- are used for conditionals in strengthening and K derived rules, but are more general processes so leaving here
 getNEmbeddedAntecedents :: Operator -> Int -> Sentence -> [Sentence]
