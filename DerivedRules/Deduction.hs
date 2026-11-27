@@ -4,11 +4,12 @@ import Core
 import Parse.Sentences
 
 import Defs.Operators
+import Defs.Rules
 
 import DerivedRules.Utils
 
 import qualified Data.Map as Map
-
+import Data.Maybe
 
 hypCaseDerivedRule :: ProofTree -> ProofTree
 hypCaseDerivedRule (ProofTree h _ _) =
@@ -20,38 +21,98 @@ hypCaseDerivedRule (ProofTree h _ _) =
     where 
         applySubst = parseWithSubst [cond] []
 
-axiomCaseDerivedRule :: Sentence -> ProofTree -> ProofTree
-axiomCaseDerivedRule hyp (ProofTree pfc pfj spfs) =
-    ProofTree (applySubst "H -> C" [("H", hyp), ("C", pfc)]) "Modus Ponens" 
-        [ProofTree pfc pfj [],
-        ProofTree (applySubst "C -> (H -> C)" [("H", hyp), ("C", pfc)]) "Simp" []]
-    where 
-        applySubst = parseWithSubst [cond] []
+-- axiomCaseDerivedRule :: Sentence -> ProofTree -> ProofTree
+-- axiomCaseDerivedRule hyp pft@(ProofTree pfc pfj _) =
+--     ProofTree (applySubst "H -> C" [("H", hyp), ("C", pfc)]) "Modus Ponens" 
+--         [pft,
+--         ProofTree (applySubst "C -> (H -> C)" [("H", hyp), ("C", pfc)]) "Simp" []]
+--     where 
+--         applySubst = parseWithSubst [cond] []
 
 
-modusPonensCaseDerivedRule :: Sentence -> ProofTree -> ProofTree
-modusPonensCaseDerivedRule hyp (ProofTree pfc pfj spfs)= 
-    ProofTree (applySubst "H -> Q" [("H", hyp), ("Q", pfc)]) "Modus Ponens"
+
+unify :: [Sentence] -> [Sentence] -> Maybe Substitution
+unify schemas currs = foldl' sumIfCoherent' (Just []) (zipWith getSubst schemas currs)
+
+hypSyll :: ([Sentence], Sentence)
+hypSyll = ([parse [cond] [] "H -> P", parse [cond] [] "P -> Q"], (parse [cond] [] "H -> Q"))
+
+middleP :: ([Sentence], Sentence)
+middleP = ([parse [cond] [] "P", parse [cond] [] "H -> (P -> Q)"], (parse [cond] [] "H -> Q"))
+
+recMP :: ([Sentence], Sentence)
+recMP = ([parse [cond] [] "H -> P", parse [cond] [] "H -> (P -> Q)"], (parse [cond] [] "H -> Q"))
+    
+
+modusPonensCaseDerivedRule :: ProofTree -> ProofTree
+modusPonensCaseDerivedRule (ProofTree pfc pfj spfs) = 
+    ProofTree (p "H -> Q") "Modus Ponens"
         [hpPf,
-        ProofTree (applySubst "HP -> (H -> Q)" [("HP", hp), ("H", hyp), ("Q", pfc)]) "Modus Ponens" 
+        ProofTree (p "(H -> P) -> (H -> Q)") "Modus Ponens" 
                 [hpqPf,
-                ProofTree (applySubst "HPQ -> (HP -> (H -> Q))" [("HP", hp), ("HPQ", hpq), ("H", hyp), ("Q", pfc)]) "Frege" []]]
+                ProofTree (p "(H -> (P -> Q)) -> ((H -> P) -> (H -> Q))") "Frege" []]]
     where
-        applySubst = parseWithSubst [cond] []
+        subst = fromJust (unify (fst recMP) (map pfContent spfs))
+        p = \str -> parseWithSubst [cond] [] str subst
         [hpPf, hpqPf] = spfs
-        [hp, hpq] = map pfContent spfs
+
+hypSyllCaseDerivedRule :: ProofTree -> ProofTree
+hypSyllCaseDerivedRule (ProofTree pfc pfj spfs) = 
+    ProofTree (p "H -> Q") "Modus Ponens"
+        [hpPf,
+        ProofTree (p "(H -> P) -> (H -> Q)") "Modus Ponens" 
+            [ProofTree (p "H -> (P -> Q)") "Modus Ponens" 
+                [pqPf,
+                ProofTree (p "(P -> Q) -> (H -> (P -> Q))") "Simp" []],
+            ProofTree (p "(H -> (P -> Q)) -> ((H -> P) -> (H -> Q))") "Frege" []]]
+    where
+        subst = fromJust (unify (fst hypSyll) (map pfContent spfs))
+        p = \str -> parseWithSubst [cond] [] str subst
+        [hpPf, pqPf] = spfs
+
+middlePCaseDerivedRule :: ProofTree -> ProofTree
+middlePCaseDerivedRule (ProofTree pfc pfj spfs) = 
+    ProofTree (p "H -> Q") "Modus Ponens"
+        [ProofTree (p "H -> P") "Modus Ponens"
+            [pPf,
+            ProofTree (p "P -> (H -> P)") "Simp" []],
+        ProofTree (p "(H -> P) -> (H -> Q)") "Modus Ponens" 
+            [hpqPf,
+            ProofTree (p "(H -> (P -> Q)) -> ((H -> P) -> (H -> Q))") "Frege" []]]
+    where
+        subst = fromJust (unify (fst middleP) (map pfContent spfs))
+        p = \str -> parseWithSubst [cond] [] str subst
+        [pPf, hpqPf] = spfs
+
+
 
 
 -- deduction should be the last transformation that happens
--- useDeduction' :: Sentence -> ProofTree -> ProofTree
--- useDeduction' hyp pfTree =
---     case pfJustification pfTree of
---         "Modus Ponens" -> modusPonensCaseDerivedRule hyp pfTree
---         "Assumption" -> if pfContent pfTree == hyp
---                             then hypCaseDerivedRule pfTree
---                             else axiomCaseDerivedRule hyp pfTree
---         j -> axiomCaseDerivedRule hyp pfTree
+useDeduction' :: Sentence -> ProofTree -> ProofTree
+useDeduction' hyp pfTree@(ProofTree pfc pfj spfs) =
+    case pfj of
+        "Modus Ponens" -> 
+            let currPrems = map pfContent spfs in
+            case unify (premises modusPonens) currPrems of
+                Just s -> pfTree
+                Nothing -> case unify (fst hypSyll) currPrems of
+                    Just s -> hypSyllCaseDerivedRule pfTree
+                    Nothing -> case unify (fst middleP) currPrems of
+                        Just s -> middlePCaseDerivedRule pfTree
+                        Nothing -> case unify (fst recMP) currPrems of
+                            Just s -> modusPonensCaseDerivedRule pfTree
+                            Nothing -> error "something wrong in new deduction fock"
+        "Assumption" -> if pfContent pfTree == hyp
+                            then hypCaseDerivedRule pfTree
+                            else pfTree
+        _ -> pfTree
 
+useDeduction :: Sentence -> ProofTree -> ProofTree
+useDeduction hyp = applyOverTree (useDeduction' hyp)
+
+makeDeductionsFunc :: [Sentence] -> ProofTree -> ProofTree
+makeDeductionsFunc deductionAntecedents =
+    foldl' (.) id (map useDeduction deductionAntecedents) -- used to be foldl... still works tho
 
 eliminateDeduction' :: ProofTree -> ProofTree
 eliminateDeduction' (ProofTree pfc "deduction" [spf]) =
@@ -63,42 +124,6 @@ eliminateDeduction' pft = pft
 
 eliminateDeduction :: ProofTree -> ProofTree
 eliminateDeduction = applyOverTree eliminateDeduction'
-
--- right now have problem (see remarkable). 
--- I think we can fix it by making deduction top-down. 
--- if subterms are not closed, then we need to do full deduction. 
--- if subterms are closed, we don't need to do full deduction: we only need to do weakening (axiomCase) on top level.
--- (This is the observation that allows for using axiomCaseDerivedRule in useDeduction' above)
-
-closedUnderSent :: Sentence -> ProofTree -> Bool
-closedUnderSent hyp (ProofTree pfc pfj spfs) =
-    not (pfc == hyp && pfj == "Assumption") || or (map (closedUnderSent hyp) spfs)
--- closedUnderSent hyp (ProofTree _ _ spfs) =
---     or (map (closedUnderSent hyp) spfs)
-
-useDeduction'' :: Sentence -> ProofTree -> ProofTree
-useDeduction'' hyp pfTree =
-    case pfJustification pfTree of
-        "Modus Ponens" -> modusPonensCaseDerivedRule hyp pfTree
-        "Assumption" -> if pfContent pfTree == hyp
-                            then hypCaseDerivedRule pfTree
-                            else axiomCaseDerivedRule hyp pfTree
-        j -> axiomCaseDerivedRule hyp pfTree
-
-useDeduction' :: Sentence -> ProofTree -> ProofTree
-useDeduction' hyp pft@(ProofTree pfc pfj spfs) 
-    | closedUnderSent hyp pft = pft
-    | otherwise =
-        let recCalls = map (useDeduction'' hyp) spfs in
-        useDeduction'' hyp (ProofTree pfc pfj recCalls)
-
-useDeduction :: Sentence -> ProofTree -> ProofTree
-useDeduction hyp = applyOverTree (useDeduction' hyp)
-
-
--- makeDeductionsFunc :: [Sentence] -> ProofTree -> ProofTree
--- makeDeductionsFunc deductionAntecedents =
---     foldl' (.) id (map useDeduction deductionAntecedents) -- used to be foldl... still works tho
 
 
 
