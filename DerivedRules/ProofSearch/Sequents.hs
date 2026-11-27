@@ -1,16 +1,12 @@
 module DerivedRules.ProofSearch.Sequents where
 
 import Core 
-import Parse.Sentences
-import Defs.Operators
 import DerivedRules.Utils
-import DerivedRules.Deduction
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
-import Data.Char
 
 isAtomic :: Sentence -> Bool
 isAtomic (Atom _) = True
