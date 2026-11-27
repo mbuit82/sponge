@@ -49,7 +49,6 @@ getHaskellProofWithoutDeduction logicName proofName = do
     (goal, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
     afterEverythingButDeduction <- useEverythingButDeduction logicName userProof
-    -- let afterNormalizing = normalize afterEverythingButDeduction
     pure (goal, afterEverythingButDeduction) -- this is what we return for the FINAL pass, which is deduction (below)
 
 getHaskellProof :: String -> String -> IO (Sentence, ProofTree)

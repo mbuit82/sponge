@@ -129,9 +129,13 @@ eliminateDeduction = applyOverTree eliminateDeduction'
 
 normalize' :: ProofTree -> ProofTree
 normalize' (ProofTree q "Modus Ponens" [pPf, ProofTree pq "deduction" [spf]]) =
-    composeDerivations (mkSentSubsts [pPf]) spf
-    -- spf should be a proof of q. so we are good
+    composeDerivations (mkSentSubsts [pPf]) spf -- spf should be a proof of q. so we are good
 normalize' pft = pft
 
+-- inefficient
 normalize :: ProofTree -> ProofTree
-normalize = applyOverTree normalize'
+normalize pft = 
+    let normed = applyOverTree normalize' pft in
+    if pft == normed
+        then pft
+        else applyOverTree normalize' normed
