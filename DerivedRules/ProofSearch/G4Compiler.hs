@@ -26,9 +26,6 @@ getStepSubst seqPf@(SequentProof seqpfc rl subseqpfs) =
 compilerParseHelper :: [(String, Sentence)] -> String -> Sentence
 compilerParseHelper subst str = parseWithSubst [andOp, orOp, cond, negOp] [] str subst
 
-mkSentSubsts :: [ProofTree] -> [(Sentence, ProofTree)]
-mkSentSubsts = map (\pft -> (pfContent pft, pft))
-
 replaceNotA :: Sentence -> Sentence -> Sentence
 replaceNotA replacement (Atom "NotA") = replacement
 replaceNotA replacement (Atom a) = Atom a

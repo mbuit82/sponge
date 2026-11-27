@@ -113,3 +113,32 @@ useDeduction hyp = applyOverTree (useDeduction' hyp)
 makeDeductionsFunc :: [Sentence] -> ProofTree -> ProofTree
 makeDeductionsFunc deductionAntecedents =
     foldl' (.) id (map useDeduction deductionAntecedents) -- used to be foldl... still works tho
+
+eliminateDeduction' :: ProofTree -> ProofTree
+eliminateDeduction' (ProofTree pfc "deduction" [spf]) =
+    let [dArg] = getNEmbeddedAntecedents cond 1 pfc in
+    useDeduction dArg spf
+eliminateDeduction' (ProofTree pfc "deduction" spfs) =
+    error ("deduction should have one arg but has two: " ++ show spfs)
+eliminateDeduction' pft = pft
+
+eliminateDeduction :: ProofTree -> ProofTree
+eliminateDeduction = applyOverTree eliminateDeduction'
+
+
+
+normalize' :: ProofTree -> ProofTree
+normalize' (ProofTree q "Modus Ponens" [pPf, ProofTree pq "deduction" [spf]]) =
+    composeDerivations (mkSentSubsts [pPf]) spf -- spf should be a proof of q. so we are good
+normalize' pft = pft
+
+-- inefficient
+-- by the code it's potentially endlessly looping
+-- but I'm like 99% sure strong normalization holds for the system I'm working in
+-- since it's basically a stripped down version of ND
+normalize :: ProofTree -> ProofTree
+normalize pft = 
+    let normed = applyOverTree normalize' pft in
+    if pft == normed
+        then pft
+        else applyOverTree normalize' normed

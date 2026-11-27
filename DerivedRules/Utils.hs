@@ -5,6 +5,7 @@ import Parse.Sentences
 import Defs.Operators
 import Data.Char
 
+
 import qualified Data.Map as Map
 import Data.Functor.Identity
 
@@ -24,6 +25,10 @@ applyPfs pfTree (spf:rem) =
     applyPfs (ProofTree consq "Modus Ponens" [spf, pfTree]) rem 
     where 
         [_, consq] = args (pfContent pfTree)
+
+mkSentSubsts :: [ProofTree] -> [(Sentence, ProofTree)]
+mkSentSubsts = map (\pft -> (pfContent pft, pft))
+
 
 
 -- are used for conditionals in strengthening and K derived rules, but are more general processes so leaving here
@@ -91,8 +96,6 @@ composeDerivations pairs (ProofTree pfc pfj spfs) =
 --         Just newDerivation -> newDerivation
 -- derivationComposition pairs (ProofTree pfc pfj spfs) =
 --     ProofTree pfc pfj (map (derivationComposition pairs) spfs)
-
-
 
 parseIP :: String -> Maybe Sentence
 parseIP str = 

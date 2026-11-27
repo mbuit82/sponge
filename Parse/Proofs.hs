@@ -92,17 +92,30 @@ ignoreAfterQED (ln:lns) =
         then []
         else ln : ignoreAfterQED lns
 
-parseUserProofFile' :: Logic -> String -> (Sentence, [Sentence], [Line])
+makeDeductionLine :: Sentence -> Line -> Line
+makeDeductionLine sent (Line lNum c _ _ _) = 
+    -- refLines is lNum because that is how they're made in this file
+    Line (lNum + 1) (OpNode cond [sent, c]) "deduction" [lNum] (Just (lNum + 1))
+
+makeDeductionLines :: [Sentence] -> [Line] -> [Line]
+makeDeductionLines [] lns = lns
+makeDeductionLines (sent:sents) lns =
+    let newLn = makeDeductionLine sent (last lns) in
+    makeDeductionLines sents (lns ++ [newLn])
+
+parseUserProofFile' :: Logic -> String -> (Sentence, [Line])
 parseUserProofFile' logic fileContent =
     let (goalLine, pfLines'') = splitByGoalLine (lines fileContent)
         goal = getProofGoal logic [] goalLine
         (preamble, pfLines') = splitByProofLine [] pfLines''
         pfLines = ignoreAfterQED pfLines'
-        deductionArgs = getDeductionArgs goal preamble in
-            (goal, deductionArgs, parseUserProof logic pfLines)
+        deductionArgs = getDeductionArgs goal preamble
+        userLines = parseUserProof logic pfLines in
+    (goal, makeDeductionLines (reverse deductionArgs) userLines)
+    -- (goal, deductionArgs, parseUserProof logic pfLines)
 
 
-parseUserProofFile :: String -> String -> IO (Sentence, [Sentence], [Line])
+parseUserProofFile :: String -> String -> IO (Sentence, [Line])
 parseUserProofFile logicName proofName = do
     fileContent <- readFile ("user_proofs/" ++ logicName ++ "/" ++ proofName ++ ".txt")
     createDirectoryIfMissing False ("datalog/datalog_proofs/" ++ logicName ++ "/" ++ proofName)

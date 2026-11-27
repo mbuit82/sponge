@@ -8,7 +8,6 @@ import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
-
 isAtomic :: Sentence -> Bool
 isAtomic (Atom _) = True
 isAtomic _ = False

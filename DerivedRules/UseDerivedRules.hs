@@ -44,17 +44,19 @@ useEverythingButDeduction logicName userProof = do
     let afterCitingAxioms = useCitedAxioms (getLogic logicName) afterDerivedRules
     useCitedTheorems afterCitingAxioms
 
-getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, [Sentence], ProofTree)
+getHaskellProofWithoutDeduction :: String -> String -> IO (Sentence, ProofTree)
 getHaskellProofWithoutDeduction logicName proofName = do
-    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
+    (goal, userLines) <- parseUserProofFile logicName proofName
     let userProof = linesToProofTree userLines
     afterEverythingButDeduction <- useEverythingButDeduction logicName userProof
-    pure (goal, deductionArgs, afterEverythingButDeduction) -- this is what we return for the FINAL pass, which is deduction (below)
+    pure (goal, afterEverythingButDeduction) -- this is what we return for the FINAL pass, which is deduction (below)
 
 getHaskellProof :: String -> String -> IO (Sentence, ProofTree)
 getHaskellProof logicName proofName = do
-    (goal, deductionArgs, pf) <- getHaskellProofWithoutDeduction logicName proofName
-    pure (goal, (makeDeductionsFunc deductionArgs) pf)
+    (goal, pf) <- getHaskellProofWithoutDeduction logicName proofName
+    let afterNormalizing = normalize pf
+    let afterEliminatingDeduction = eliminateDeduction afterNormalizing
+    pure (goal, afterEliminatingDeduction)
 
 -- not quite what you want bc don't u avoid repetitions here
 seeHaskellProof :: String -> String -> IO ()
@@ -107,19 +109,20 @@ getUsedDerivedArgs (dArg:remArgs) (newRef:remRefs) =
         ((dArg, newRef) : remPairs, unusedDeductions, unusedApps)
 
 -- wondering about name
-optimizedApply :: Sentence -> [Sentence] -> ProofTree -> ProofTree -> ProofTree
-optimizedApply citedGoal deductionArgs citedPf pfTree =
+optimizedApply :: Sentence -> ProofTree -> ProofTree -> ProofTree
+optimizedApply citedGoal citedPf pfTree =
     let varMap = getVarMap (reconstructCitedTheorem pfTree) citedGoal in
     let citedPfSubstd = applySubstToProof varMap citedPf in
-    let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs in
-    let (usedDerivedArgs, remHyps, remArgs) = getUsedDerivedArgs deductionArgsSubstd (subProofs pfTree) in
-    applyPfs (composeDerivations usedDerivedArgs ((makeDeductionsFunc remHyps) citedPfSubstd)) remArgs
+    -- let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs in
+    -- let (usedDerivedArgs, remHyps, remArgs) = getUsedDerivedArgs deductionArgsSubstd (subProofs pfTree) in
+    applyPfs citedPfSubstd (subProofs pfTree)
+    -- applyPfs (composeDerivations usedDerivedArgs ((makeDeductionsFunc remHyps) citedPfSubstd)) remArgs
 
 useCitedTheorem :: ProofTree -> IO ProofTree
 useCitedTheorem pfTree = do
     let (thmLogicName, thmName) = getTheoremInfo (pfJustification pfTree)
-    (thmGoal, deductionArgs, citedPf) <- getHaskellProofWithoutDeduction thmLogicName thmName
-    pure (optimizedApply thmGoal deductionArgs citedPf pfTree)
+    (thmGoal, citedPf) <- getHaskellProofWithoutDeduction thmLogicName thmName
+    pure (optimizedApply thmGoal citedPf pfTree)
 
 useCitedTheorems' :: ProofTree -> IO ProofTree
 useCitedTheorems' pfTree =
@@ -134,7 +137,7 @@ useCitedAxiom :: Logic -> ProofTree -> ProofTree
 useCitedAxiom logic pfTree = 
     let axiom = (axiomsDict logic Map.! (pfJustification pfTree)) in
     let axc = axiomContent axiom in
-    optimizedApply axc [] (ProofTree axc (axiomName axiom) []) pfTree
+    optimizedApply axc (ProofTree axc (axiomName axiom) []) pfTree
 
 useCitedAxioms' :: Logic -> ProofTree -> ProofTree
 useCitedAxioms' logic pfTree =
@@ -147,21 +150,21 @@ useCitedAxioms logic = applyOverTree (useCitedAxioms' logic)
 
 
 
--- don't really have a palce for these right now, they're toys
-getUserSentencesInOrder :: [Line] -> [Sentence]
-getUserSentencesInOrder userLines =
-    map lineContent userLines
+-- -- don't really have a palce for these right now, they're toys
+-- getUserSentencesInOrder :: [Line] -> [Sentence]
+-- getUserSentencesInOrder userLines =
+--     map lineContent userLines
 
-findLNumForContent :: [Line] -> Sentence -> Int
-findLNumForContent [] sent = error ("no line w sentence " ++ (show sent))
-findLNumForContent (ln:lns) sent =
-    if lineContent ln == sent then lineNumber ln else findLNumForContent lns sent
+-- findLNumForContent :: [Line] -> Sentence -> Int
+-- findLNumForContent [] sent = error ("no line w sentence " ++ (show sent))
+-- findLNumForContent (ln:lns) sent =
+--     if lineContent ln == sent then lineNumber ln else findLNumForContent lns sent
 
-asdf :: String -> String -> IO [Int]
-asdf logicName proofName = do
-    (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
-    let userSents = getUserSentencesInOrder userLines
-    (goal, haskellPf) <- getHaskellProof logicName proofName
-    let haskellLines' = proofTreeToLines haskellPf
-    -- let haskellLines = pruneProofTree haskellLines'
-    pure (map (findLNumForContent haskellLines') userSents)
+-- asdf :: String -> String -> IO [Int]
+-- asdf logicName proofName = do
+--     (goal, deductionArgs, userLines) <- parseUserProofFile logicName proofName
+--     let userSents = getUserSentencesInOrder userLines
+--     (goal, haskellPf) <- getHaskellProof logicName proofName
+--     let haskellLines' = proofTreeToLines haskellPf
+--     -- let haskellLines = pruneProofTree haskellLines'
+--     pure (map (findLNumForContent haskellLines') userSents)
