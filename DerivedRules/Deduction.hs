@@ -85,14 +85,14 @@ middlePCaseDerivedRule (ProofTree pfc pfj spfs) =
         [pPf, hpqPf] = spfs
 
 -- OLD deduction
--- useDeduction' :: Sentence -> ProofTree -> ProofTree
--- useDeduction' hyp pfTree@(ProofTree pfc pfj spfs) =
---     case pfj of
---         "Modus Ponens" -> modusPonensCaseDerivedRule pfTree
---         "Assumption" -> if pfContent pfTree == hyp
---                             then hypCaseDerivedRule pfTree
---                             else axiomCaseDerivedRule hyp pfTree
---         _ -> axiomCaseDerivedRule hyp pfTree
+oldUseDeduction' :: Sentence -> ProofTree -> ProofTree
+oldUseDeduction' hyp pfTree@(ProofTree pfc pfj spfs) =
+    case pfj of
+        "Modus Ponens" -> modusPonensCaseDerivedRule pfTree
+        "Assumption" -> if pfContent pfTree == hyp
+                            then hypCaseDerivedRule pfTree
+                            else axiomCaseDerivedRule hyp pfTree
+        _ -> axiomCaseDerivedRule hyp pfTree
 
 -- deduction should be the last transformation that happens
 useDeduction' :: Sentence -> ProofTree -> ProofTree
@@ -127,7 +127,7 @@ eliminateDeduction' (ProofTree pfc "Deduction Lemma" [spf]) =
     let [dArg] = getNEmbeddedAntecedents cond 1 pfc in
     let deducted = (useDeduction dArg spf) in
     if deducted == spf -- happens if you never use the assumption
-        -- only happens in compiler, contrapositive backward
+        -- only happens in compiler, contrapositive
         then axiomCaseDerivedRule dArg deducted
         else deducted
 eliminateDeduction' (ProofTree pfc "Deduction Lemma" spfs) =
@@ -148,7 +148,7 @@ normalize' pft = pft
 -- since it's basically a stripped down version of ND
 -- so endless looping does not happen
 normalize :: ProofTree -> ProofTree
-normalize pft = 
+normalize pft =
     let normed = applyOverTree normalize' pft in
     if pft == normed
         then pft
