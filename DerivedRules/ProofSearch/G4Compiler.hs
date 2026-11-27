@@ -5,7 +5,6 @@ import Parse.Sentences
 import Defs.Operators
 import Defs.Axioms
 import DerivedRules.Utils
-import DerivedRules.Deduction
 import DerivedRules.ProofSearch.Sequents
 
 import qualified Data.Set as Set
@@ -83,8 +82,7 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                         ProofTree (p "(A -> C) -> ((B -> C) -> ((A v B) -> C))") "Or Elim" []]]]
         "R->" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
-            let [deductionArg] = getNEmbeddedAntecedents cond 1 (getSuccSent seqpfc) in
-            useDeduction deductionArg recCall
+            ProofTree (getSuccSent seqpfc) "Deduction Lemma" [recCall]
         "L->1" ->
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             let bDerivation = 
@@ -92,17 +90,9 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
                         [ProofTree (p "A") "Assumption" [],
                         ProofTree (p "A -> B") "Assumption" []] in
             composeDerivations (mkSentSubsts [bDerivation]) recCall
-        "L->2" ->
-            -- what would be nice here is to leave the citation of currying as an open term, 
-            -- but only leaving one deduction open
-            -- I wonder if that could be another optimization pass? 
-            -- basically you want to check if you are doing modus ponens P -> Q, P with a P that is an assumption and a P -> Q that was formed from an open term, then you want to eliminate that detour
-            -- this is basically normalization
-            -- this issue is that you don't have a representation of open terms
-            -- are these two differen things? normalization would be eliminating successive MP and deduction occurrences. 
-            -- the only way I can think of doing this I'm not sure if it's nice:
-            -- it would be to have a prooftree node that represents use of deduction. 
-            -- that way you could literally have successive intro/elim terms you can syntactically eliminate. 
+        "L->2" -> 
+            -- this is the case where normalization helps
+            -- now you don't have to feed a line to currying, it will automatically normalize!
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             let curriedDerivation = 
                     ProofTree (p "C -> (D -> B)") "Modus Ponens"
@@ -122,13 +112,13 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
             composeDerivations (mkSentSubsts [cbDerivation, dbDerivation]) recCall
         "L->4" ->
             let [cdRecCall, rootRecCall] = map compileG4 (fromJust subseqpfs) in
-            let bUnderDDerivation = 
-                    ProofTree (p "B") "Modus Ponens"
-                        [ProofTree (p "C -> D") "Modus Ponens"
-                            [ProofTree (p "D") "Assumption" [],
-                            ProofTree (p "D -> (C -> D)") "Simp" []],
-                        ProofTree (p "(C -> D) -> B") "Assumption" []] in
-            let dbDerivation = useDeduction (p "D") bUnderDDerivation in
+            let dbDerivation = 
+                    ProofTree (p "D -> B") "Deduction Lemma" [
+                        ProofTree (p "B") "Modus Ponens"
+                            [ProofTree (p "C -> D") "Modus Ponens"
+                                [ProofTree (p "D") "Assumption" [],
+                                ProofTree (p "D -> (C -> D)") "Simp" []],
+                            ProofTree (p "(C -> D) -> B") "Assumption" []]] in
             let cdDerivation = composeDerivations (mkSentSubsts [dbDerivation]) cdRecCall in
             let bDerivation = 
                     ProofTree (p "B") "Modus Ponens"
@@ -145,7 +135,7 @@ compileG4 seqPf@(SequentProof seqpfc rl subseqpfs) =
         "R~" -> 
             let [recCall] = map compileG4 (fromJust subseqpfs) in
             ProofTree (p "~A") "Modus Ponens"
-                    [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
+                    [ProofTree (p "A -> ~A") "Deduction Lemma" [replaceNotAInTree (p "~A") recCall],
                     ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
         "L~1" -> 
             ProofTree (p "E") "Modus Ponens"
@@ -232,39 +222,33 @@ useProofSearch' pfTree@(ProofTree pfc pfj _) =
 useProofSearch :: ProofTree -> ProofTree
 useProofSearch = applyOverTree useProofSearch'
 
--- ProofTree {pfContent = ~((P & ~(P))), pfJustification = "Negation Intro", subProofs = [
---         ProofTree {pfContent = ((P & ~(P)) -> P), pfJustification = "And Elim L", subProofs = []},
---         ProofTree {pfContent = ((P & ~(P)) -> ~(P)), pfJustification = "And Elim R", subProofs = []}]}
+-- -- keeping for posterity
+-- -- there are old versions, with no object language deduction
+-- newCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
+-- newCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
+--     let [recCall] = map compileG4 (fromJust subseqpfs) in
+--         ProofTree
+--             (p "~A")
+--             "Modus Ponens"
+--                 [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
+--                 ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
 
--- ProofTree {pfContent = (~((A v B)) -> ~(B)), pfJustification = "applying contrapositive_forward (from intuitionistic)", subProofs = [
---     ProofTree {pfContent = (B -> (A v B)), pfJustification = "Or Intro R", subProofs = []}]}
-
--- keeping for posterity
-newCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
-newCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
-    let [recCall] = map compileG4 (fromJust subseqpfs) in
-        ProofTree
-            (p "~A")
-            "Modus Ponens"
-                [useDeduction (p "A") (replaceNotAInTree (p "~A") recCall),
-                ProofTree (p "(A -> ~A) -> ~A") "citing reductio (from intuitionistic)" []]
-
-oldCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
-oldCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
-    case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
-                Nothing -> error ("R~ MESSED UP\n" ++ show seqpfc)
-                Just (x, xSeqDer, nxSeqDer) -> 
-                    let negIntro = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negI) in
-                    let axDer = useDeduction (p "A") (compileG4 xSeqDer) in
-                    let anxDer = useDeduction (p "A") (compileG4 nxSeqDer) in 
-                    let consequentOfNegElim = (args negIntro) !! 1 in
-                    ProofTree 
-                        (p "~A")
-                        "Modus Ponens"
-                        [anxDer,
-                        ProofTree consequentOfNegElim "Modus Ponens"
-                            [axDer,
-                            ProofTree negIntro "Negation Intro" []]]
+-- oldCaseNegR :: SequentProof -> (String -> Sentence) -> ProofTree
+-- oldCaseNegR (SequentProof seqpfc seqpfj subseqpfs) p = 
+--     case Set.lookupMin (getBotDerivations (antecedent seqpfc) (p "A")) of
+--                 Nothing -> error ("R~ MESSED UP\n" ++ show seqpfc)
+--                 Just (x, xSeqDer, nxSeqDer) -> 
+--                     let negIntro = applySubst [("P", (p "A")), ("Q", x)] (axiomContent negI) in
+--                     let axDer = useDeduction (p "A") (compileG4 xSeqDer) in
+--                     let anxDer = useDeduction (p "A") (compileG4 nxSeqDer) in 
+--                     let consequentOfNegElim = (args negIntro) !! 1 in
+--                     ProofTree 
+--                         (p "~A")
+--                         "Modus Ponens"
+--                         [anxDer,
+--                         ProofTree consequentOfNegElim "Modus Ponens"
+--                             [axDer,
+--                             ProofTree negIntro "Negation Intro" []]]
 
 getSubFormulas :: Sentence -> Set.Set Sentence
 getSubFormulas s@(Atom a) = Set.singleton s

@@ -89,7 +89,7 @@ composeDerivations pairs (ProofTree pfc pfj spfs) =
     case (Map.lookup pfc (Map.fromList pairs)) of
         Nothing -> ProofTree pfc pfj (map (composeDerivations pairs) spfs)
         Just newDerivation -> newDerivation
--- -- OLD. more efficient. Changed to make good for Sequents
+-- -- OLD. more efficient. Changed to make good for Sequents.hs
 -- derivationComposition pairs pft@(ProofTree pfc "Assumption" spfs) =
 --     case (Map.lookup pfc (Map.fromList pairs)) of
 --         Nothing -> pft

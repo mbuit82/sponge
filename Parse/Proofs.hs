@@ -95,7 +95,7 @@ ignoreAfterQED (ln:lns) =
 makeDeductionLine :: Sentence -> Line -> Line
 makeDeductionLine sent (Line lNum c _ _ _) = 
     -- refLines is lNum because that is how they're made in this file
-    Line (lNum + 1) (OpNode cond [sent, c]) "deduction" [lNum] (Just (lNum + 1))
+    Line (lNum + 1) (OpNode cond [sent, c]) "Deduction Lemma" [lNum] (Just (lNum + 1))
 
 makeDeductionLines :: [Sentence] -> [Line] -> [Line]
 makeDeductionLines [] lns = lns

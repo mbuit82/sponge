@@ -18,10 +18,8 @@ import Data.Char
 import qualified Data.Map as Map
 
 -- DERIVED RULES
--- The way derived rules work is that they're applied on everything. If you use one for a logic that doesn't have the required operators or axioms, then the Datalog proof just won't go through (and eventually we'll get an error pointing to the right user line). Nothing too terrible. And they _really_, really don't belong in the logics. 
 derivedRules :: Map.Map String (ProofTree -> ProofTree)
 derivedRules = Map.fromList [ 
-    -- contrapositionDerivedRule,
     ("strengthening", strengtheningDerivedRule), -- from |- x -> y infer |- (P -> ... -> x) -> (P -> ... -> y) (any depth you'd like!)
     ("weakening", weakeningDerivedRule),
     ("embedding", embeddingDerivedRule),
@@ -101,28 +99,17 @@ getTheoremInfo jus =
     let (logicName, rest') = break (==')') (dropWhile isSpace (fromJust (stripPrefix "(from" rest))) in
     (logicName, dropWhileEnd isSpace proofName')
 
-getUsedDerivedArgs :: [Sentence] -> [ProofTree] -> ([(Sentence, ProofTree)], [Sentence], [ProofTree])
-getUsedDerivedArgs deductionArgs [] = ([], deductionArgs, [])
-getUsedDerivedArgs [] spfs = ([], [], spfs)
-getUsedDerivedArgs (dArg:remArgs) (newRef:remRefs) =
-    let (remPairs, unusedDeductions, unusedApps) = getUsedDerivedArgs remArgs remRefs in
-        ((dArg, newRef) : remPairs, unusedDeductions, unusedApps)
-
--- wondering about name
-optimizedApply :: Sentence -> ProofTree -> ProofTree -> ProofTree
-optimizedApply citedGoal citedPf pfTree =
+applyHelper :: Sentence -> ProofTree -> ProofTree -> ProofTree
+applyHelper citedGoal citedPf pfTree =
     let varMap = getVarMap (reconstructCitedTheorem pfTree) citedGoal in
     let citedPfSubstd = applySubstToProof varMap citedPf in
-    -- let deductionArgsSubstd = map (applySubstToSent varMap) deductionArgs in
-    -- let (usedDerivedArgs, remHyps, remArgs) = getUsedDerivedArgs deductionArgsSubstd (subProofs pfTree) in
     applyPfs citedPfSubstd (subProofs pfTree)
-    -- applyPfs (composeDerivations usedDerivedArgs ((makeDeductionsFunc remHyps) citedPfSubstd)) remArgs
 
 useCitedTheorem :: ProofTree -> IO ProofTree
 useCitedTheorem pfTree = do
     let (thmLogicName, thmName) = getTheoremInfo (pfJustification pfTree)
     (thmGoal, citedPf) <- getHaskellProofWithoutDeduction thmLogicName thmName
-    pure (optimizedApply thmGoal citedPf pfTree)
+    pure (applyHelper thmGoal citedPf pfTree)
 
 useCitedTheorems' :: ProofTree -> IO ProofTree
 useCitedTheorems' pfTree =
@@ -137,7 +124,7 @@ useCitedAxiom :: Logic -> ProofTree -> ProofTree
 useCitedAxiom logic pfTree = 
     let axiom = (axiomsDict logic Map.! (pfJustification pfTree)) in
     let axc = axiomContent axiom in
-    optimizedApply axc (ProofTree axc (axiomName axiom) []) pfTree
+    applyHelper axc (ProofTree axc (axiomName axiom) []) pfTree
 
 useCitedAxioms' :: Logic -> ProofTree -> ProofTree
 useCitedAxioms' logic pfTree =

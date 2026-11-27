@@ -40,7 +40,10 @@ data Sentence = Atom {atomName :: String}
 prettyPrintSentence :: Sentence -> String
 prettyPrintSentence (Atom str) = str
 prettyPrintSentence (OpNode (Operator _ opS 0) []) = opS
-prettyPrintSentence (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ prettyPrintSentence arg ++ ")"
+-- prettyPrintSentence (OpNode (Operator _ opS 1) [Atom str]) = opS ++ str
+-- prettyPrintSentence (OpNode (Operator _ opS 1) [OpNode op' [arg]]) = opS ++ prettyPrintSentence (OpNode op' [arg])
+prettyPrintSentence (OpNode (Operator _ opS 1) [arg]) = opS ++ prettyPrintSentence arg
+-- prettyPrintSentence (OpNode (Operator _ opS 1) [arg]) = opS ++ "(" ++ prettyPrintSentence arg ++ ")"
 prettyPrintSentence (OpNode (Operator _ opS 2) [arg1, arg2]) = "(" ++ prettyPrintSentence arg1 ++ " " ++ opS ++ " " ++ prettyPrintSentence arg2 ++ ")"
 prettyPrintSentence (OpNode _ _) = error "either n-ary or something's gone wrong with an operator definition"
 instance Show Sentence where

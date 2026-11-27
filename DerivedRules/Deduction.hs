@@ -13,21 +13,21 @@ import Data.Maybe
 
 hypCaseDerivedRule :: ProofTree -> ProofTree
 hypCaseDerivedRule (ProofTree h _ _) =
-    ProofTree (applySubst "H -> H" [("H", h)]) "Modus Ponens" 
-        [ProofTree (applySubst "H -> (H -> H)" [("H", h)]) "Simp" [],
-        ProofTree (applySubst "(H -> (H -> H)) -> (H -> H))" [("H", h)]) "Modus Ponens" 
-            [ProofTree (applySubst "H -> ((H -> H) -> H)" [("H", h)]) "Simp" [],
-            ProofTree (applySubst "((H -> ((H -> H) -> H)) -> ((H -> (H -> H)) -> (H -> H)))" [("H", h)]) "Frege" []]]
+    ProofTree (p "H -> H") "Modus Ponens" 
+        [ProofTree (p "H -> (H -> H)") "Simp" [],
+        ProofTree (p "(H -> (H -> H)) -> (H -> H))") "Modus Ponens" 
+            [ProofTree (p "H -> ((H -> H) -> H)") "Simp" [],
+            ProofTree (p "((H -> ((H -> H) -> H)) -> ((H -> (H -> H)) -> (H -> H)))") "Frege" []]]
     where 
-        applySubst = parseWithSubst [cond] []
+        p = \str -> parseWithSubst [cond] [] str [("H", h)]
 
--- axiomCaseDerivedRule :: Sentence -> ProofTree -> ProofTree
--- axiomCaseDerivedRule hyp pft@(ProofTree pfc pfj _) =
---     ProofTree (applySubst "H -> C" [("H", hyp), ("C", pfc)]) "Modus Ponens" 
---         [pft,
---         ProofTree (applySubst "C -> (H -> C)" [("H", hyp), ("C", pfc)]) "Simp" []]
---     where 
---         applySubst = parseWithSubst [cond] []
+axiomCaseDerivedRule :: Sentence -> ProofTree -> ProofTree
+axiomCaseDerivedRule hyp pft@(ProofTree pfc pfj _) =
+    ProofTree (p "H -> C") "Modus Ponens" 
+        [pft,
+        ProofTree (p "C -> (H -> C)") "Simp" []]
+    where 
+        p = \str -> parseWithSubst [cond] [] str [("H", hyp), ("C", pfc)]
 
 
 
@@ -84,8 +84,15 @@ middlePCaseDerivedRule (ProofTree pfc pfj spfs) =
         p = \str -> parseWithSubst [cond] [] str subst
         [pPf, hpqPf] = spfs
 
-
-
+-- OLD deduction
+-- useDeduction' :: Sentence -> ProofTree -> ProofTree
+-- useDeduction' hyp pfTree@(ProofTree pfc pfj spfs) =
+--     case pfj of
+--         "Modus Ponens" -> modusPonensCaseDerivedRule pfTree
+--         "Assumption" -> if pfContent pfTree == hyp
+--                             then hypCaseDerivedRule pfTree
+--                             else axiomCaseDerivedRule hyp pfTree
+--         _ -> axiomCaseDerivedRule hyp pfTree
 
 -- deduction should be the last transformation that happens
 useDeduction' :: Sentence -> ProofTree -> ProofTree
@@ -101,7 +108,12 @@ useDeduction' hyp pfTree@(ProofTree pfc pfj spfs) =
                         Just s -> middlePCaseDerivedRule pfTree
                         Nothing -> case unify (fst recMP) currPrems of
                             Just s -> modusPonensCaseDerivedRule pfTree
-                            Nothing -> error "something wrong in new deduction fock"
+                            Nothing -> error (
+                                "something wrong in new deduction fock" ++ "\n" ++
+                                show hyp ++ "\n" ++ 
+                                show pfc ++ "\n" ++ 
+                                show pfj ++ "\n" ++ 
+                                show (map pfContent spfs))
         "Assumption" -> if pfContent pfTree == hyp
                             then hypCaseDerivedRule pfTree
                             else pfTree
@@ -110,32 +122,31 @@ useDeduction' hyp pfTree@(ProofTree pfc pfj spfs) =
 useDeduction :: Sentence -> ProofTree -> ProofTree
 useDeduction hyp = applyOverTree (useDeduction' hyp)
 
-makeDeductionsFunc :: [Sentence] -> ProofTree -> ProofTree
-makeDeductionsFunc deductionAntecedents =
-    foldl' (.) id (map useDeduction deductionAntecedents) -- used to be foldl... still works tho
-
 eliminateDeduction' :: ProofTree -> ProofTree
-eliminateDeduction' (ProofTree pfc "deduction" [spf]) =
+eliminateDeduction' (ProofTree pfc "Deduction Lemma" [spf]) =
     let [dArg] = getNEmbeddedAntecedents cond 1 pfc in
-    useDeduction dArg spf
-eliminateDeduction' (ProofTree pfc "deduction" spfs) =
+    let deducted = (useDeduction dArg spf) in
+    if deducted == spf -- happens if you never use the assumption
+        -- only happens in compiler, contrapositive backward
+        then axiomCaseDerivedRule dArg deducted
+        else deducted
+eliminateDeduction' (ProofTree pfc "Deduction Lemma" spfs) =
     error ("deduction should have one arg but has two: " ++ show spfs)
 eliminateDeduction' pft = pft
 
 eliminateDeduction :: ProofTree -> ProofTree
 eliminateDeduction = applyOverTree eliminateDeduction'
 
-
-
 normalize' :: ProofTree -> ProofTree
-normalize' (ProofTree q "Modus Ponens" [pPf, ProofTree pq "deduction" [spf]]) =
+normalize' (ProofTree q "Modus Ponens" [pPf, ProofTree pq "Deduction Lemma" [spf]]) =
     composeDerivations (mkSentSubsts [pPf]) spf -- spf should be a proof of q. so we are good
 normalize' pft = pft
 
 -- inefficient
--- by the code it's potentially endlessly looping
+-- potentially endlessly looping
 -- but I'm like 99% sure strong normalization holds for the system I'm working in
 -- since it's basically a stripped down version of ND
+-- so endless looping does not happen
 normalize :: ProofTree -> ProofTree
 normalize pft = 
     let normed = applyOverTree normalize' pft in
