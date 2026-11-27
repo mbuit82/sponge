@@ -1,9 +1,14 @@
 module DerivedRules.Utils where
 
 import Core
+import Parse.Sentences
+import Defs.Operators
+import Data.Char
 
 import qualified Data.Map as Map
 import Data.Functor.Identity
+
+type Substitution = [(String, Sentence)]
 
 applyOverTreeM :: Monad m => (ProofTree -> m ProofTree) -> ProofTree -> m ProofTree
 applyOverTreeM func (ProofTree pfc pfj spfs) = do
@@ -86,3 +91,38 @@ composeDerivations pairs (ProofTree pfc pfj spfs) =
 --         Just newDerivation -> newDerivation
 -- derivationComposition pairs (ProofTree pfc pfj spfs) =
 --     ProofTree pfc pfj (map (derivationComposition pairs) spfs)
+
+
+
+parseIP :: String -> Maybe Sentence
+parseIP str = 
+    if (all isSpace str)
+        then Nothing
+        else Just (parse [andOp, orOp, cond, negOp, box] [diamond] str)
+
+checkPairsCohere :: (String, Sentence) -> (String, Sentence) -> Bool
+checkPairsCohere (a1, s1) (a2, s2) = not (a1 == a2 && s1 /= s2)
+
+-- checks if a pair is coherent with an entire subst. 
+-- true if it's coherent with all the pairs in the subst.
+checkPairWithSubst :: Substitution -> (String, Sentence) -> Bool
+checkPairWithSubst [] p = True
+checkPairWithSubst (p':ps') p = checkPairsCohere p' p && checkPairWithSubst ps' p
+
+checkSubstsCohere :: Substitution -> Substitution -> Bool
+checkSubstsCohere subst1 subst2 = and (map (checkPairWithSubst subst1) subst2)
+
+extendSubst :: Substitution -> (String, Sentence) -> Substitution
+extendSubst subst pair = if pair `elem` subst then subst else pair:subst
+
+sumSubsts :: Substitution -> Substitution -> Substitution
+sumSubsts = foldl' extendSubst
+
+sumIfCoherent' :: Maybe Substitution -> Maybe Substitution -> Maybe Substitution
+sumIfCoherent' Nothing _ = Nothing
+sumIfCoherent' _ Nothing = Nothing
+sumIfCoherent' (Just subst1) (Just subst2) =
+    if checkSubstsCohere subst1 subst2 then Just (sumSubsts subst1 subst2) else Nothing
+
+sumIfCoherent :: Substitution -> Substitution -> Maybe Substitution
+sumIfCoherent subst1 subst2 = sumIfCoherent' (Just subst1) (Just subst2)

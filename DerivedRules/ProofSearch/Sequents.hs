@@ -1,22 +1,13 @@
 module DerivedRules.ProofSearch.Sequents where
 
 import Core 
-import Parse.Sentences
-import Defs.Operators
 import DerivedRules.Utils
-import DerivedRules.Deduction
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
-import Data.Char
 
-parseIP :: String -> Maybe Sentence
-parseIP str = 
-    if (all isSpace str)
-        then Nothing
-        else Just (parse [andOp, orOp, cond, negOp, box] [diamond] str)
 
 isAtomic :: Sentence -> Bool
 isAtomic (Atom _) = True
@@ -187,7 +178,6 @@ g4ip = G4Logic iInvertibleRules iNoninvertibleRules
 
 -- this unification procedure only works on sets.
 -- would have problem in case of schema set {A -> B, C -> D} if it wasn't for just sets
-type Substitution = [(String, Sentence)]
 
 getSubstFragment :: Set.Set Sentence -> Sentence -> Set.Set Substitution
 getSubstFragment sents schema =
@@ -195,28 +185,6 @@ getSubstFragment sents schema =
 
 getSubstFragments :: Set.Set Sentence -> Set.Set Sentence -> Set.Set (Set.Set Substitution)
 getSubstFragments schemas sents = Set.map (getSubstFragment sents) schemas
-
-checkPairsCohere :: (String, Sentence) -> (String, Sentence) -> Bool
-checkPairsCohere (a1, s1) (a2, s2) = not (a1 == a2 && s1 /= s2)
-
--- checks if a pair is coherent with an entire subst. 
--- true if it's coherent with all the pairs in the subst.
-checkPairWithSubst :: Substitution -> (String, Sentence) -> Bool
-checkPairWithSubst [] p = True
-checkPairWithSubst (p':ps') p = checkPairsCohere p' p && checkPairWithSubst ps' p
-
-checkSubstsCohere :: Substitution -> Substitution -> Bool
-checkSubstsCohere subst1 subst2 = and (map (checkPairWithSubst subst1) subst2)
-
-extendSubst :: Substitution -> (String, Sentence) -> Substitution
-extendSubst subst pair = if pair `elem` subst then subst else pair:subst
-
-sumSubsts :: Substitution -> Substitution -> Substitution
-sumSubsts = foldl' extendSubst
-
-sumIfCoherent :: Substitution -> Substitution -> Maybe Substitution
-sumIfCoherent subst1 subst2 =
-    if checkSubstsCohere subst1 subst2 then Just (sumSubsts subst1 subst2) else Nothing
 
 -- given a set of substs and a subst, return the set of coherent extensions by the second arg
 getPossibleSubsts'' :: Set.Set Substitution -> Substitution -> Set.Set Substitution
