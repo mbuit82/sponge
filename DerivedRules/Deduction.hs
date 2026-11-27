@@ -133,6 +133,9 @@ normalize' (ProofTree q "Modus Ponens" [pPf, ProofTree pq "deduction" [spf]]) =
 normalize' pft = pft
 
 -- inefficient
+-- by the code it's potentially endlessly looping
+-- but I'm like 99% sure strong normalization holds for the system I'm working in
+-- since it's basically a stripped down version of ND
 normalize :: ProofTree -> ProofTree
 normalize pft = 
     let normed = applyOverTree normalize' pft in
