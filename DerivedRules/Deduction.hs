@@ -150,6 +150,4 @@ normalize' pft = pft
 normalize :: ProofTree -> ProofTree
 normalize pft =
     let normed = applyOverTree normalize' pft in
-    if pft == normed
-        then pft
-        else applyOverTree normalize' normed
+    if pft == normed then pft else normalize normed

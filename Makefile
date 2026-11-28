@@ -1,6 +1,6 @@
 all: basics proof-processing
 
-exec/build-engines: ToDatalog/Engines.hs ToDatalog/Utils.hs $(wildcard Defs/*.hs) $(wildcard Parse/*.hs) Core.hs
+exec/build-engines: $(wildcard ToDatalog/*.hs) $(wildcard Defs/*.hs) $(wildcard Parse/*.hs) Core.hs
 	@ ghc ToDatalog/Engines.hs -main-is ToDatalog.Engines.main -o exec/build-engines -outputdir build
 
 exec/show-logic: Core.hs Defs/Specs.hs Commands/ShowLogic.hs
@@ -18,15 +18,15 @@ basics:
 	
 
 
-exec/build-proof: ToDatalog/UserProofs.hs ToDatalog/Utils.hs $(wildcard DerivedRules/ProofSearch/*.hs) $(wildcard DerivedRules/*.hs) $(wildcard Defs/*.hs) $(wildcard ToDatalog/*.hs) Core.hs
+exec/build-proof: exec/build-engines $(wildcard ToDatalog/*.hs) $(wildcard DerivedRules/ProofSearch/*.hs) $(wildcard DerivedRules/*.hs) $(wildcard Defs/*.hs) Core.hs
 	@ ghc ToDatalog/UserProofs.hs -main-is ToDatalog.UserProofs.main -o exec/build-proof -outputdir build
 
 exec/check-datalog-output: ToDatalog/Utils.hs  Commands/CheckDatalogOutput.hs
 	@ ghc Commands/CheckDatalogOutput.hs -main-is Commands.CheckDatalogOutput.main -o exec/check-datalog-output -outputdir build
 
-proof-processing: exec/build-proof exec/check-datalog-output
+proof-processing: exec/build-proof exec/check-datalog-output exec/build-engines
 
-check-proof: exec/build-proof exec/check-datalog-output
+check-proof: exec/build-proof exec/check-datalog-output exec/build-engines
 	@ ./exec/build-proof $(LOGIC) $(PROOF)
 	@ souffle -D datalog/datalog_proofs/$(LOGIC)/$(PROOF) datalog/datalog_proofs/$(LOGIC)/$(PROOF)/$(PROOF).dl
 	@ ./exec/check-datalog-output $(LOGIC) $(PROOF)
@@ -35,7 +35,7 @@ check-proof: exec/build-proof exec/check-datalog-output
 PROOF_FILES := $(wildcard user_proofs/$(LOGIC)/*.txt)
 PROOF_NAMES := $(basename $(notdir $(PROOF_FILES)))
 
-check-logic: exec/build-proof exec/check-datalog-output
+check-logic: exec/build-proof exec/check-datalog-output exec/build-engines
 	@ ./exec/build-proof $(LOGIC)
 	@ echo Checking all proofs in $(LOGIC)...
 	@ for pnm in $(PROOF_NAMES); do \
@@ -48,7 +48,7 @@ LOGIC_NAMES:= $(wildcard user_proofs/$(LOGIC)/*.txt)
 LOGIC_DIRS := $(wildcard user_proofs/*/)
 LOGICS := $(notdir $(patsubst %/,%,$(LOGIC_DIRS)))
 
-check-all: exec/build-proof exec/check-datalog-output
+check-all: exec/build-proof exec/check-datalog-output exec/build-engines
 	@ for lnm in $(LOGICS); do \
 		make check-logic LOGIC=$$lnm; \
 	done
